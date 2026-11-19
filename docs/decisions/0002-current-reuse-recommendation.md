@@ -17,7 +17,7 @@ on the actual development campaign and task contracts, not our wrapper tests.
 | CaP-X | Benchmark protocol/reference implementation; possible environment contribution | Pinned MIT-owned source; useful abstraction/feedback distinctions; its default executor and perception stack cannot silently replace edge owners |
 | ACE-CaP-0 | Demonstration and experiment-acquisition methodology | Main text and appendix reviewed; public site repository does not establish deployable controller code or reuse license |
 | RoboRepair | Recovery baseline design and trace-based metrics | Recovery without repeated completed steps is already covered; confirmed author code not located |
-| NeSyRo | Symbolic applicability/probing baseline design | Requires domain definitions, probability scoring and calibration; confirmed author code not located; our transport lacks required probability output |
+| NeSyRo | Symbolic applicability/probing baseline design | Requires domain definitions and a separate probability-scoring model with calibration; confirmed author code not located; generation can still use Astra |
 
 Repository license findings cover the inspected project-owned source, not all
 third-party dependencies, model weights or datasets. Paper availability is not

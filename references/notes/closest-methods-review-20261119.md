@@ -73,6 +73,11 @@ self-reported confidence. Our current `src/craft/backends.py` returns text and
 metadata, not token probabilities. This is a local interface gap; it does not
 prove the underlying model service cannot expose the needed information.
 
+Correction after full NeSyRo text review: section 4 explicitly uses a separate
+Llama-3.2-3B confidence scorer. The generation model need not provide probabilities;
+the missing local component is a separate scorer and its calibration. See
+`nesyro-full-text-review.md`. Sections 1–5 and appendices A–D are now reviewed.
+
 Neither inspected arXiv HTML links an author implementation (GitHub links in
 the footer concern arXiv rendering). Additional search still has not confirmed
 an author repository. Code availability remains **unverified**, not nonexistent.

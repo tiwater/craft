@@ -652,8 +652,8 @@
       "url": "https://arxiv.org/abs/2510.21302",
       "category": "verification",
       "relevance_zh": "符号验证和主动获取缺失观测；证据条件选题需直接比较。",
-      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
-      "full_text_reviewed": false,
+      "reading_status": "main_text_and_appendix_text_reviewed",
+      "full_text_reviewed": true,
       "reproduced": false,
       "checked_on": "2026-11-19",
       "authors": [
@@ -700,7 +700,8 @@
         "Check code/license and distinguish reproduction from reimplementation."
       ],
       "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
-      "review_note": "notes/closest-methods-review-20261119.md"
+      "review_note": "notes/nesyro-full-text-review.md",
+      "reading_scope": "arXiv v1 sections 1-5 and appendices A-D text, tables, algorithms and prompts; no independent figure-image audit; not reproduced"
     },
     {
       "key": "lu2026aspire",
