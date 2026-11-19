@@ -1090,8 +1090,8 @@
       "url": "https://arxiv.org/abs/2611.16872",
       "category": "frozen_policy",
       "relevance_zh": "按需示范/仿真，部署期冻结程序；核心对照。",
-      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
-      "full_text_reviewed": false,
+      "reading_status": "main_text_and_appendix_text_reviewed",
+      "full_text_reviewed": true,
       "reproduced": false,
       "checked_on": "2026-11-19",
       "authors": [
@@ -1184,7 +1184,8 @@
         "Check code/license and distinguish reproduction from reimplementation."
       ],
       "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
-      "review_note": "notes/closest-methods-review-20261119.md"
+      "review_note": "notes/closest-methods-review-20261119.md",
+      "reading_scope": "arXiv v1 sections 1-6 and Appendix A text/tables; no independent figure-image audit; not reproduced"
     },
     {
       "key": "fan2026captain",

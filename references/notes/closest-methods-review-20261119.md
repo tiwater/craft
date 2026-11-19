@@ -3,6 +3,12 @@
 Reading level: methods and selected evaluation passages; full papers/appendices
 not yet completely read. None reproduced. Date: 2026-11-19.
 
+Update: ACE-CaP-0 v1 sections 1–6 and Appendix A have now been read in full
+(text and table content; no independent figure-image analysis). Its conclusion
+explicitly distinguishes evaluation repetitions from independent development
+runs and calls for demonstration effort to be included in future cost studies.
+Other entries retain their individually stated partial-reading status.
+
 ## ACE-CaP-0 — ace2026
 
 Source: https://arxiv.org/html/2611.16872v1 (sections 2–3).
