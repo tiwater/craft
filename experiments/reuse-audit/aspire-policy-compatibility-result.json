@@ -1,0 +1,82 @@
+{
+  "scope": "scripted_host_differential_policy_execution",
+  "policy_sha256": "117957aef5e96861609797487228d0a6d3df23f2448daaf751d3224d16c9fa1a",
+  "adapted_sha256": "d336dd75875d9e21c979ee66a87a156d76d6f42f18f010b324222f64c0477583",
+  "upstream_commit": "fa00f0ef2bc1d91d594b9aa502c22133c9f538f7",
+  "physical_commands": 0,
+  "model_calls": 0,
+  "craft_runtime_used": false,
+  "actual_host_sdk_tested": false,
+  "cases": [
+    {
+      "case": "normal",
+      "status": "completed",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 8
+    },
+    {
+      "case": "recenter",
+      "status": "completed",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 10
+    },
+    {
+      "case": "unknown_resolved",
+      "status": "completed",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 9
+    },
+    {
+      "case": "unknown_unresolved",
+      "status": "failed_brew_start",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 6
+    },
+    {
+      "case": "stale",
+      "status": "rejected_observation_not_ready",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 2
+    },
+    {
+      "case": "no_cup",
+      "status": "failed",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 2
+    },
+    {
+      "case": "ambiguity",
+      "status": "paused_for_operator",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 3
+    },
+    {
+      "case": "hazard",
+      "status": "escalated_to_human",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 4
+    },
+    {
+      "case": "place_rejected",
+      "status": "failed_place",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 3
+    },
+    {
+      "case": "l2_block",
+      "status": "failed_l2_pouring_gate",
+      "same_result": true,
+      "same_calls": true,
+      "call_count": 6
+    }
+  ]
+}

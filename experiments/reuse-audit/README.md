@@ -36,3 +36,26 @@ upstream execution. It adds no estimator, actuation, or CRAFT runtime.
 transport/executor evidence, not validation of object accuracy, policy quality,
 robot execution, or ASPIRE's learning method. The endpoint and scene payload
 are deliberately not archived.
+
+## Existing policy compatibility probe
+
+Run `probe_aspire_policy_compatibility.py --host-source <edge_cap_runtime.py>
+--output <result.json>` with the pinned upstream interpreter. The script reads
+the existing `EDGE_CLOSED_LOOP_COFFEE_POLICY_CODE` constant without importing
+edge. It compares trusted direct Python execution with the unmodified ASPIRE
+executor on identical scripted host responses. The explicit AST adapter maps
+`sdk.method(...)` to registered tools and removes the unused SDK parameter;
+branch logic is unchanged. Both policy hashes are recorded.
+
+Ten cases have equal returned JSON values and host call traces: normal,
+recentering, resolved/unresolved unknown brew receipts, observation-not-ready,
+missing/ambiguous cup, hazard escalation, rejected placement and L2 rejection.
+Unknown brew outcomes query once and never issue a second brew command in
+these cases. The observation-not-ready case does not test timestamp detection.
+
+These are scripted contract fixtures, not the real SDK, existing edge sandbox,
+physics, persistent recovery, or ASPIRE's learning pipeline. No model is used.
+This supports signature adaptation feasibility only. Production integration
+must retain edge's subprocess boundary and SDK guards. ASPIRE's in-process
+executor alone does not replace those controls; custom action names also need
+explicit trace instrumentation if before/after motion keyframes are required.
