@@ -1,7 +1,8 @@
 # Current recommendation: upstream first, no second general runtime
 
-2026-11-19. Evidence-backed interim recommendation; the goal audit is still
-active. This is not a claim of complete paper reproduction or deployment readiness.
+2026-11-19. Decision for the initial necessity investigation. This is not a
+claim of complete paper reproduction or deployment readiness. Reopen the
+research decision only when new comparative evidence warrants it.
 
 ## Decision
 
@@ -62,7 +63,38 @@ problem, adopt it or propose it upstream rather than manufacturing a new method.
 - `references/notes/`: versioned paper and source audits.
 - `experiments/reuse-audit/`: scripts, prompt, policy, failed and successful trials.
 
-Finish the remaining paper/code review; evaluate a real upstream development
-campaign through the existing host; record complete budgets and held-out task
-conditions. Do not label host delegation as that campaign. Do not build a new
-general framework merely to get a publishable project name.
+The five closest methods now have main-text and appendix-text review records;
+image-only figures are not independently audited. Source inspection and runnable
+coverage differ by candidate and are recorded separately.
+
+The initial necessity investigation ends with **thin adaptation, not independent
+framework development**. Minimal compatibility and simulator validation support
+this direction without establishing production adoption. A complete upstream
+learning campaign is the next deployment experiment, not evidence already held.
+
+## Bounded adoption experiment
+
+1. Expose only existing edge observation and execution contracts to ASPIRE's
+   current development workflow. Producer/owner: `EdgeCapRuntime._run_job` and
+   `EdgeZeroGtCoffeeSDK`; execution remains in the existing subprocess sandbox.
+   No new perception, geometry, robot controller or direct device access.
+2. Predeclare development conditions, held-out conditions and equal model/effort,
+   action abstraction and total development budget. Record human interventions,
+   resets, all model calls/tokens when available, wall time and admitted skills.
+   Missing usage data remains missing; do not infer subscription dollar costs.
+3. Compare direct generation, upstream development without retained skills and
+   upstream development with retained skills. Freeze programs before evaluation.
+   Score completion independently and preserve crashes, unknown outcomes,
+   duplicate non-idempotent actions and unsuccessful trials.
+4. Add oven tasks only after the host supplies executable door, load, heat,
+   query and unload contracts plus an independent completion oracle. Existing
+   visual geometry is insufficient. This prerequisite is shared by all methods.
+5. Adopt upstream if it meets task requirements. Keep local code limited to the
+   host/environment adapter; propose a generic adapter upstream only after it
+   works and external communication is authorized. If it fails, first attribute
+   failure to capability, perception/control, integration or policy development.
+   Consider independent research only for reproducible method-level gaps that
+   survive matched-budget baselines and an explanatory ablation.
+
+No new runtime or upstream message is part of this decision. The alpha code is
+retained for reproducibility; its presence is not an instruction to extend it.

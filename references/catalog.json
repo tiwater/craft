@@ -598,8 +598,8 @@
       "url": "https://arxiv.org/abs/2410.18893",
       "category": "recovery",
       "relevance_zh": "从当前状态恢复并减少重复动作；直接相关工作。",
-      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
-      "full_text_reviewed": false,
+      "reading_status": "main_text_and_appendix_text_reviewed",
+      "full_text_reviewed": true,
       "reproduced": false,
       "checked_on": "2026-11-19",
       "authors": [
@@ -642,7 +642,8 @@
         "Check code/license and distinguish reproduction from reimplementation."
       ],
       "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
-      "review_note": "notes/closest-methods-review-20261119.md"
+      "review_note": "notes/roborepair-full-text-review.md",
+      "reading_scope": "Version 1 main text and appendix text/tables/code where present; image-only figures not independently audited; no reproduction."
     },
     {
       "key": "ahn2025reliablecap",
@@ -939,8 +940,8 @@
       "url": "https://arxiv.org/abs/2603.22435",
       "category": "benchmark",
       "relevance_zh": "CaP-Gym/Bench/Agent0/RL；控制 API 抽象和反馈条件。",
-      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
-      "full_text_reviewed": false,
+      "reading_status": "main_text_and_appendix_text_reviewed",
+      "full_text_reviewed": true,
       "reproduced": false,
       "checked_on": "2026-11-19",
       "authors": [
@@ -1009,7 +1010,9 @@
         "Check code/license and distinguish reproduction from reimplementation."
       ],
       "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
-      "protocol_review_note": "notes/evaluation-protocol-audit.md"
+      "protocol_review_note": "notes/evaluation-protocol-audit.md",
+      "review_note": "notes/capx-full-text-review.md",
+      "reading_scope": "Version 1 main text and appendix text/tables/code where present; image-only figures not independently audited; no reproduction."
     },
     {
       "key": "chen2026amp",

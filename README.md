@@ -13,6 +13,17 @@ contracts and deterministic fault-injection fixtures. It does **not** claim
 validated physical coffee/bagel manipulation, a completed benchmark, or a paper.
 It has not replaced the live ticos-edge CaP runtime.
 
+## Reuse decision (2026-11-19)
+
+The necessity audit does **not** justify a new general CaP framework. Keep CRAFT
+as a literature, evaluation and thin integration workspace; do not expand or
+promote the alpha interpreter as a production replacement. Prioritize an ASPIRE
+policy-development adapter to the existing edge host. Actual deployment and
+learning benefits remain unverified. See the [decision and evidence limits](docs/decisions/0002-current-reuse-recommendation.md).
+
+The architecture and examples below describe the existing alpha fixtures,
+not an approved live integration or a demonstrated research contribution.
+
 ## Quick start
 
 Python 3.10+; no runtime dependencies, robot, GPU or model credentials required:
