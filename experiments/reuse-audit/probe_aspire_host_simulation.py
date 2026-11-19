@@ -29,6 +29,8 @@ def main():
     p.add_argument('--sim-base', required=True)
     p.add_argument('--host-source', required=True)
     p.add_argument('--policy-file', help='Optional frozen generated policy; never repaired during this run')
+    p.add_argument('--fault-only', action='store_true')
+    p.add_argument('--direct-only', action='store_true')
     p.add_argument('--output', required=True)
     a = p.parse_args()
     session = requests.Session()
@@ -55,8 +57,8 @@ def main():
     def save():
         Path(a.output).write_text(json.dumps(report, indent=2) + '\n')
     save()
-    for fault in (False, True):
-        for mode in ('direct_host', 'aspire_delegates_to_host'):
+    for fault in ((True,) if a.fault_only else (False, True)):
+        for mode in (('direct_host',) if a.direct_only else ('direct_host', 'aspire_delegates_to_host')):
             post(a.edge_base + '/cap/reset', {})
             post(a.sim_base + '/v1/sim/testbed/setup', {'preset': 'default'})
             initial = get(a.edge_base + '/edge-scene')
@@ -104,6 +106,8 @@ def main():
                    'sandbox_mode': (res.get('sandbox_isolation') or {}).get('mode'),
                    'producer_timestamp_ns': str(scene.get('timestamp_ns'))}
             row['task_passed'] = row['status'] == 'completed' and row['cup_filled'] and err <= 15
+            if not row['task_passed']:
+                row['failure_receipt'] = res.get('step_receipt')
             row['fault_checks_passed'] = None
             if fault:
                 unknown_at = [i for i, name in enumerate(methods) if name == 'command_ack_timeout_unknown']

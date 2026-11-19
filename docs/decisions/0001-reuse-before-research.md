@@ -57,3 +57,8 @@ run failed with SDK `empty_grasp` during recentering; the fourth paired run was
 not executed. This is not an ASPIRE learning campaign. See
 `experiments/reuse-audit/generated-coffee-baseline/`. Resolve failure attribution
 before inferring that a different coding framework would fix the physical step.
+
+Four predeclared follow-up fault trials (existing/generated/generated/existing)
+all passed without modifying either policy. The earlier failure remains in the
+record and its root cause is unresolved. It is not presently evidence of a
+deterministic generated-policy defect or a framework-specific missing feature.

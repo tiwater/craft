@@ -1,0 +1,21 @@
+{
+  "purpose": "check whether recenter failure is unique to generated policy",
+  "sequence": [
+    "existing",
+    "generated",
+    "generated",
+    "existing"
+  ],
+  "conditions": {
+    "placement_offset_m": [
+      0.038,
+      -0.012
+    ],
+    "first_brew_timeout": true
+  },
+  "policy_edits": false,
+  "model_calls": 0,
+  "repeats_per_policy": 2,
+  "failure_inclusion": "all attempts retained; no replacement trials",
+  "limitations": "small sample, fresh nonidentical RGB-D, not a framework ranking"
+}

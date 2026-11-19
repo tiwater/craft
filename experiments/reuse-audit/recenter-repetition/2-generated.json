@@ -1,0 +1,50 @@
+{
+  "scope": "simulator_host_delegation_smoke_test",
+  "model_calls": 0,
+  "policy_source": "provided_frozen_file",
+  "policy_sha256": "df9a6ad722e1376d801acc8a8ca519dd6fd94f9b7ec0babfb8073a7b765b64a7",
+  "upstream_commit": "fa00f0ef2bc1d91d594b9aa502c22133c9f538f7",
+  "actual_host_sdk_tested": true,
+  "aspire_learning_tested": false,
+  "oracle_in_policy_input": false,
+  "runs": [
+    {
+      "mode": "direct_host",
+      "fault_injection": true,
+      "status": "completed",
+      "wall_s": 26.156,
+      "delivery_error_mm": 3.744,
+      "cup_filled": true,
+      "methods": [
+        "get_order",
+        "observe_scene",
+        "observe_scene",
+        "place_cup_under_machine",
+        "query_command_status",
+        "observe_scene",
+        "observe_scene",
+        "observe_scene",
+        "recenter_cup_under_spout",
+        "query_command_status",
+        "observe_scene",
+        "observe_scene",
+        "start_coffee_machine",
+        "command_ack_timeout_unknown",
+        "query_command_status",
+        "wait_for_coffee_ready",
+        "query_command_status",
+        "observe_scene",
+        "retrieve_and_deliver_cup",
+        "query_command_status",
+        "observe_scene",
+        "complete_order_delivery",
+        "query_command_status"
+      ],
+      "brew_execution_count": 1,
+      "sandbox_mode": "os_subprocess_isolated",
+      "producer_timestamp_ns": "1795097052201026343",
+      "task_passed": true,
+      "fault_checks_passed": true
+    }
+  ]
+}
