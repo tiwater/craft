@@ -710,7 +710,7 @@
       "url": "https://arxiv.org/abs/2607.00272",
       "category": "memory",
       "relevance_zh": "多模态执行记录、程序修复、技能库与搜索；核心对照。",
-      "reading_status": "abstract_or_project_page_reviewed",
+      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
       "full_text_reviewed": false,
       "reproduced": false,
       "checked_on": "2026-11-19",
@@ -786,7 +786,8 @@
         "upstream_tests_passed": 96,
         "robot_reproduction": false
       },
-      "review_note": "notes/aspire-initial-code-audit.md"
+      "review_note": "notes/aspire-initial-code-audit.md",
+      "protocol_review_note": "notes/evaluation-protocol-audit.md"
     },
     {
       "key": "enpire2026",
@@ -936,7 +937,7 @@
       "url": "https://arxiv.org/abs/2603.22435",
       "category": "benchmark",
       "relevance_zh": "CaP-Gym/Bench/Agent0/RL；控制 API 抽象和反馈条件。",
-      "reading_status": "abstract_or_project_page_reviewed",
+      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
       "full_text_reviewed": false,
       "reproduced": false,
       "checked_on": "2026-11-19",
@@ -1005,7 +1006,8 @@
         "Record development/test split, frozen artifacts and evaluation budget.",
         "Check code/license and distinguish reproduction from reimplementation."
       ],
-      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
+      "protocol_review_note": "notes/evaluation-protocol-audit.md"
     },
     {
       "key": "chen2026amp",

@@ -21,5 +21,9 @@ Stages:
 5. Propose independent research only if the evidence demonstrates a real gap.
 
 Current: ASPIRE source checked out at fa00f0ef2bc1d91d594b9aa502c22133c9f538f7;
-selected docs/interfaces reviewed; isolated base/dev installation underway.
-No model or robot run has been launched. Other paper full reviews remain pending.
+selected docs/interfaces reviewed; 96 selected core tests passed in isolation.
+Unmodified upstream execution preserves selected fields from a live edge scene
+snapshot. CaP-X source is pinned and its executor/license inspected. See
+`references/notes/evaluation-protocol-audit.md` for evaluation differences and
+the proposed matched experiment. No model or robot run has been launched in
+this reuse audit. Full paper reviews and task-level validation remain pending.

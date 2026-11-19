@@ -21,3 +21,18 @@ Failure history: missing imageio during collection, missing ffmpeg for four
 artifact tests, and a probe equality check expecting mutable list/dict output
 instead of upstream's frozen tuple/mapping output. Dependency installation and
 JSON-value normalization resolved these without upstream source changes.
+
+## Existing edge observation probe
+
+`probe_aspire_edge_readonly.py --endpoint <existing-edge-scene-URL> --output <file>`
+uses the same upstream interpreter. Producer/state owner: the existing edge
+scene route consumed by `EdgeZeroGtCoffeeSDK.observe_scene` in
+`ticos-edge/tools/edge_cap_runtime.py`; its snapshot remains authoritative.
+The adapter selects existing fields and compares their JSON values after
+upstream execution. It adds no estimator, actuation, or CRAFT runtime.
+
+`aspire-edge-readonly-result.json` records a successful live read (six objects,
+183.4 ms snapshot age at measurement, identical input/output hashes). This is
+transport/executor evidence, not validation of object accuracy, policy quality,
+robot execution, or ASPIRE's learning method. The endpoint and scene payload
+are deliberately not archived.

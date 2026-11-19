@@ -1,0 +1,25 @@
+{
+  "scope": "read_only_existing_edge_snapshot_through_upstream_executor",
+  "upstream_commit": "fa00f0ef2bc1d91d594b9aa502c22133c9f538f7",
+  "source_timestamp_ns": "1795096051317780629",
+  "snapshot_age_ms": 183.4,
+  "object_count": 6,
+  "fields": [
+    "source",
+    "timestamp_ns",
+    "objects",
+    "cameras_available",
+    "l2_pouring_safety",
+    "brew_status",
+    "cup_filled"
+  ],
+  "input_sha256": "a3b45f6a568a959e5c0c95319b2249a8f9655d4f03d04927fb1f5ab85e96a58a",
+  "output_sha256": "a3b45f6a568a959e5c0c95319b2249a8f9655d4f03d04927fb1f5ab85e96a58a",
+  "values_preserved": true,
+  "calls": [
+    "observe_scene"
+  ],
+  "physical_commands": 0,
+  "new_perception_estimator": false,
+  "craft_runtime_used": false
+}
