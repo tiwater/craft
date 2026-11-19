@@ -1,0 +1,12 @@
+{
+  "scope": "unmodified_upstream_executor_contract_probe",
+  "ok": true,
+  "observation_preserved": true,
+  "tools": [
+    "observe_scene",
+    "query_appliance"
+  ],
+  "physical_commands": 0,
+  "craft_runtime_used": false,
+  "upstream_patch_required": false
+}

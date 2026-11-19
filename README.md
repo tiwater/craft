@@ -102,6 +102,10 @@ or paid fallback. Provider generation does not run a policy or actuate hardware.
 
 ## Research scope
 
+Current priority: determine whether CRAFT needs an independent framework.
+Adopting an existing project is a valid outcome. See the
+[reuse-first gate](docs/decisions/0001-reuse-before-research.md).
+
 The proposed question is whether explicit skill applicability and execution
 evidence improve reuse and recovery under held-out disturbances and ambiguous
 physical outcomes. This is a hypothesis, not a novelty or superiority claim.
