@@ -45,3 +45,8 @@ skill-verification and promotion support (108 selected pipeline tests pass).
 Cafe is not an accepted CLI benchmark family. This is a concrete integration
 gap to investigate as an upstream extension, not yet an algorithmic gap.
 See `references/notes/aspire-development-pipeline-audit.md`.
+
+The running SDK and simulator dispatch have also been audited for warm-food
+tasks; see `host-capability-audit.md`. Visible oven/bagel scene geometry is not
+an executable appliance contract. Bagel and combined-order algorithm rankings
+are currently unsupported; this limitation applies equally to every candidate.
