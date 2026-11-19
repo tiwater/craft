@@ -12,7 +12,8 @@ research map, not an exhaustive systematic review. Snapshot: 2026-11-19.
 - [novelty-matrix.md](novelty-matrix.md): claims already covered and required comparisons.
 - [reading-plan.md](reading-plan.md): paper-reading and reproduction priorities.
 
-**Reading depth:** abstract and/or project-page review only. No entry is marked
+**Reading depth:** initial abstract/project-page review; selected method sections
+for ACE-CaP-0, RoboRepair and NeSyRo now have linked notes in catalog.json. No entry is marked
 full-text reviewed or reproduced. Repository availability does not mean we have
 run its code, audited its license or checked its reported scores. Bibliographic
 verification does not verify experimental claims. These distinctions must remain

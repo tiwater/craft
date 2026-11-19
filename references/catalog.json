@@ -598,7 +598,7 @@
       "url": "https://arxiv.org/abs/2410.18893",
       "category": "recovery",
       "relevance_zh": "从当前状态恢复并减少重复动作；直接相关工作。",
-      "reading_status": "abstract_or_project_page_reviewed",
+      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
       "full_text_reviewed": false,
       "reproduced": false,
       "checked_on": "2026-11-19",
@@ -641,7 +641,8 @@
         "Record development/test split, frozen artifacts and evaluation budget.",
         "Check code/license and distinguish reproduction from reimplementation."
       ],
-      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
+      "review_note": "notes/closest-methods-review-20261119.md"
     },
     {
       "key": "ahn2025reliablecap",
@@ -651,7 +652,7 @@
       "url": "https://arxiv.org/abs/2510.21302",
       "category": "verification",
       "relevance_zh": "符号验证和主动获取缺失观测；证据条件选题需直接比较。",
-      "reading_status": "abstract_or_project_page_reviewed",
+      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
       "full_text_reviewed": false,
       "reproduced": false,
       "checked_on": "2026-11-19",
@@ -698,7 +699,8 @@
         "Record development/test split, frozen artifacts and evaluation budget.",
         "Check code/license and distinguish reproduction from reimplementation."
       ],
-      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
+      "review_note": "notes/closest-methods-review-20261119.md"
     },
     {
       "key": "lu2026aspire",
@@ -777,7 +779,14 @@
         "Record development/test split, frozen artifacts and evaluation budget.",
         "Check code/license and distinguish reproduction from reimplementation."
       ],
-      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
+      "code_audit": {
+        "commit": "fa00f0ef2bc1d91d594b9aa502c22133c9f538f7",
+        "status": "selected_core_tests_and_registry_probe",
+        "upstream_tests_passed": 96,
+        "robot_reproduction": false
+      },
+      "review_note": "notes/aspire-initial-code-audit.md"
     },
     {
       "key": "enpire2026",
@@ -1079,7 +1088,7 @@
       "url": "https://arxiv.org/abs/2611.16872",
       "category": "frozen_policy",
       "relevance_zh": "按需示范/仿真，部署期冻结程序；核心对照。",
-      "reading_status": "abstract_or_project_page_reviewed",
+      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
       "full_text_reviewed": false,
       "reproduced": false,
       "checked_on": "2026-11-19",
@@ -1172,7 +1181,8 @@
         "Record development/test split, frozen artifacts and evaluation budget.",
         "Check code/license and distinguish reproduction from reimplementation."
       ],
-      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
+      "review_note": "notes/closest-methods-review-20261119.md"
     },
     {
       "key": "fan2026captain",
