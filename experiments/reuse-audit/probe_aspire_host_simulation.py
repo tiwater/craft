@@ -28,6 +28,7 @@ def main():
     p.add_argument('--edge-base', required=True, help='Existing robot-scoped edge URL')
     p.add_argument('--sim-base', required=True)
     p.add_argument('--host-source', required=True)
+    p.add_argument('--policy-file', help='Optional frozen generated policy; never repaired during this run')
     p.add_argument('--output', required=True)
     a = p.parse_args()
     session = requests.Session()
@@ -39,11 +40,14 @@ def main():
     tree = ast.parse(Path(a.host_source).read_text())
     code = next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign)
                 and any(isinstance(t, ast.Name) and t.id == 'EDGE_CLOSED_LOOP_COFFEE_POLICY_CODE' for t in n.targets))
+    if a.policy_file:
+        code = Path(a.policy_file).read_text()
     # Do not interrupt another execution; simulator testbed presence is required.
     state = get(a.edge_base + '/cap/state')
     assert state['runtime']['status'] != 'running', 'Host already executing'
     get(a.sim_base + '/v1/sim/testbed/oracle')
     report = {'scope': 'simulator_host_delegation_smoke_test', 'model_calls': 0,
+              'policy_source': 'provided_frozen_file' if a.policy_file else 'existing_host_constant',
               'policy_sha256': hashlib.sha256(code.encode()).hexdigest(),
               'upstream_commit': 'fa00f0ef2bc1d91d594b9aa502c22133c9f538f7',
               'actual_host_sdk_tested': True, 'aspire_learning_tested': False,

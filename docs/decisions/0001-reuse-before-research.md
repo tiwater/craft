@@ -50,3 +50,10 @@ The running SDK and simulator dispatch have also been audited for warm-food
 tasks; see `host-capability-audit.md`. Visible oven/bagel scene geometry is not
 an executable appliance contract. Bagel and combined-order algorithm rankings
 are currently unsupported; this limitation applies equally to every candidate.
+
+A single Codex/Astra-medium generation through the existing engineered prompt
+has now been tested without policy edits: two normal runs passed, then a fault
+run failed with SDK `empty_grasp` during recentering; the fourth paired run was
+not executed. This is not an ASPIRE learning campaign. See
+`experiments/reuse-audit/generated-coffee-baseline/`. Resolve failure attribution
+before inferring that a different coding framework would fix the physical step.

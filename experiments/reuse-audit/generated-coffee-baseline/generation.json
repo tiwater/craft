@@ -1,0 +1,14 @@
+{
+  "generator": "codex-cli-live",
+  "model": "gpt-6-astra",
+  "reasoning_effort": "medium",
+  "latency_ms": 42812.1,
+  "scope": "single_generation_existing_engineered_prompt",
+  "prompt_sha256": "5475d8ea8c66578de80c6bef602bcdc9dc0d11d30d9ba4c33846292b21b0730c",
+  "policy_sha256": "df9a6ad722e1376d801acc8a8ca519dd6fd94f9b7ec0babfb8073a7b765b64a7",
+  "wall_s": 42.814,
+  "ast_violations": [],
+  "model_calls": 1,
+  "skill_learning_tested": false,
+  "oracle_in_prompt": false
+}

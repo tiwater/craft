@@ -1,0 +1,176 @@
+{
+  "status": "failed_recenter",
+  "result": {
+    "status": "failed_recenter",
+    "order_id": "A042",
+    "step_receipt": {
+      "commandId": "reuse-audit-1795096954468481656-recenter-cup",
+      "robotId": "lsrx-sim-01",
+      "episodeId": "ep_edge_1795096954",
+      "leaseId": "ops-lease-live",
+      "operatorId": "ops_duty",
+      "expiresAtS": 0.0,
+      "plan": {
+        "action": "recenter_cup_under_spout",
+        "cup_id": "obj-cup-a",
+        "destination": "$SLOT_COFFEE_MACHINE"
+      },
+      "expectedAck": [
+        "accepted",
+        "running",
+        "done"
+      ],
+      "skillKind": "recenter_cup_under_spout",
+      "receipt": "rejected",
+      "detail": "夹爪闭合范围内无杯体实体",
+      "receiptHistory": [
+        {
+          "state": "accepted",
+          "detail": "检测到偏心杯体 [0.4852, -0.0166, 1.0749]，启动视觉微调居中",
+          "timestampMs": 1795096966511
+        },
+        {
+          "state": "rejected",
+          "detail": "检测到偏心杯体 [0.4852, -0.0166, 1.0749]，启动视觉微调居中",
+          "timestampMs": 1795096966511
+        }
+      ],
+      "executionCount": 0,
+      "ok": false,
+      "reason": "empty_grasp",
+      "pick_result": {
+        "ok": false,
+        "reason": "empty_grasp",
+        "detail": "夹爪闭合范围内无杯体实体"
+      },
+      "pre_recenter_cup_world_m": [
+        0.4852,
+        -0.0166,
+        1.0749
+      ],
+      "pre_recenter_l2": {
+        "status": "hold_or_reposition",
+        "safe_to_pour": false,
+        "uncertainty_envelope_clears_cup_rim": false,
+        "blocker_reasons": [
+          "current_uncertainty_envelope_exceeds_cup_rim"
+        ],
+        "signed_height_above_rim_m": 0.0548,
+        "current_radial_offset_m": 0.039,
+        "current_rim_clearance_95_m": -0.0158,
+        "assist_translation_delta_m": [
+          0.0143,
+          -0.0068,
+          0.0009
+        ]
+      },
+      "post_recenter_l2": {
+        "status": "blocked_missing_evidence",
+        "safe_to_pour": false,
+        "uncertainty_envelope_clears_cup_rim": false,
+        "blocker_reasons": [
+          "container_opening_evidence_missing"
+        ],
+        "signed_height_above_rim_m": 0.0,
+        "current_radial_offset_m": 0.0,
+        "current_rim_clearance_95_m": 0.0,
+        "assist_translation_delta_m": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "sandbox_isolation": {
+      "mode": "os_subprocess_isolated",
+      "child_pid": 1954056,
+      "parent_pid": 1938372,
+      "rlimits_applied": [
+        "RLIMIT_CPU=5s",
+        "RLIMIT_AS=512MB",
+        "RLIMIT_NPROC=0",
+        "RLIMIT_NOFILE=4"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "stepIndex": 4,
+      "method": "query_command_status",
+      "receipt": "done",
+      "detail": "",
+      "timestampMs": 1795096962655,
+      "details": {
+        "commandId": "reuse-audit-1795096954468481656-place-cup",
+        "receipt": "done"
+      }
+    },
+    {
+      "stepIndex": 8,
+      "method": "recenter_cup_under_spout",
+      "receipt": "rejected",
+      "detail": "夹爪闭合范围内无杯体实体",
+      "timestampMs": 1795096966511,
+      "details": {
+        "commandId": "reuse-audit-1795096954468481656-recenter-cup",
+        "receipt": "rejected",
+        "ok": false,
+        "reason": "empty_grasp",
+        "detail": "夹爪闭合范围内无杯体实体",
+        "pick_result": {
+          "ok": false,
+          "reason": "empty_grasp",
+          "detail": "夹爪闭合范围内无杯体实体"
+        },
+        "pre_recenter_cup_world_m": [
+          0.4852,
+          -0.0166,
+          1.0749
+        ],
+        "pre_recenter_l2": {
+          "status": "hold_or_reposition",
+          "safe_to_pour": false,
+          "uncertainty_envelope_clears_cup_rim": false,
+          "blocker_reasons": [
+            "current_uncertainty_envelope_exceeds_cup_rim"
+          ],
+          "signed_height_above_rim_m": 0.0548,
+          "current_radial_offset_m": 0.039,
+          "current_rim_clearance_95_m": -0.0158,
+          "assist_translation_delta_m": [
+            0.0143,
+            -0.0068,
+            0.0009
+          ]
+        },
+        "post_recenter_l2": {
+          "status": "blocked_missing_evidence",
+          "safe_to_pour": false,
+          "uncertainty_envelope_clears_cup_rim": false,
+          "blocker_reasons": [
+            "container_opening_evidence_missing"
+          ],
+          "signed_height_above_rim_m": 0.0,
+          "current_radial_offset_m": 0.0,
+          "current_rim_clearance_95_m": 0.0,
+          "assist_translation_delta_m": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    },
+    {
+      "stepIndex": 9,
+      "method": "query_command_status",
+      "receipt": "rejected",
+      "detail": "",
+      "timestampMs": 1795096966511,
+      "details": {
+        "commandId": "reuse-audit-1795096954468481656-recenter-cup",
+        "receipt": "rejected"
+      }
+    }
+  ]
+}
