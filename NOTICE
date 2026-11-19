@@ -1,0 +1,5 @@
+CRAFT: Code-based Robotic Automation for Fast-Food Tasks
+Copyright 2026 Tiwater
+
+Model transport code and associated tests were adapted from Tiwater ticos-edge.
+See docs/provenance.md for attribution and implementation boundaries.

@@ -1,0 +1,1495 @@
+{
+  "scope": "CaP only; reconstruction excluded; discovery is not exhaustive",
+  "as_of": "2026-11-19",
+  "entries": [
+    {
+      "key": "liang2022cap",
+      "arxiv_id": "2209.07753",
+      "title": "Code as Policies: Language Model Programs for Embodied Control",
+      "year": 2022,
+      "url": "https://arxiv.org/abs/2209.07753",
+      "category": "foundation",
+      "relevance_zh": "自然语言生成调用感知/控制 API 的策略程序；基础对照。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Liang, Jacky",
+        "Huang, Wenlong",
+        "Xia, Fei",
+        "Xu, Peng",
+        "Hausman, Karol",
+        "Ichter, Brian",
+        "Florence, Pete",
+        "Zeng, Andy"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Code as Policies: Language Model Programs for Embodied Control"
+        ],
+        "citation_author": [
+          "Liang, Jacky",
+          "Huang, Wenlong",
+          "Xia, Fei",
+          "Xu, Peng",
+          "Hausman, Karol",
+          "Ichter, Brian",
+          "Florence, Pete",
+          "Zeng, Andy"
+        ],
+        "citation_date": [
+          "2022/09/16"
+        ],
+        "citation_online_date": [
+          "2023/05/25"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2209.07753"
+        ],
+        "citation_arxiv_id": [
+          "2209.07753"
+        ],
+        "citation_abstract": [
+          "Large language models (LLMs) trained on code completion have been shown to be capable of synthesizing simple Python programs from docstrings [1]. We find that these code-writing LLMs can be re-purposed to write robot policy code, given natural language commands. Specifically, policy code can express functions or feedback loops that process perception outputs (e.g.,from object detectors [2], [3]) and parameterize control primitive APIs. When provided as input several example language commands (formatted as comments) followed by corresponding policy code (via few-shot prompting), LLMs can take in new commands and autonomously re-compose API calls to generate new policy code respectively. By chaining classic logic structures and referencing third-party libraries (e.g., NumPy, Shapely) to perform arithmetic, LLMs used in this way can write robot policies that (i) exhibit spatial-geometric reasoning, (ii) generalize to new instructions, and (iii) prescribe precise values (e.g., velocities) to ambiguous descriptions (\"faster\") depending on context (i.e., behavioral commonsense). This paper presents code as policies: a robot-centric formulation of language model generated programs (LMPs) that can represent reactive policies (e.g., impedance controllers), as well as waypoint-based policies (vision-based pick and place, trajectory-based control), demonstrated across multiple real robot platforms. Central to our approach is prompting hierarchical code-gen (recursively defining undefined functions), which can write more complex code and also improves state-of-the-art to solve 39.8% of problems on the HumanEval [1] benchmark. Code and videos are available at https://code-as-policies.github.io"
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://code-as-policies.github.io/",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "singh2022progprompt",
+      "arxiv_id": "2209.11302",
+      "title": "ProgPrompt: Generating Situated Robot Task Plans using Large Language Models",
+      "year": 2022,
+      "url": "https://arxiv.org/abs/2209.11302",
+      "category": "foundation",
+      "relevance_zh": "程序化接口、前置条件与恢复已有先例。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Singh, Ishika",
+        "Blukis, Valts",
+        "Mousavian, Arsalan",
+        "Goyal, Ankit",
+        "Xu, Danfei",
+        "Tremblay, Jonathan",
+        "Fox, Dieter",
+        "Thomason, Jesse",
+        "Garg, Animesh"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "ProgPrompt: Generating Situated Robot Task Plans using Large Language Models"
+        ],
+        "citation_author": [
+          "Singh, Ishika",
+          "Blukis, Valts",
+          "Mousavian, Arsalan",
+          "Goyal, Ankit",
+          "Xu, Danfei",
+          "Tremblay, Jonathan",
+          "Fox, Dieter",
+          "Thomason, Jesse",
+          "Garg, Animesh"
+        ],
+        "citation_date": [
+          "2022/09/22"
+        ],
+        "citation_online_date": [
+          "2022/09/22"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2209.11302"
+        ],
+        "citation_arxiv_id": [
+          "2209.11302"
+        ],
+        "citation_abstract": [
+          "Task planning can require defining myriad domain knowledge about the world in which a robot needs to act. To ameliorate that effort, large language models (LLMs) can be used to score potential next actions during task planning, and even generate action sequences directly, given an instruction in natural language with no additional domain information. However, such methods either require enumerating all possible next steps for scoring, or generate free-form text that may contain actions not possible on a given robot in its current context. We present a programmatic LLM prompt structure that enables plan generation functional across situated environments, robot capabilities, and tasks. Our key insight is to prompt the LLM with program-like specifications of the available actions and objects in an environment, as well as with example programs that can be executed. We make concrete recommendations about prompt structure and generation constraints through ablation experiments, demonstrate state of the art success rates in VirtualHome household tasks, and deploy our method on a physical robot arm for tabletop tasks. Website at progprompt.github.io"
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "huang2023voxposer",
+      "arxiv_id": "2307.05973",
+      "title": "VoxPoser: Composable 3D Value Maps for Robotic Manipulation with Language Models",
+      "year": 2023,
+      "url": "https://arxiv.org/abs/2307.05973",
+      "category": "representation",
+      "relevance_zh": "生成代码可缓存并随观测闭环执行；不能宣称策略缓存是新贡献。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Huang, Wenlong",
+        "Wang, Chen",
+        "Zhang, Ruohan",
+        "Li, Yunzhu",
+        "Wu, Jiajun",
+        "Fei-Fei, Li"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "VoxPoser: Composable 3D Value Maps for Robotic Manipulation with Language Models"
+        ],
+        "citation_author": [
+          "Huang, Wenlong",
+          "Wang, Chen",
+          "Zhang, Ruohan",
+          "Li, Yunzhu",
+          "Wu, Jiajun",
+          "Fei-Fei, Li"
+        ],
+        "citation_date": [
+          "2023/07/12"
+        ],
+        "citation_online_date": [
+          "2023/11/02"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2307.05973"
+        ],
+        "citation_arxiv_id": [
+          "2307.05973"
+        ],
+        "citation_abstract": [
+          "Large language models (LLMs) are shown to possess a wealth of actionable knowledge that can be extracted for robot manipulation in the form of reasoning and planning. Despite the progress, most still rely on pre-defined motion primitives to carry out the physical interactions with the environment, which remains a major bottleneck. In this work, we aim to synthesize robot trajectories, i.e., a dense sequence of 6-DoF end-effector waypoints, for a large variety of manipulation tasks given an open-set of instructions and an open-set of objects. We achieve this by first observing that LLMs excel at inferring affordances and constraints given a free-form language instruction. More importantly, by leveraging their code-writing capabilities, they can interact with a vision-language model (VLM) to compose 3D value maps to ground the knowledge into the observation space of the agent. The composed value maps are then used in a model-based planning framework to zero-shot synthesize closed-loop robot trajectories with robustness to dynamic perturbations. We further demonstrate how the proposed framework can benefit from online experiences by efficiently learning a dynamics model for scenes that involve contact-rich interactions. We present a large-scale study of the proposed method in both simulated and real-robot environments, showcasing the ability to perform a large variety of everyday manipulation tasks specified in free-form natural language. Videos and code at https://voxposer.github.io"
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://voxposer.github.io/",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "huang2024rekep",
+      "arxiv_id": "2409.01652",
+      "title": "ReKep: Spatio-Temporal Reasoning of Relational Keypoint Constraints for Robotic Manipulation",
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2409.01652",
+      "category": "representation",
+      "relevance_zh": "目标和路径约束程序；并非通用技能记忆系统。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Huang, Wenlong",
+        "Wang, Chen",
+        "Li, Yunzhu",
+        "Zhang, Ruohan",
+        "Fei-Fei, Li"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "ReKep: Spatio-Temporal Reasoning of Relational Keypoint Constraints for Robotic Manipulation"
+        ],
+        "citation_author": [
+          "Huang, Wenlong",
+          "Wang, Chen",
+          "Li, Yunzhu",
+          "Zhang, Ruohan",
+          "Fei-Fei, Li"
+        ],
+        "citation_date": [
+          "2024/09/03"
+        ],
+        "citation_online_date": [
+          "2024/11/12"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2409.01652"
+        ],
+        "citation_arxiv_id": [
+          "2409.01652"
+        ],
+        "citation_abstract": [
+          "Representing robotic manipulation tasks as constraints that associate the robot and the environment is a promising way to encode desired robot behaviors. However, it remains unclear how to formulate the constraints such that they are 1) versatile to diverse tasks, 2) free of manual labeling, and 3) optimizable by off-the-shelf solvers to produce robot actions in real-time. In this work, we introduce Relational Keypoint Constraints (ReKep), a visually-grounded representation for constraints in robotic manipulation. Specifically, ReKep is expressed as Python functions mapping a set of 3D keypoints in the environment to a numerical cost. We demonstrate that by representing a manipulation task as a sequence of Relational Keypoint Constraints, we can employ a hierarchical optimization procedure to solve for robot actions (represented by a sequence of end-effector poses in SE(3)) with a perception-action loop at a real-time frequency. Furthermore, in order to circumvent the need for manual specification of ReKep for each new task, we devise an automated procedure that leverages large vision models and vision-language models to produce ReKep from free-form language instructions and RGB-D observations. We present system implementations on a wheeled single-arm platform and a stationary dual-arm platform that can perform a large variety of manipulation tasks, featuring multi-stage, in-the-wild, bimanual, and reactive behaviors, all without task-specific data or environment models. Website at https://rekep-robot.github.io/."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://rekep-robot.github.io/",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "chen2024roboscript",
+      "arxiv_id": "2402.14623",
+      "title": "RoboScript: Code Generation for Free-Form Manipulation Tasks across Real and Simulation",
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2402.14623",
+      "category": "deployment",
+      "relevance_zh": "统一仿真与真实接口、代码部署；与 2026 同名项目区分。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Chen, Junting",
+        "Mu, Yao",
+        "Yu, Qiaojun",
+        "Wei, Tianming",
+        "Wu, Silang",
+        "Yuan, Zhecheng",
+        "Liang, Zhixuan",
+        "Yang, Chao",
+        "Zhang, Kaipeng",
+        "Shao, Wenqi",
+        "Qiao, Yu",
+        "Xu, Huazhe",
+        "Ding, Mingyu",
+        "Luo, Ping"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "RoboScript: Code Generation for Free-Form Manipulation Tasks across Real and Simulation"
+        ],
+        "citation_author": [
+          "Chen, Junting",
+          "Mu, Yao",
+          "Yu, Qiaojun",
+          "Wei, Tianming",
+          "Wu, Silang",
+          "Yuan, Zhecheng",
+          "Liang, Zhixuan",
+          "Yang, Chao",
+          "Zhang, Kaipeng",
+          "Shao, Wenqi",
+          "Qiao, Yu",
+          "Xu, Huazhe",
+          "Ding, Mingyu",
+          "Luo, Ping"
+        ],
+        "citation_date": [
+          "2024/02/22"
+        ],
+        "citation_online_date": [
+          "2024/02/22"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2402.14623"
+        ],
+        "citation_arxiv_id": [
+          "2402.14623"
+        ],
+        "citation_abstract": [
+          "Rapid progress in high-level task planning and code generation for open-world robot manipulation has been witnessed in Embodied AI. However, previous studies put much effort into general common sense reasoning and task planning capabilities of large-scale language or multi-modal models, relatively little effort on ensuring the deployability of generated code on real robots, and other fundamental components of autonomous robot systems including robot perception, motion planning, and control. To bridge this ``ideal-to-real'' gap, this paper presents \\textbf{RobotScript}, a platform for 1) a deployable robot manipulation pipeline powered by code generation; and 2) a code generation benchmark for robot manipulation tasks in free-form natural language. The RobotScript platform addresses this gap by emphasizing the unified interface with both simulation and real robots, based on abstraction from the Robot Operating System (ROS), ensuring syntax compliance and simulation validation with Gazebo. We demonstrate the adaptability of our code generation framework across multiple robot embodiments, including the Franka and UR5 robot arms, and multiple grippers. Additionally, our benchmark assesses reasoning abilities for physical space and constraints, highlighting the differences between GPT-3.5, GPT-4, and Gemini in handling complex physical interactions. Finally, we present a thorough evaluation on the whole system, exploring how each module in the pipeline: code generation, perception, motion planning, and even object geometric properties, impact the overall performance of the system."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "mu2024robocodex",
+      "arxiv_id": "2402.16117",
+      "title": "RoboCodeX: Multimodal Code Generation for Robotic Behavior Synthesis",
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2402.16117",
+      "category": "generation",
+      "relevance_zh": "多模态树形任务分解及模型训练。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Mu, Yao",
+        "Chen, Junting",
+        "Zhang, Qinglong",
+        "Chen, Shoufa",
+        "Yu, Qiaojun",
+        "Ge, Chongjian",
+        "Chen, Runjian",
+        "Liang, Zhixuan",
+        "Hu, Mengkang",
+        "Tao, Chaofan",
+        "Sun, Peize",
+        "Yu, Haibao",
+        "Yang, Chao",
+        "Shao, Wenqi",
+        "Wang, Wenhai",
+        "Dai, Jifeng",
+        "Qiao, Yu",
+        "Ding, Mingyu",
+        "Luo, Ping"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "RoboCodeX: Multimodal Code Generation for Robotic Behavior Synthesis"
+        ],
+        "citation_author": [
+          "Mu, Yao",
+          "Chen, Junting",
+          "Zhang, Qinglong",
+          "Chen, Shoufa",
+          "Yu, Qiaojun",
+          "Ge, Chongjian",
+          "Chen, Runjian",
+          "Liang, Zhixuan",
+          "Hu, Mengkang",
+          "Tao, Chaofan",
+          "Sun, Peize",
+          "Yu, Haibao",
+          "Yang, Chao",
+          "Shao, Wenqi",
+          "Wang, Wenhai",
+          "Dai, Jifeng",
+          "Qiao, Yu",
+          "Ding, Mingyu",
+          "Luo, Ping"
+        ],
+        "citation_date": [
+          "2024/02/25"
+        ],
+        "citation_online_date": [
+          "2024/02/25"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2402.16117"
+        ],
+        "citation_arxiv_id": [
+          "2402.16117"
+        ],
+        "citation_abstract": [
+          "Robotic behavior synthesis, the problem of understanding multimodal inputs and generating precise physical control for robots, is an important part of Embodied AI. Despite successes in applying multimodal large language models for high-level understanding, it remains challenging to translate these conceptual understandings into detailed robotic actions while achieving generalization across various scenarios. In this paper, we propose a tree-structured multimodal code generation framework for generalized robotic behavior synthesis, termed RoboCodeX. RoboCodeX decomposes high-level human instructions into multiple object-centric manipulation units consisting of physical preferences such as affordance and safety constraints, and applies code generation to introduce generalization ability across various robotics platforms. To further enhance the capability to map conceptual and perceptual understanding into control commands, a specialized multimodal reasoning dataset is collected for pre-training and an iterative self-updating methodology is introduced for supervised fine-tuning. Extensive experiments demonstrate that RoboCodeX achieves state-of-the-art performance in both simulators and real robots on four different kinds of manipulation tasks and one navigation task."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "hu2023codebotler",
+      "arxiv_id": "2311.11183",
+      "title": "Deploying and Evaluating LLMs to Program Service Mobile Robots",
+      "year": 2023,
+      "url": "https://arxiv.org/abs/2311.11183",
+      "category": "verification",
+      "relevance_zh": "CodeBotler/RoboEval；用时序逻辑验证多初始状态下执行轨迹。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Hu, Zichao",
+        "Lucchetti, Francesca",
+        "Schlesinger, Claire",
+        "Saxena, Yash",
+        "Freeman, Anders",
+        "Modak, Sadanand",
+        "Guha, Arjun",
+        "Biswas, Joydeep"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Deploying and Evaluating LLMs to Program Service Mobile Robots"
+        ],
+        "citation_author": [
+          "Hu, Zichao",
+          "Lucchetti, Francesca",
+          "Schlesinger, Claire",
+          "Saxena, Yash",
+          "Freeman, Anders",
+          "Modak, Sadanand",
+          "Guha, Arjun",
+          "Biswas, Joydeep"
+        ],
+        "citation_doi": [
+          "10.1109/LRA.2024.3360020"
+        ],
+        "citation_date": [
+          "2023/11/18"
+        ],
+        "citation_online_date": [
+          "2024/02/22"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2311.11183"
+        ],
+        "citation_arxiv_id": [
+          "2311.11183"
+        ],
+        "citation_abstract": [
+          "Recent advancements in large language models (LLMs) have spurred interest in using them for generating robot programs from natural language, with promising initial results. We investigate the use of LLMs to generate programs for service mobile robots leveraging mobility, perception, and human interaction skills, and where accurate sequencing and ordering of actions is crucial for success. We contribute CodeBotler, an open-source robot-agnostic tool to program service mobile robots from natural language, and RoboEval, a benchmark for evaluating LLMs' capabilities of generating programs to complete service robot tasks. CodeBotler performs program generation via few-shot prompting of LLMs with an embedded domain-specific language (eDSL) in Python, and leverages skill abstractions to deploy generated programs on any general-purpose mobile robot. RoboEval evaluates the correctness of generated programs by checking execution traces starting with multiple initial states, and checking whether the traces satisfy temporal logic properties that encode correctness for each task. RoboEval also includes multiple prompts per task to test for the robustness of program generation. We evaluate several popular state-of-the-art LLMs with the RoboEval benchmark, and perform a thorough analysis of the modes of failures, resulting in a taxonomy that highlights common pitfalls of LLMs at generating robot programs. We release our code and benchmark at https://amrl.cs.utexas.edu/codebotler/."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://amrl.cs.utexas.edu/codebotler/",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "zha2023droc",
+      "arxiv_id": "2311.10678",
+      "title": "Distilling and Retrieving Generalizable Knowledge for Robot Manipulation via Language Corrections",
+      "year": 2023,
+      "url": "https://arxiv.org/abs/2311.10678",
+      "category": "memory",
+      "relevance_zh": "从人的语言纠正中蒸馏并检索经验；不等同全自动修复。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Zha, Lihan",
+        "Cui, Yuchen",
+        "Lin, Li-Heng",
+        "Kwon, Minae",
+        "Arenas, Montserrat Gonzalez",
+        "Zeng, Andy",
+        "Xia, Fei",
+        "Sadigh, Dorsa"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Distilling and Retrieving Generalizable Knowledge for Robot Manipulation via Language Corrections"
+        ],
+        "citation_author": [
+          "Zha, Lihan",
+          "Cui, Yuchen",
+          "Lin, Li-Heng",
+          "Kwon, Minae",
+          "Arenas, Montserrat Gonzalez",
+          "Zeng, Andy",
+          "Xia, Fei",
+          "Sadigh, Dorsa"
+        ],
+        "citation_date": [
+          "2023/11/17"
+        ],
+        "citation_online_date": [
+          "2024/03/21"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2311.10678"
+        ],
+        "citation_arxiv_id": [
+          "2311.10678"
+        ],
+        "citation_abstract": [
+          "Today's robot policies exhibit subpar performance when faced with the challenge of generalizing to novel environments. Human corrective feedback is a crucial form of guidance to enable such generalization. However, adapting to and learning from online human corrections is a non-trivial endeavor: not only do robots need to remember human feedback over time to retrieve the right information in new settings and reduce the intervention rate, but also they would need to be able to respond to feedback that can be arbitrary corrections about high-level human preferences to low-level adjustments to skill parameters. In this work, we present Distillation and Retrieval of Online Corrections (DROC), a large language model (LLM)-based system that can respond to arbitrary forms of language feedback, distill generalizable knowledge from corrections, and retrieve relevant past experiences based on textual and visual similarity for improving performance in novel settings. DROC is able to respond to a sequence of online language corrections that address failures in both high-level task plans and low-level skill primitives. We demonstrate that DROC effectively distills the relevant information from the sequence of online corrections in a knowledge base and retrieves that knowledge in settings with new task or object instances. DROC outperforms other techniques that directly generate robot code via LLMs by using only half of the total number of corrections needed in the first round and requires little to no corrections after two iterations. We show further results, videos, prompts and code on https://sites.google.com/stanford.edu/droc ."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "zhu2024incoro",
+      "arxiv_id": "2402.05188",
+      "title": "InCoRo: In-Context Learning for Robotics Control with Feedback Loops",
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2402.05188",
+      "category": "feedback",
+      "relevance_zh": "动态环境中持续反馈控制，与冻结代码部署区分。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Zhu, Jiaqiang Ye",
+        "Cano, Carla Gomez",
+        "Bermudez, David Vazquez",
+        "Drozdzal, Michal"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "InCoRo: In-Context Learning for Robotics Control with Feedback Loops"
+        ],
+        "citation_author": [
+          "Zhu, Jiaqiang Ye",
+          "Cano, Carla Gomez",
+          "Bermudez, David Vazquez",
+          "Drozdzal, Michal"
+        ],
+        "citation_date": [
+          "2024/02/07"
+        ],
+        "citation_online_date": [
+          "2024/02/07"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2402.05188"
+        ],
+        "citation_arxiv_id": [
+          "2402.05188"
+        ],
+        "citation_abstract": [
+          "One of the challenges in robotics is to enable robotic units with the reasoning capability that would be robust enough to execute complex tasks in dynamic environments. Recent advances in LLMs have positioned them as go-to tools for simple reasoning tasks, motivating the pioneering work of Liang et al. [35] that uses an LLM to translate natural language commands into low-level static execution plans for robotic units. Using LLMs inside robotics systems brings their generalization to a new level, enabling zero-shot generalization to new tasks. This paper extends this prior work to dynamic environments. We propose InCoRo, a system that uses a classical robotic feedback loop composed of an LLM controller, a scene understanding unit, and a robot. Our system continuously analyzes the state of the environment and provides adapted execution commands, enabling the robot to adjust to changing environmental conditions and correcting for controller errors. Our system does not require any iterative optimization to learn to accomplish a task as it leverages in-context learning with an off-the-shelf LLM model. Through an extensive validation process involving two standardized industrial robotic units -- SCARA and DELTA types -- we contribute knowledge about these robots, not popular in the community, thereby enriching it. We highlight the generalization capabilities of our system and show that (1) in-context learning in combination with the current state-of-the-art LLMs is an effective way to implement a robotic controller; (2) in static environments, InCoRo surpasses the prior art in terms of the success rate; (3) in dynamic environments, we establish new state-of-the-art for the SCARA and DELTA units, respectively. This research paves the way towards building reliable, efficient, intelligent autonomous systems that adapt to dynamic environments."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "schlesinger2024roborepair",
+      "arxiv_id": "2410.18893",
+      "title": "Creating and Repairing Robot Programs in Open-World Domains",
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2410.18893",
+      "category": "recovery",
+      "relevance_zh": "从当前状态恢复并减少重复动作；直接相关工作。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Schlesinger, Claire",
+        "Guha, Arjun",
+        "Biswas, Joydeep"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Creating and Repairing Robot Programs in Open-World Domains"
+        ],
+        "citation_author": [
+          "Schlesinger, Claire",
+          "Guha, Arjun",
+          "Biswas, Joydeep"
+        ],
+        "citation_date": [
+          "2024/10/24"
+        ],
+        "citation_online_date": [
+          "2024/10/24"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2410.18893"
+        ],
+        "citation_arxiv_id": [
+          "2410.18893"
+        ],
+        "citation_abstract": [
+          "Using Large Language Models (LLMs) to produce robot programs from natural language has allowed for robot systems that can complete a higher diversity of tasks. However, LLM-generated programs may be faulty, either due to ambiguity in instructions, misinterpretation of the desired task, or missing information about the world state. As these programs run, the state of the world changes and they gather new information. When a failure occurs, it is important that they recover from the current world state and avoid repeating steps that they they previously completed successfully. We propose RoboRepair, a system which traces the execution of a program up until error, and then runs an LLM-produced recovery program that minimizes repeated actions. To evaluate the efficacy of our system, we create a benchmark consisting of eleven tasks with various error conditions that require the generation of a recovery program. We compare the efficiency of the recovery program to a plan built with an oracle that has foreknowledge of future errors."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "ahn2025reliablecap",
+      "arxiv_id": "2510.21302",
+      "title": "Towards Reliable Code-as-Policies: A Neuro-Symbolic Framework for Embodied Task Planning",
+      "year": 2025,
+      "url": "https://arxiv.org/abs/2510.21302",
+      "category": "verification",
+      "relevance_zh": "符号验证和主动获取缺失观测；证据条件选题需直接比较。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Ahn, Sanghyun",
+        "Choi, Wonje",
+        "Lee, Junyong",
+        "Park, Jinwoo",
+        "Woo, Honguk"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Towards Reliable Code-as-Policies: A Neuro-Symbolic Framework for Embodied Task Planning"
+        ],
+        "citation_author": [
+          "Ahn, Sanghyun",
+          "Choi, Wonje",
+          "Lee, Junyong",
+          "Park, Jinwoo",
+          "Woo, Honguk"
+        ],
+        "citation_date": [
+          "2025/10/24"
+        ],
+        "citation_online_date": [
+          "2025/10/24"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2510.21302"
+        ],
+        "citation_arxiv_id": [
+          "2510.21302"
+        ],
+        "citation_abstract": [
+          "Recent advances in large language models (LLMs) have enabled the automatic generation of executable code for task planning and control in embodied agents such as robots, demonstrating the potential of LLM-based embodied intelligence. However, these LLM-based code-as-policies approaches often suffer from limited environmental grounding, particularly in dynamic or partially observable settings, leading to suboptimal task success rates due to incorrect or incomplete code generation. In this work, we propose a neuro-symbolic embodied task planning framework that incorporates explicit symbolic verification and interactive validation processes during code generation. In the validation phase, the framework generates exploratory code that actively interacts with the environment to acquire missing observations while preserving task-relevant states. This integrated process enhances the grounding of generated code, resulting in improved task reliability and success rates in complex environments. We evaluate our framework on RLBench and in real-world settings across dynamic, partially observable scenarios. Experimental results demonstrate that our framework improves task success rates by 46.2% over Code-as-Policies baselines and attains over 86.8% executability of task-relevant actions, thereby enhancing the reliability of task planning in dynamic environments."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "lu2026aspire",
+      "arxiv_id": "2607.00272",
+      "title": "ASPIRE: Agentic /Skills Discovery for Robotics",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2607.00272",
+      "category": "memory",
+      "relevance_zh": "多模态执行记录、程序修复、技能库与搜索；核心对照。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Lu, Runyu",
+        "Wu, Yubo",
+        "Kou, Ethan",
+        "Lin, Haotian",
+        "Fu, Letian",
+        "Xiao, Wenli",
+        "Mandlekar, Ajay",
+        "Xu, Yinzhen",
+        "Shi, Guanya",
+        "Goldberg, Ken",
+        "Chen, Ang",
+        "Chowdhury, Mosharaf",
+        "Kautz, Jan",
+        "Zhu, Yuke",
+        "Fan, Linxi \"Jim\"",
+        "Wang, Guanzhi"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "ASPIRE: Agentic /Skills Discovery for Robotics"
+        ],
+        "citation_author": [
+          "Lu, Runyu",
+          "Wu, Yubo",
+          "Kou, Ethan",
+          "Lin, Haotian",
+          "Fu, Letian",
+          "Xiao, Wenli",
+          "Mandlekar, Ajay",
+          "Xu, Yinzhen",
+          "Shi, Guanya",
+          "Goldberg, Ken",
+          "Chen, Ang",
+          "Chowdhury, Mosharaf",
+          "Kautz, Jan",
+          "Zhu, Yuke",
+          "Fan, Linxi \"Jim\"",
+          "Wang, Guanzhi"
+        ],
+        "citation_date": [
+          "2026/06/30"
+        ],
+        "citation_online_date": [
+          "2026/10/20"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2607.00272"
+        ],
+        "citation_arxiv_id": [
+          "2607.00272"
+        ],
+        "citation_abstract": [
+          "Traditional robot programming is notoriously challenging: it requires orchestrating multimodal perception, managing physical contact dynamics, and handling diverse environment configurations and execution failures. We introduce ASPIRE (Agentic Skill Programming through Iterative Robot Exploration), a continual learning system that autonomously writes and refines robot control programs in a code-as-policy paradigm while compounding experience into a reusable skill library. ASPIRE operates in an open-ended learning loop, consisting of three components: (1) a closed-loop robot execution engine that exposes fine-grained multimodal traces, enabling the agent to autonomously diagnose failures, synthesize repairs, and validate outcomes; (2) a continually expanding skill library that distills validated fixes into reusable, transferable robotic knowledge; and (3) an evolutionary search procedure that generates diverse programs, systematically debugging them to explore beyond single-trajectory refinement. ASPIRE surpasses prior methods by up to 77% on manipulation tasks under perturbation, 72% on Robosuite's bimanual handover task, and up to 32% on long-horizon household tasks. The accumulated skill library further enables zero-shot generalization: on representative unseen long-horizon tasks, ASPIRE achieves 31% success, outperforming the 4% success rate of prior methods. Performance scales with the capabilities of frontier models. With Claude Opus 5.5, ASPIRE nearly saturates these benchmarks, achieving 99% average success across all 80 LIBERO-Pro tasks and 100% success on representative Robosuite and BEHAVIOR-1K tasks. Beyond simulation, skills discovered in simulation reduce real-world robot programming effort across embodiments and robot APIs, while skills acquired through online interaction with physical robots enable ASPIRE to solve a Rubik's Cube with progressively improving efficiency."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://research.nvidia.com/labs/gear/aspire/",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "enpire2026",
+      "arxiv_id": "2606.19980",
+      "title": "ENPIRE: Agentic Robot Policy Self-Improvement in the Real World",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2606.19980",
+      "category": "experimentation",
+      "relevance_zh": "自动复位、执行、验证与改进；包括非 CaP 的学习路线。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Xiao, Wenli",
+        "Xie, Jia",
+        "Zhang, Tonghe",
+        "Lin, Haotian",
+        "Fu, Letian \"Max\"",
+        "Xue, Haoru",
+        "Lu, Jalen",
+        "Yang, Yi",
+        "Dai, Cunxi",
+        "Wang, Zi",
+        "Wu, Jimmy",
+        "Wang, Guanzhi",
+        "Sastry, S. Shankar",
+        "Goldberg, Ken",
+        "Fan, Linxi \"Jim\"",
+        "Zhu, Yuke",
+        "Shi, Guanya"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "ENPIRE: Agentic Robot Policy Self-Improvement in the Real World"
+        ],
+        "citation_author": [
+          "Xiao, Wenli",
+          "Xie, Jia",
+          "Zhang, Tonghe",
+          "Lin, Haotian",
+          "Fu, Letian \"Max\"",
+          "Xue, Haoru",
+          "Lu, Jalen",
+          "Yang, Yi",
+          "Dai, Cunxi",
+          "Wang, Zi",
+          "Wu, Jimmy",
+          "Wang, Guanzhi",
+          "Sastry, S. Shankar",
+          "Goldberg, Ken",
+          "Fan, Linxi \"Jim\"",
+          "Zhu, Yuke",
+          "Shi, Guanya"
+        ],
+        "citation_date": [
+          "2026/06/18"
+        ],
+        "citation_online_date": [
+          "2026/09/20"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2606.19980"
+        ],
+        "citation_arxiv_id": [
+          "2606.19980"
+        ],
+        "citation_abstract": [
+          "Achieving dexterous robotic manipulation in the real world heavily relies on human supervision and algorithm engineering, which becomes a central bottleneck in the pursuit of general physical intelligence. Although emerging coding agents can generate code to automate algorithm search, their successes remain largely confined in digital environments. We conjecture that the missing abstraction to automate robotics research is a repeatable feedback loop for real-world policy improvement: reset the scene, execute a policy, verify the outcome, and refine the next iteration. To bridge this gap, we introduce ENPIRE, a harness framework for coding agents that instantiates this physical feedback routine with four core modules: an Environment module (EN) for automatic reset and verification, a Policy Improvement module (PI) that launches policy refinement, a Rollout module (R) to evaluate policies with one or multiple physical robots operating in parallel, and an Evolution module (E) in which coding agents analyze logs, consult literature, improve training infrastructure and algorithm code to address failure modes. This closed-loop system transforms real-world manipulation learning into a controllable optimization procedure, minimizing human effort while allowing fair ablations across training recipe and agent variants. Powered by ENPIRE, frontier coding agents can autonomously train a policy to achieve a 99% success rate on challenging, dexterous manipulation tasks, such as organizing a pin box, fastening a zip tie, and tool use, a process that further accelerates when we dispatch an agent team on a robot fleet. Our results suggest a practical and scalable path toward deploying coding agents to autonomously advancing robotics in the physical world."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://research.nvidia.com/labs/gear/enpire/",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "xie2026roboskill",
+      "arxiv_id": "2609.37810",
+      "title": "Explore, Execute, Evolve: A Skill Acquisition and Reuse Loop for Embodied Agents",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2609.37810",
+      "category": "memory",
+      "relevance_zh": "文本和代码技能复用及成本摊销；核心对照。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Xie, Sicheng",
+        "Chen, Yitong",
+        "Cao, Haidong",
+        "Lu, Shunlin",
+        "Wu, Zuxuan",
+        "Jiang, Yu-Gang"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Explore, Execute, Evolve: A Skill Acquisition and Reuse Loop for Embodied Agents"
+        ],
+        "citation_author": [
+          "Xie, Sicheng",
+          "Chen, Yitong",
+          "Cao, Haidong",
+          "Lu, Shunlin",
+          "Wu, Zuxuan",
+          "Jiang, Yu-Gang"
+        ],
+        "citation_date": [
+          "2026/09/29"
+        ],
+        "citation_online_date": [
+          "2026/09/29"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2609.37810"
+        ],
+        "citation_arxiv_id": [
+          "2609.37810"
+        ],
+        "citation_abstract": [
+          "Vision-language-action and world-action models have demonstrated impressive capabilities in robotics, yet generalization to unseen tasks remains challenging. More recently, general-purpose multimodal agents have shown great potential for zero-shot robotic task solving. However, they often incur high execution costs by reasoning and exploring the physical world from scratch. To reduce these costs, we introduce RoboSkill, a framework that connects skill acquisition and reuse through an Explore, Execute, Evolve loop. Within this loop, the agent explores to gather task-relevant information, executes tasks while adapting to feedback, and evolves its skill library based on execution records. It then reuses these skills to guide exploration and execution in the next cycle, closing the loop. To improve loop efficiency, we complement vision with tactile feedback to reduce uncertainty during physical interaction. We further augment textual guidance with reusable code to reduce reasoning overhead during skill reuse. On LIBERO-10, RoboSkill improves first-episode success rates by 12.5--25.0 percentage points and reduces average runtime by 7.6--72.4% across four agents. On real robots, it improves success rates by 8.3 percentage points and reduces average runtime for successful trials by at least 14.4%."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "fu2026capx",
+      "arxiv_id": "2603.22435",
+      "title": "CaP-X: A Framework for Benchmarking and Improving Coding Agents for Robot Manipulation",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2603.22435",
+      "category": "benchmark",
+      "relevance_zh": "CaP-Gym/Bench/Agent0/RL；控制 API 抽象和反馈条件。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Fu, Letian",
+        "Yu, Justin",
+        "El-Refai, Karim",
+        "Kou, Ethan",
+        "Xue, Haoru",
+        "Huang, Huang",
+        "Xiao, Wenli",
+        "Wang, Guanzhi",
+        "Niu, Dantong",
+        "Li, Fei-Fei",
+        "Shi, Guanya",
+        "Wu, Jiajun",
+        "Sastry, Shankar",
+        "Zhu, Yuke",
+        "Goldberg, Ken",
+        "Fan, Linxi \"Jim\""
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "CaP-X: A Framework for Benchmarking and Improving Coding Agents for Robot Manipulation"
+        ],
+        "citation_author": [
+          "Fu, Letian",
+          "Yu, Justin",
+          "El-Refai, Karim",
+          "Kou, Ethan",
+          "Xue, Haoru",
+          "Huang, Huang",
+          "Xiao, Wenli",
+          "Wang, Guanzhi",
+          "Niu, Dantong",
+          "Li, Fei-Fei",
+          "Shi, Guanya",
+          "Wu, Jiajun",
+          "Sastry, Shankar",
+          "Zhu, Yuke",
+          "Goldberg, Ken",
+          "Fan, Linxi \"Jim\""
+        ],
+        "citation_date": [
+          "2026/03/23"
+        ],
+        "citation_online_date": [
+          "2026/07/02"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2603.22435"
+        ],
+        "citation_arxiv_id": [
+          "2603.22435"
+        ],
+        "citation_abstract": [
+          "\"Code-as-Policy\" considers how executable code can complement data-intensive Vision-Language-Action (VLA) methods, yet their effectiveness as autonomous controllers for embodied manipulation remains underexplored. We present CaP-X, an open-access framework for systematically studying Code-as-Policy agents in robot manipulation. At its core is CaP-Gym, an interactive environment in which agents control robots by synthesizing and executing programs that compose perception and control primitives. Building on this foundation, CaP-Bench evaluates frontier language and vision-language models across varying levels of abstraction, interaction, and perceptual grounding. Across 12 models, CaP-Bench reveals a consistent trend: performance improves with human-crafted abstractions but degrades as these priors are removed, exposing a dependence on designer scaffolding. At the same time, we observe that this gap can be mitigated through scaling agentic test-time computation--through multi-turn interaction, structured execution feedback, visual differencing, automatic skill synthesis, and ensembled reasoning--substantially improves robustness even when agents operate over low-level primitives. These findings allow us to derive CaP-Agent0, a training-free framework that recovers human-level reliability on several manipulation tasks in simulation and on real embodiments. We further introduce CaP-RL, showing reinforcement learning with verifiable rewards improves success rates and transfers from sim2real with minimal gap. Together, CaP-X provides a principled, open-access platform for advancing embodied coding agents."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "chen2026amp",
+      "arxiv_id": "2611.09892",
+      "title": "On Agentic Manipulation Policies",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2611.09892",
+      "category": "agentic_control",
+      "relevance_zh": "AMP1 实时智能体执行和记忆；与冻结策略分别比较成本。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Chen, Chen",
+        "Bagherieh, Omid",
+        "Balaji, Naveen Nikamanth Appiah",
+        "Gonzalez, Jesse T.",
+        "Heravi, Negin",
+        "Islam, Fahad",
+        "Li, Xueting",
+        "Regli, Jean-Baptiste",
+        "Ren, Kejia",
+        "Švec, Petr",
+        "Yoon, David J.",
+        "Müller, Matthias",
+        "Koltun, Vladlen"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "On Agentic Manipulation Policies"
+        ],
+        "citation_author": [
+          "Chen, Chen",
+          "Bagherieh, Omid",
+          "Balaji, Naveen Nikamanth Appiah",
+          "Gonzalez, Jesse T.",
+          "Heravi, Negin",
+          "Islam, Fahad",
+          "Li, Xueting",
+          "Regli, Jean-Baptiste",
+          "Ren, Kejia",
+          "Švec, Petr",
+          "Yoon, David J.",
+          "Müller, Matthias",
+          "Koltun, Vladlen"
+        ],
+        "citation_date": [
+          "2026/11/06"
+        ],
+        "citation_online_date": [
+          "2026/11/18"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2611.09892"
+        ],
+        "citation_arxiv_id": [
+          "2611.09892"
+        ],
+        "citation_abstract": [
+          "Recent work on robot manipulation has focused on specialist policies trained on demonstrations. We show that generalist AI models can control manipulators more reliably than specialist policies such as vision-language-action models (VLAs) and world-action models (WAMs). We systematically analyze agentic manipulation policies (AMPs), in which a generalist AI model commands the manipulator directly, adapting its actions as the task unfolds. We present AMP1, a reference harness that runs unchanged across single-arm, bimanual, and mobile manipulation. AMP1 achieves state-of-the-art results on the RoboLab-120 and CaP-Gym benchmarks, with no demonstrations or task-specific training. On RoboLab-120, AMP1 reaches an 85.6% success rate zero-shot, compared to 49.2% and 42.9% for leading VLA and WAM policies. The agent succeeds zero-shot in 104 of 108 real-world trials spanning twelve tasks and three robot instances, reducing failure rates by 20x and 15x relative to strong VLA and WAM baselines. The basic harness supplies no grasping, pushing, or placing skills; the agent develops its own strategies, such as searching for hidden objects, using objects as tools, and calibrating its cameras. With the addition of a persistent memory store, the agent can also learn from experience: an augmented harness with a memory representation that is carried across episodes lowers the failure rate on RoboDojo bimanual manipulation tasks by 4.6x relative to zero-shot deployment. Our analysis suggests that AMPs are substantially more general and robust than specialist manipulation policies, providing a promising foundation for robot manipulation."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "ace2026",
+      "arxiv_id": "2611.16872",
+      "title": "ACE-CaP-0: Real-World Code-as-Policies in the Era of Experience",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2611.16872",
+      "category": "frozen_policy",
+      "relevance_zh": "按需示范/仿真，部署期冻结程序；核心对照。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "CaP Team",
+        "Wei, Changxu",
+        "Qing, Yunpeng",
+        "Ma, Guozheng",
+        "Liu, Bowen",
+        "He, Zexin",
+        "Kong, Yilun",
+        "Gu, Haoming",
+        "Liu, Jingyuan",
+        "Zhu, Tianyu",
+        "Wang, Jianfei",
+        "Kou, Junqiang",
+        "Mo, Huinan",
+        "Lv, Hao",
+        "Li, Pengbin",
+        "Wang, Yuesong",
+        "Li, Bo",
+        "Zhou, Huan",
+        "Liu, Shunyu",
+        "Liu, Chunxiao",
+        "Jin, Bixuan",
+        "Yin, Shaopeng",
+        "Wang, Fei",
+        "Hou, Zhi",
+        "Huang, Jiaxing",
+        "Zou, Changqing",
+        "Tao, Dacheng",
+        "Wang, Xiaogang"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "ACE-CaP-0: Real-World Code-as-Policies in the Era of Experience"
+        ],
+        "citation_author": [
+          "CaP Team",
+          "Wei, Changxu",
+          "Qing, Yunpeng",
+          "Ma, Guozheng",
+          "Liu, Bowen",
+          "He, Zexin",
+          "Kong, Yilun",
+          "Gu, Haoming",
+          "Liu, Jingyuan",
+          "Zhu, Tianyu",
+          "Wang, Jianfei",
+          "Kou, Junqiang",
+          "Mo, Huinan",
+          "Lv, Hao",
+          "Li, Pengbin",
+          "Wang, Yuesong",
+          "Li, Bo",
+          "Zhou, Huan",
+          "Liu, Shunyu",
+          "Liu, Chunxiao",
+          "Jin, Bixuan",
+          "Yin, Shaopeng",
+          "Wang, Fei",
+          "Hou, Zhi",
+          "Huang, Jiaxing",
+          "Zou, Changqing",
+          "Tao, Dacheng",
+          "Wang, Xiaogang"
+        ],
+        "citation_date": [
+          "2026/11/12"
+        ],
+        "citation_online_date": [
+          "2026/11/12"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2611.16872"
+        ],
+        "citation_arxiv_id": [
+          "2611.16872"
+        ],
+        "citation_abstract": [
+          "Recent advances in frontier models have pushed the boundaries of agentic robot control, enabling agents to perform complex robotic tasks through reasoning and interaction. However, repeated calls to these models during execution can substantially increase task completion time. Code as Policies (CaP) offers a route for coding agents to acquire physical skills through experience and retain them in executable programs, allowing the reasoning invested in development to be reused across runs. Developing reliable code policies while limiting the cost of physical experimentation remains a central challenge. We investigate human guidance as a source of priors for feasible actions and simulation as an auxiliary environment for exploring and testing candidate policies. Our findings favor robot demonstrations available on request and simulation used selectively during real-world policy refinement. These findings inform ACE-CaP-0, an agentic recipe that couples policy revision with experience acquisition through Demonstrations on Request and Simulation on Demand. Across eight real-world manipulation tasks spanning alignment, multi-object handling, and bimanual coordination, the resulting frozen programs achieve 92.1\\% success (221/240 trials). Mean execution times across tasks range from 0.97 to 2.27 minutes. The programs execute with runtime perception and control, without a human or coding agent in the loop. These results highlight CaP's potential to turn experience into reliable, reusable physical skills."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "fan2026captain",
+      "arxiv_id": "2610.40799",
+      "title": "CaPtain: A Pipeline for Post-Training Code-as-Policy Robot Agents",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2610.40799",
+      "category": "post_training",
+      "relevance_zh": "小模型的 SFT/RL 后训练；不属于纯框架改进。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Fan, Yijia",
+        "He, Xilin",
+        "Jiang, Yilei",
+        "Wu, Dongming",
+        "Wang, Jiaxu",
+        "Yue, Xiangyu"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "CaPtain: A Pipeline for Post-Training Code-as-Policy Robot Agents"
+        ],
+        "citation_author": [
+          "Fan, Yijia",
+          "He, Xilin",
+          "Jiang, Yilei",
+          "Wu, Dongming",
+          "Wang, Jiaxu",
+          "Yue, Xiangyu"
+        ],
+        "citation_date": [
+          "2026/10/29"
+        ],
+        "citation_online_date": [
+          "2026/10/29"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2610.40799"
+        ],
+        "citation_arxiv_id": [
+          "2610.40799"
+        ],
+        "citation_abstract": [
+          "Across coding, web, and tool-use tasks, language-model agents are now routinely trained with the same recipe: supervised fine-tuning (SFT) to learn the interface, then multi-turn reinforcement learning (RL) to master it. Code-as-policy (CaP) casts robot manipulation in the same form, as the policy writes code against robot APIs and reads back the results, so the same recipe should apply. Yet existing CaP agents sidestep training: they either prompt closed frontier models or delegate manipulation to pre-trained vision-language-action models (VLAs) and high-level skills, while small open vision-language models (VLMs) fail outright. We present CaPtain, an open post-training pipeline that turns a small open VLM into a capable CaP agent, with no VLA, frontier model, or privileged state at test time. CaPtain trains and deploys the policy inside CaPtain-Harness, which exposes low-level perception, geometry, and guarded-motion primitives across simulation and real hardware. We first align the base model via SFT on synthetic trajectories generated with GPT-6 Astra, then apply multi-turn RL. Multi-turn RL must credit tens of agent requests, whose physical effects often surface turns later, from a single end-of-episode outcome. We therefore introduce a physical critic that reads privileged simulator state, never seen by the policy, and credits each request by how much it changes the predicted chance of success. Starting from Qwen3.5-4B (0% zero-shot), CaPtain-4B reaches 55.4% held-out LIBERO success after SFT and 73.8% after RL. On LIBERO-PRO, it reaches 78.5%, surpassing several frontier-model agents, and its RL gains persist across three perturbation suites (+17.6 to +21.2 points). Without target-domain training, it attains 83.3% on SimplerEnv WidowX, exceeds frontier models on CaP-Bench, and runs on a real robot after simulation-only adaptation. We release all code, data, and model weights."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "roboscript2026",
+      "arxiv_id": "2611.12885",
+      "title": "World In-Context Learning for Agentic Robot Manipulation",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2611.12885",
+      "category": "memory",
+      "relevance_zh": "示范、任务记忆、冻结部署；必须与 2024 同名工作区分。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Fang, Heng",
+        "Guo, Zehui",
+        "Zhang, Yuehan",
+        "Du, Mingyang",
+        "Liang, Dingkang",
+        "Bai, Xiang"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "World In-Context Learning for Agentic Robot Manipulation"
+        ],
+        "citation_author": [
+          "Fang, Heng",
+          "Guo, Zehui",
+          "Zhang, Yuehan",
+          "Du, Mingyang",
+          "Liang, Dingkang",
+          "Bai, Xiang"
+        ],
+        "citation_date": [
+          "2026/11/09"
+        ],
+        "citation_online_date": [
+          "2026/11/09"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2611.12885"
+        ],
+        "citation_arxiv_id": [
+          "2611.12885"
+        ],
+        "citation_abstract": [
+          "Trained action policies write manipulation skill into network weights, tying what is learned to the distribution it is learned from. In-context learning (ICL) avoids this coupling but has not matched trained policies, because a demonstration recorded in another scene carries no feedback from the world the robot currently faces. We observe that what an agent learns in context is semantic, recording task steps and object roles rather than visual appearance, so experience gathered in one world transfers to another. Based on this insight, we propose World In-Context Learning (WICL), a paradigm in which a frozen model starts from a demonstration, rehearses the task in a world such as a simulator, and writes the feedback into its context rather than its weights. We build RoboScript, a modular infrastructure that implements WICL for agentic manipulation. From a single demonstration, RoboScript learns each task through rehearsal in simulation, freezes the learned knowledge as a Task Memory, and deploys the frozen memory on new scenes with data isolation that ensures every deployment input is available on a real robot. On all 50 tasks of RoboTwin 2.0, RoboScript reaches 83.4% mean success across clean and randomized settings with one demonstration per task and no gradient updates, exceeding the strongest trained action policy by over 20 points. The method generalizes across visual distributions, improves through reflection, scales with the foundation model, and transfers to a physical dual-arm robot through cross-embodiment memory adaptation. With a world in the loop, a robot can learn a manipulation task in its context as well as it learns one in its weights. All code is available at https://github.com/ArcheOne-AI/RoboScript"
+        ]
+      },
+      "metadata_title_differs_from_search": true,
+      "project_url": "https://github.com/ArcheOne-AI/RoboScript",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "wang2023voyager",
+      "arxiv_id": "2305.16291",
+      "title": "Voyager: An Open-Ended Embodied Agent with Large Language Models",
+      "year": 2023,
+      "url": "https://arxiv.org/abs/2305.16291",
+      "category": "adjacent",
+      "relevance_zh": "Minecraft 中代码技能库和自动课程；不能视为真实机器人证据。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Wang, Guanzhi",
+        "Xie, Yuqi",
+        "Jiang, Yunfan",
+        "Mandlekar, Ajay",
+        "Xiao, Chaowei",
+        "Zhu, Yuke",
+        "Fan, Linxi",
+        "Anandkumar, Anima"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Voyager: An Open-Ended Embodied Agent with Large Language Models"
+        ],
+        "citation_author": [
+          "Wang, Guanzhi",
+          "Xie, Yuqi",
+          "Jiang, Yunfan",
+          "Mandlekar, Ajay",
+          "Xiao, Chaowei",
+          "Zhu, Yuke",
+          "Fan, Linxi",
+          "Anandkumar, Anima"
+        ],
+        "citation_date": [
+          "2023/05/25"
+        ],
+        "citation_online_date": [
+          "2023/10/19"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2305.16291"
+        ],
+        "citation_arxiv_id": [
+          "2305.16291"
+        ],
+        "citation_abstract": [
+          "We introduce Voyager, the first LLM-powered embodied lifelong learning agent in Minecraft that continuously explores the world, acquires diverse skills, and makes novel discoveries without human intervention. Voyager consists of three key components: 1) an automatic curriculum that maximizes exploration, 2) an ever-growing skill library of executable code for storing and retrieving complex behaviors, and 3) a new iterative prompting mechanism that incorporates environment feedback, execution errors, and self-verification for program improvement. Voyager interacts with GPT-4 via blackbox queries, which bypasses the need for model parameter fine-tuning. The skills developed by Voyager are temporally extended, interpretable, and compositional, which compounds the agent's abilities rapidly and alleviates catastrophic forgetting. Empirically, Voyager shows strong in-context lifelong learning capability and exhibits exceptional proficiency in playing Minecraft. It obtains 3.3x more unique items, travels 2.3x longer distances, and unlocks key tech tree milestones up to 15.3x faster than prior SOTA. Voyager is able to utilize the learned skill library in a new Minecraft world to solve novel tasks from scratch, while other techniques struggle to generalize. We open-source our full codebase and prompts at https://voyager.minedojo.org/."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://voyager.minedojo.org/",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "ha2023scalingup",
+      "arxiv_id": "2307.14535",
+      "title": "Scaling Up and Distilling Down: Language-Guided Robot Skill Acquisition",
+      "year": 2023,
+      "url": "https://arxiv.org/abs/2307.14535",
+      "category": "adjacent",
+      "relevance_zh": "代码引导采集/验证后蒸馏为神经策略；与部署代码策略区分。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Ha, Huy",
+        "Florence, Pete",
+        "Song, Shuran"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Scaling Up and Distilling Down: Language-Guided Robot Skill Acquisition"
+        ],
+        "citation_author": [
+          "Ha, Huy",
+          "Florence, Pete",
+          "Song, Shuran"
+        ],
+        "citation_date": [
+          "2023/07/26"
+        ],
+        "citation_online_date": [
+          "2023/10/01"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2307.14535"
+        ],
+        "citation_arxiv_id": [
+          "2307.14535"
+        ],
+        "citation_abstract": [
+          "We present a framework for robot skill acquisition, which 1) efficiently scale up data generation of language-labelled robot data and 2) effectively distills this data down into a robust multi-task language-conditioned visuo-motor policy. For (1), we use a large language model (LLM) to guide high-level planning, and sampling-based robot planners (e.g. motion or grasp samplers) for generating diverse and rich manipulation trajectories. To robustify this data-collection process, the LLM also infers a code-snippet for the success condition of each task, simultaneously enabling the data-collection process to detect failure and retry as well as the automatic labeling of trajectories with success/failure. For (2), we extend the diffusion policy single-task behavior-cloning approach to multi-task settings with language conditioning. Finally, we propose a new multi-task benchmark with 18 tasks across five domains to test long-horizon behavior, common-sense reasoning, tool-use, and intuitive physics. We find that our distilled policy successfully learned the robust retrying behavior in its data collection procedure, while improving absolute success rates by 33.2% on average across five domains. Code, data, and additional qualitative results are available on https://www.cs.columbia.edu/~huy/scalingup/."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://github.com/real-stanford/scalingup",
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "li2026roboclaw",
+      "arxiv_id": "2603.11558",
+      "title": "RoboClaw: An Agentic Framework for Scalable Long-Horizon Robotic Tasks",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2603.11558",
+      "category": "adjacent",
+      "relevance_zh": "数据采集、策略学习、执行及复位；并非纯 CaP。",
+      "reading_status": "abstract_or_project_page_reviewed",
+      "full_text_reviewed": false,
+      "reproduced": false,
+      "checked_on": "2026-11-19",
+      "authors": [
+        "Li, Ruiying",
+        "Zhou, Yunlang",
+        "Zhu, YuYao",
+        "Chen, Kylin",
+        "Wang, Jingyuan",
+        "Wang, Sukai",
+        "Hu, Kongtao",
+        "Yu, Minhui",
+        "Jiang, Bowen",
+        "Su, Zhan",
+        "Ma, Jiayao",
+        "He, Xin",
+        "Shen, Yongjian",
+        "Yang, Yang",
+        "Ren, Guanghui",
+        "Yao, Maoqing",
+        "Wang, Wenhao",
+        "Mu, Yao"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "RoboClaw: An Agentic Framework for Scalable Long-Horizon Robotic Tasks"
+        ],
+        "citation_author": [
+          "Li, Ruiying",
+          "Zhou, Yunlang",
+          "Zhu, YuYao",
+          "Chen, Kylin",
+          "Wang, Jingyuan",
+          "Wang, Sukai",
+          "Hu, Kongtao",
+          "Yu, Minhui",
+          "Jiang, Bowen",
+          "Su, Zhan",
+          "Ma, Jiayao",
+          "He, Xin",
+          "Shen, Yongjian",
+          "Yang, Yang",
+          "Ren, Guanghui",
+          "Yao, Maoqing",
+          "Wang, Wenhao",
+          "Mu, Yao"
+        ],
+        "citation_date": [
+          "2026/03/12"
+        ],
+        "citation_online_date": [
+          "2026/04/01"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2603.11558"
+        ],
+        "citation_arxiv_id": [
+          "2603.11558"
+        ],
+        "citation_abstract": [
+          "Vision-Language-Action (VLA) systems have shown strong potential for language-driven robotic manipulation. However, scaling them to long-horizon tasks remains challenging. Existing pipelines typically separate data collection, policy learning, and deployment, resulting in heavy reliance on manual environment resets and brittle multi-policy execution. We present RoboClaw, an agentic robotics framework that unifies data collection, policy learning, and task execution under a single VLM-driven controller. At the policy level, RoboClaw introduces Entangled Action Pairs (EAP), which couple forward manipulation behaviors with inverse recovery actions to form self-resetting loops for autonomous data collection. This mechanism enables continuous on-policy data acquisition and iterative policy refinement with minimal human intervention. During deployment, the same agent performs high-level reasoning and dynamically orchestrates learned policy primitives to accomplish long-horizon tasks. By maintaining consistent contextual semantics across collection and execution, RoboClaw reduces mismatch between the two phases and improves multi-policy robustness. Experiments in real-world manipulation tasks demonstrate improved stability and scalability compared to conventional open-loop pipelines, while significantly reducing human effort throughout the robot lifecycle, achieving a 25% improvement in success rate over baseline methods on long-horizon tasks and reducing human time investment by 53.7%."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Read full methods, limitations and appendices.",
+        "Record action abstraction, observation privileges, feedback and runtime model calls.",
+        "Record development/test split, frozen artifacts and evaluation budget.",
+        "Check code/license and distinguish reproduction from reimplementation."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+include LICENSE NOTICE CITATION.cff AGENTS.md CONTRIBUTING.md
+recursive-include docs *.md *.json
+recursive-include references *.md *.json *.bib
+recursive-include tests *.py

@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "Please cite this software; CRAFT does not yet have a research paper."
+type: software
+title: "CRAFT: Code-based Robotic Automation for Fast-Food Tasks"
+authors:
+  - name: "Tiwater"
+version: 0.1.0
+date-released: 2026-11-19
+url: "https://github.com/tiwater/craft"
+repository-code: "https://github.com/tiwater/craft"
+license: Apache-2.0
