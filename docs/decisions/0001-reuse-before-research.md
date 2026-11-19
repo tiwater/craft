@@ -25,5 +25,17 @@ selected docs/interfaces reviewed; 96 selected core tests passed in isolation.
 Unmodified upstream execution preserves selected fields from a live edge scene
 snapshot. CaP-X source is pinned and its executor/license inspected. See
 `references/notes/evaluation-protocol-audit.md` for evaluation differences and
-the proposed matched experiment. No model or robot run has been launched in
-this reuse audit. Full paper reviews and task-level validation remain pending.
+the proposed matched experiment. Four actual coffee simulator runs now pass:
+direct host execution and ASPIRE whole-policy delegation, each with normal and
+offset/unknown-receipt conditions. Existing host policy and SDK supply recovery;
+these runs do not evaluate ASPIRE learning or prove better success rates.
+No model generation or physical-robot trial has been run in this reuse audit.
+Full paper reviews, strategy-development comparison and oven capability
+validation remain pending.
+
+Current decision tendency (not final): favor upstream development tools plus
+the existing edge execution owner. Do not build another general runtime merely
+to add tracing, skill memory, preconditions or partial recovery: prior work and
+the existing host already cover substantial parts of these functions. A useful
+next experiment must test learned policy development or a concrete missing
+capability, rather than add more wrappers around a known successful policy.

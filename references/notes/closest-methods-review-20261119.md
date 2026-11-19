@@ -47,3 +47,28 @@ A third-party search result points to skku-ai/NESYRO, but GitHub cannot resolve
 that repository; repository search returned no NeSyRo result. Treat the code
 link as unverified, not official availability. Next inspect author/conference
 sources and appendices. Do not reimplement and call it an official reproduction.
+
+## Evaluation and implementation follow-up
+
+RoboRepair sections 4–6: eleven tasks, five prompts each and twenty completions
+per prompt. Three tasks use API errors and eight use user interruptions. Trace
+constraints include action ordering and critical actions occurring once. The
+oracle baseline knows future errors, so its action count is not an attainable
+online baseline under equal information. Limitations explicitly restrict the
+benchmark to one error per task and identify undetected erroneous behavior as
+unhandled. This is evidence for recovery benchmarks, not appliance durability.
+
+NeSyRo section 4 and appendices A–D: observation incompleteness is manipulated
+across four conditions, each with ten randomized trials. Appendix C computes
+confidence from token probabilities and uses successful probe outcomes to
+calibrate its threshold; demonstrations are synthesized symbolic examples.
+Reproduction needs the exact scoring and calibration procedure, not an LLM's
+self-reported confidence. Our current `src/craft/backends.py` returns text and
+metadata, not token probabilities. This is a local interface gap; it does not
+prove the underlying model service cannot expose the needed information.
+
+Neither inspected arXiv HTML links an author implementation (GitHub links in
+the footer concern arXiv rendering). Additional search still has not confirmed
+an author repository. Code availability remains **unverified**, not nonexistent.
+The guessed NeSyRo repository is not accepted as an official source. Reading
+depth remains selected sections; do not mark these as complete reproductions.
