@@ -59,3 +59,26 @@ This supports signature adaptation feasibility only. Production integration
 must retain edge's subprocess boundary and SDK guards. ASPIRE's in-process
 executor alone does not replace those controls; custom action names also need
 explicit trace instrumentation if before/after motion keyframes are required.
+
+## Actual simulator host delegation
+
+`probe_aspire_host_simulation.py` requires explicit `--edge-base`, `--sim-base`,
+`--host-source` and `--output`. It resets the simulator between runs. It checks
+the existing runtime is not running, then requires a fresh single-cup scene.
+No model is used: the same existing policy source is passed to `/cap/execute`
+directly or through one registered ASPIRE `execute_host_policy` tool. The latter
+delegates the entire policy to edge; it does NOT move primitive execution into
+ASPIRE or reproduce its learning algorithm. Edge retains `_run_job`, the SDK,
+process isolation and the command ledger. No production source was modified.
+
+The paired conditions are default placement and injected 38/-12 mm placement
+offset plus a simulated first-brew acknowledgment timeout. Scoring uses the
+existing simulator oracle only after execution: completed status, filled cup
+and delivery error within 15 mm. Additional fault checks use recorded method
+order and brew execution count; they do not prove persistence across a crash.
+
+One pair per condition is a smoke test, not a statistical benchmark. Both runs
+use the same reset preset and policy, but fresh RGB-D inputs are not identical.
+Direct mode always precedes delegation, so order effects are not controlled.
+The result cannot establish a success-rate advantage, ASPIRE skill discovery,
+bagel/oven capability, or real-robot reliability.
