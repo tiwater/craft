@@ -42,3 +42,9 @@ Decision implication: prefer an upstream environment extension or a separately
 versioned thin experiment adapter. Do not call a host-delegation smoke test an
 ASPIRE development campaign. Do not create a parallel general runtime while
 the missing cafe integration is the only demonstrated obstacle.
+
+Paper/code version caveat: arXiv v1 Appendix E describes baseline-run repair,
+while this pinned workflow explicitly starts without external baseline code
+and adds independent skill proposal verification. See `aspire-full-text-review.md`.
+An experiment using the current workflow must not be called an exact replication
+of the published campaign without resolving this difference.

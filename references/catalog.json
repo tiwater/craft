@@ -711,8 +711,8 @@
       "url": "https://arxiv.org/abs/2607.00272",
       "category": "memory",
       "relevance_zh": "多模态执行记录、程序修复、技能库与搜索；核心对照。",
-      "reading_status": "selected_methods_and_evaluation_sections_reviewed",
-      "full_text_reviewed": false,
+      "reading_status": "main_text_and_appendix_text_reviewed",
+      "full_text_reviewed": true,
       "reproduced": false,
       "checked_on": "2026-11-19",
       "authors": [
@@ -787,8 +787,9 @@
         "upstream_tests_passed": 96,
         "robot_reproduction": false
       },
-      "review_note": "notes/aspire-initial-code-audit.md",
-      "protocol_review_note": "notes/evaluation-protocol-audit.md"
+      "review_note": "notes/aspire-full-text-review.md",
+      "protocol_review_note": "notes/evaluation-protocol-audit.md",
+      "reading_scope": "arXiv v1 sections 1-6 and appendices A-E text, tables, algorithms and prompts; figure-image skill cards not independently transcribed; learning not reproduced"
     },
     {
       "key": "enpire2026",
