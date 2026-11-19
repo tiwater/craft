@@ -39,3 +39,9 @@ to add tracing, skill memory, preconditions or partial recovery: prior work and
 the existing host already cover substantial parts of these functions. A useful
 next experiment must test learned policy development or a concrete missing
 capability, rather than add more wrappers around a known successful policy.
+
+Development-pipeline inspection additionally found upstream campaign, partition,
+skill-verification and promotion support (108 selected pipeline tests pass).
+Cafe is not an accepted CLI benchmark family. This is a concrete integration
+gap to investigate as an upstream extension, not yet an algorithmic gap.
+See `references/notes/aspire-development-pipeline-audit.md`.
