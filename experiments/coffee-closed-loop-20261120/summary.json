@@ -1,0 +1,42 @@
+{
+  "candidates_generated": 1,
+  "dev_budget_used": {
+    "model_calls": 1,
+    "trials": 2,
+    "wall_s": 75.078
+  },
+  "dev_trials": 2,
+  "evidence_source": "simulator",
+  "finished_at_utc": "2026-11-20T03:40:47.321507+00:00",
+  "improvement_result": {
+    "decision": "rejected",
+    "published_version": null,
+    "queue_id": "opt-001",
+    "reason": "Candidate did not improve reliability or speed over baseline"
+  },
+  "oven_gap": {
+    "detail": "Host lacks required SDK methods: open_oven_door, load_bagel, start_oven_heat, query_oven_status, unload_bagel",
+    "missing_methods": [
+      "open_oven_door",
+      "load_bagel",
+      "start_oven_heat",
+      "query_oven_status",
+      "unload_bagel"
+    ],
+    "scope": "bagel_and_combo_extension_readiness",
+    "status": "missing_capabilities"
+  },
+  "published_version": "v1",
+  "sdk_contract_sha256": "15fcbdce0816a49f1534acbff8c247f5bf843a625aca0b299ea65ef644313e56",
+  "status": "completed",
+  "v1_acceptance": {
+    "certification_disclaimer": "Scope=simulator: NOT physical-robot approval and NOT food-quality certification. Motion smoothness depends on the host robot controller, not upper-layer CaP.",
+    "completion_rate": 1.0,
+    "duplicate_non_idempotent_count": 0,
+    "max_delivery_error_mm": 4.101,
+    "mean_wall_s": 21.666,
+    "passed": true,
+    "report_id": "acc-v1",
+    "unknown_outcomes": 0
+  }
+}

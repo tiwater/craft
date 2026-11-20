@@ -15,13 +15,21 @@ import urllib.error
 import urllib.request
 
 
-def invoke_backend(provider: str, prompt: str, timeout_s: float) -> dict[str, Any]:
-    effort = os.environ.get("CRAFT_REASONING_EFFORT", "medium").strip()
+def invoke_backend(
+    provider: str,
+    prompt: str,
+    timeout_s: float,
+    *,
+    model: str | None = None,
+    reasoning_effort: str | None = None,
+) -> dict[str, Any]:
+    effort = (reasoning_effort if reasoning_effort is not None else os.environ.get("CRAFT_REASONING_EFFORT", "medium")).strip()
     if effort not in {"low", "medium", "high", "xhigh"}:
         raise ValueError("CRAFT_REASONING_EFFORT must be low, medium, high, or xhigh")
-    model = os.environ.get("CRAFT_MODEL", "").strip()
-    if not model:
+    resolved_model = (model if model is not None else os.environ.get("CRAFT_MODEL", "")).strip()
+    if not resolved_model:
         raise ValueError("CRAFT_MODEL must name an available model for the selected backend")
+    model = resolved_model
     if provider == "codex_cli":
         binary = os.environ.get("CRAFT_CODEX_BIN", "codex")
         # Keep project instructions, plugins and MCP out of the compiler context.

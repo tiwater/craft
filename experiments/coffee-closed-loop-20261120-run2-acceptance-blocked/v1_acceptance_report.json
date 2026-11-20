@@ -1,0 +1,31 @@
+{
+  "artifact": {
+    "config_sha256": "e34b61c96a8deef28ce7045d11552561d914b5c4a20189f333c41f9feb84853c",
+    "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+    "deployment_scope": "simulator",
+    "policy_sha256": "24939513dadebf667b88d3566d98723f6932f62c6113f5f155f8d3f0264c82f1",
+    "policy_source": "def run_policy(sdk, params):\n    order_id = params.get(\"order_id\", \"A042\")\n    target_slot = params.get(\"target_slot\", \"$SLOT_PICKUP_1\")\n    prefix = params.get(\"command_prefix\", \"cap\")\n    order = sdk.get_order(order_id)\n    if not order or order.get(\"order_id\") != order_id:\n        return {\"status\": \"rejected_order\"}\n\n    scene = sdk.observe_scene()\n    if not scene or scene.get(\"control_ready\") is not True:\n        return {\"status\": \"rejected_observation_not_ready\"}\n\n    threshold = scene.get(\"confidence_threshold\")\n    confirmed_id = scene.get(\"operator_confirmed_cup_id\")\n    candidates = []\n    for obj in scene.get(\"objects\", []):\n        if (\n            obj.get(\"id\")\n            and obj.get(\"cup_type\") != \"flexible_bag\"\n            and (\n                obj.get(\"cup_type\") == \"dine_in_red\"\n                or obj.get(\"label\") == \"dine_in_red\"\n            )\n        ):\n            candidates.append(obj)\n\n    eligible = []\n    for obj in candidates:\n        if confirmed_id:\n            if obj.get(\"id\") == confirmed_id:\n                eligible.append(obj)\n        elif threshold is not None and obj.get(\"confidence\", 0) >= threshold:\n            eligible.append(obj)\n\n    if len(eligible) != 1:\n        return {\n            \"status\": \"rejected_observation_not_ready\",\n            \"reason\": \"A single suitable dine-in cup could not be bound.\",\n        }\n\n    cup_id = eligible[0][\"id\"]\n    receipt = sdk.place_cup_under_machine(\n        cup_id, command_id=prefix + \":place\"\n    )\n    if not receipt or receipt.get(\"receipt\") != \"done\":\n        return {\"status\": \"failed_place\", \"receipt\": receipt}\n\n    scene = sdk.observe_scene()\n    if not scene or scene.get(\"control_ready\") is not True:\n        return {\"status\": \"rejected_observation_not_ready\"}\n\n    if scene.get(\"l2_pouring_safety\", {}).get(\"safe_to_pour\") is not True:\n        receipt = sdk.recenter_cup_under_spout(\n            cup_id, command_id=prefix + \":recenter\"\n        )\n        if not receipt or receipt.get(\"receipt\") != \"done\":\n            return {\"status\": \"failed_recenter\", \"receipt\": receipt}\n        scene = sdk.observe_scene()\n        if (\n            not scene\n            or scene.get(\"control_ready\") is not True\n            or scene.get(\"l2_pouring_safety\", {}).get(\"safe_to_pour\") is not True\n        ):\n            return {\"status\": \"failed_recenter\"}\n\n    brew_command_id = prefix + \":brew\"\n    receipt = sdk.start_coffee_machine(command_id=brew_command_id)\n    if not receipt or receipt.get(\"receipt\") not in (\"running\", \"done\", \"rejected\"):\n        receipt = sdk.query_command_status(brew_command_id)\n\n    if not receipt or receipt.get(\"receipt\") not in (\"running\", \"done\"):\n        return {\n            \"status\": \"failed_brew_start\",\n            \"command_id\": brew_command_id,\n            \"receipt\": receipt,\n        }\n\n    receipt = sdk.wait_for_coffee_ready(command_id=prefix + \":wait\")\n    if not receipt or receipt.get(\"receipt\") != \"done\":\n        return {\"status\": \"failed_wait\", \"receipt\": receipt}\n\n    scene = sdk.observe_scene()\n    if (\n        not scene\n        or scene.get(\"control_ready\") is not True\n        or scene.get(\"coffee_machine\", {}).get(\"cup_filled\") is not True\n    ):\n        return {\"status\": \"failed_cup_filled_verification\"}\n\n    receipt = sdk.retrieve_and_deliver_cup(\n        cup_id, target_slot, command_id=prefix + \":deliver\"\n    )\n    if not receipt or receipt.get(\"receipt\") != \"done\":\n        return {\"status\": \"failed_delivery\", \"receipt\": receipt}\n\n    receipt = sdk.complete_order_delivery(\n        order_id, cup_id, target_slot, command_id=prefix + \":complete\"\n    )\n    if not receipt or receipt.get(\"receipt\") != \"done\":\n        return {\"status\": \"failed_complete_order_delivery\", \"receipt\": receipt}\n\n    return {\n        \"status\": \"completed\",\n        \"order_id\": order_id,\n        \"cup_id\": cup_id,\n        \"destination_slot\": target_slot,\n    }\n",
+    "sdk_contract_sha256": "15fcbdce0816a49f1534acbff8c247f5bf843a625aca0b299ea65ef644313e56"
+  },
+  "certification_disclaimer": "Scope=simulator: NOT physical-robot approval and NOT food-quality certification. Motion smoothness depends on the host robot controller, not upper-layer CaP.",
+  "completed_trials": 1,
+  "completion_rate": 0.5,
+  "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+  "duplicate_non_idempotent_count": 0,
+  "evaluated_at_utc": "2026-11-20T03:37:12.218477+00:00",
+  "evidence_source": "simulator",
+  "failure_reasons": [
+    "Completion rate 0.500 < 1.000",
+    "Max delivery error 187.82 mm > 15.00 mm"
+  ],
+  "human_interventions": 0,
+  "max_delivery_error_mm": 187.82,
+  "mean_wall_s": 17.136,
+  "optimization_reason": "",
+  "passed": false,
+  "queue_for_optimization": false,
+  "report_id": "acc-v1",
+  "slow_steps": [],
+  "total_trials": 2,
+  "unknown_outcomes": 0
+}

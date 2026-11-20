@@ -1,0 +1,20 @@
+{
+  "candidate_id": "cand_003",
+  "condition": "dev_normal",
+  "delivery_error_mm": 3.306,
+  "duplicate_non_idempotent": false,
+  "evidence_source": "simulator",
+  "failure_detail": "status=failed detail=Host runtime finished with status=done err_mm=3.306 cup_filled=True",
+  "human_interventions": 0,
+  "needs_clarification": null,
+  "non_idempotent_counts": {
+    "start_coffee_machine": 1
+  },
+  "passed": false,
+  "queried_after_unknown": true,
+  "recorded_at_utc": "2026-11-20T03:31:28.450236+00:00",
+  "status": "failed",
+  "trial_id": "dev_trial_005",
+  "unknown_events_observed": 0,
+  "wall_s": 68.049
+}

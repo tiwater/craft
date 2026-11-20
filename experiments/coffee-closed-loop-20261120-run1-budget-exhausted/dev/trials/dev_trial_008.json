@@ -1,0 +1,20 @@
+{
+  "candidate_id": "cand_004",
+  "condition": "dev_fault_offset_and_timeout",
+  "delivery_error_mm": 4.061,
+  "duplicate_non_idempotent": false,
+  "evidence_source": "simulator",
+  "failure_detail": "status=failed detail=Host runtime finished with status=done err_mm=4.061 cup_filled=True",
+  "human_interventions": 0,
+  "needs_clarification": null,
+  "non_idempotent_counts": {
+    "start_coffee_machine": 1
+  },
+  "passed": false,
+  "queried_after_unknown": true,
+  "recorded_at_utc": "2026-11-20T03:32:54.589284+00:00",
+  "status": "failed",
+  "trial_id": "dev_trial_008",
+  "unknown_events_observed": 1,
+  "wall_s": 25.844
+}

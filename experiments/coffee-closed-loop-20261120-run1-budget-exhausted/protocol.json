@@ -1,0 +1,34 @@
+{
+  "budget": {
+    "allow_live_actuation": true,
+    "allow_sim_reset": true,
+    "max_model_calls": 6,
+    "max_trials": 10,
+    "max_wall_s": 600.0
+  },
+  "config_sha256": "e34b61c96a8deef28ce7045d11552561d914b5c4a20189f333c41f9feb84853c",
+  "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+  "dev_conditions": [
+    "dev_normal",
+    "dev_fault_offset_and_timeout"
+  ],
+  "evidence_source": "simulator",
+  "generation": {
+    "model": "gpt-6-astra",
+    "provider": "codex_cli",
+    "reasoning_effort": "medium"
+  },
+  "heldout_conditions": [
+    "heldout_normal",
+    "heldout_fault_offset_and_timeout"
+  ],
+  "started_at_utc": "2026-11-20T03:27:23.933682+00:00",
+  "stop_rules": [
+    "Stop immediately if host capabilities are missing, drifted, busy, or disconnected.",
+    "Stop development if budget (model_calls, trials, or wall_s) is exhausted.",
+    "Do not publish if independent held-out acceptance fails.",
+    "Do not accept an improvement candidate if reliability regresses or acceptance fails.",
+    "Preserve all failed candidates, failed trials, and diagnostics."
+  ],
+  "task_name": "single_cup_coffee"
+}

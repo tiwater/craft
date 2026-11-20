@@ -2,4 +2,10 @@ CRAFT: Code-based Robotic Automation for Fast-Food Tasks
 Copyright 2026 Tiwater
 
 Model transport code and associated tests were adapted from Tiwater ticos-edge.
-See docs/provenance.md for attribution and implementation boundaries.
+Validation provenance and skill-verification methodology were informed by
+NVlabs/ASPIRE (Apache-2.0, Copyright NVIDIA CORPORATION & AFFILIATES;
+pinned audit commit fa00f0ef2bc1d91d594b9aa502c22133c9f538f7).
+On-demand teaching and experiment-acquisition workflow concepts reference
+ACE-CaP (methodology reference only; no controller source code reused).
+See docs/provenance.md and docs/decisions/0003-product-architecture-and-reuse-boundary.md
+for attribution, reuse boundaries, and implementation scope.

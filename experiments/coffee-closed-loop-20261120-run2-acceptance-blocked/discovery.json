@@ -1,0 +1,43 @@
+{
+  "coffee_host": {
+    "detail": "Host capabilities verified",
+    "discovered": {
+      "allowed_methods": [
+        "get_order",
+        "observe_scene",
+        "request_operator_confirmation",
+        "retract_safe_pose",
+        "escalate_to_human_operator",
+        "complete_order_delivery",
+        "query_command_status",
+        "move_to_target",
+        "place_cup_under_machine",
+        "recenter_cup_under_spout",
+        "start_coffee_machine",
+        "wait_for_coffee_ready",
+        "retrieve_and_deliver_cup"
+      ],
+      "device_bundle_id": "ticos-cafe-sim-5090",
+      "device_bundle_sha256": "435baf1f61748c3b196414e3127b1627013b6a0c600a402afd4717002d8b5517",
+      "execution_authority": "ticos-edge-zero-gt",
+      "perception_owner": "EvidenceScene-v2.0.0-4cam-RGBD",
+      "runtime_status": "done",
+      "sdk_contract_sha256": "15fcbdce0816a49f1534acbff8c247f5bf843a625aca0b299ea65ef644313e56",
+      "sdk_version": "1.1.0"
+    },
+    "missing_methods": [],
+    "status": "ready"
+  },
+  "oven_gap": {
+    "detail": "Host lacks required SDK methods: open_oven_door, load_bagel, start_oven_heat, query_oven_status, unload_bagel",
+    "missing_methods": [
+      "open_oven_door",
+      "load_bagel",
+      "start_oven_heat",
+      "query_oven_status",
+      "unload_bagel"
+    ],
+    "scope": "bagel_and_combo_extension_readiness",
+    "status": "missing_capabilities"
+  }
+}

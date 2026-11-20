@@ -1,0 +1,106 @@
+{
+  "runs": [
+    {
+      "command_id": "craft-acc-v2_cand-heldout_normal-1795146002697555428",
+      "execution": {
+        "command_id": "craft-acc-v2_cand-heldout_normal-1795146002697555428",
+        "detail": "Host runtime finished with status=completed",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "completed",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "completed",
+        "unknown_events_observed": 0,
+        "wall_s": 17.774
+      },
+      "fault_checks_passed": null,
+      "fault_injection": false,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 3.895
+      },
+      "scene_age_ms": 208.6,
+      "scene_timestamp_ns": 1795146002933683334,
+      "task_passed": true
+    },
+    {
+      "command_id": "craft-acc-v2_cand-heldout_fault_offset_and_timeout-1795146021029761578",
+      "execution": {
+        "command_id": "craft-acc-v2_cand-heldout_fault_offset_and_timeout-1795146021029761578",
+        "detail": "Host runtime finished with status=completed",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "completed",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "command_ack_timeout_unknown",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "completed",
+        "unknown_events_observed": 1,
+        "wall_s": 25.807
+      },
+      "fault_checks_passed": true,
+      "fault_injection": true,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 4.118
+      },
+      "scene_age_ms": 86.6,
+      "scene_timestamp_ns": 1795146021412544281,
+      "task_passed": true
+    }
+  ]
+}

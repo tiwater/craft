@@ -1,0 +1,530 @@
+{
+  "runs": [
+    {
+      "command_id": "craft-dev-cand_001-dev_normal-1795145274368080821",
+      "execution": {
+        "command_id": "craft-dev-cand_001-dev_normal-1795145274368080821",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 0,
+        "wall_s": 17.489
+      },
+      "fault_checks_passed": null,
+      "fault_injection": false,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 3.189
+      },
+      "scene_age_ms": 97.3,
+      "scene_timestamp_ns": 1795145274644594961,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_001-dev_fault_offset_and_timeout-1795145292246909697",
+      "execution": {
+        "command_id": "craft-dev-cand_001-dev_fault_offset_and_timeout-1795145292246909697",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "command_ack_timeout_unknown",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 1,
+        "wall_s": 26.141
+      },
+      "fault_checks_passed": true,
+      "fault_injection": true,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 4.998
+      },
+      "scene_age_ms": 87.0,
+      "scene_timestamp_ns": 1795145292628473223,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_002-dev_normal-1795145347390690211",
+      "execution": {
+        "command_id": "craft-dev-cand_002-dev_normal-1795145347390690211",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 0,
+        "wall_s": 17.226
+      },
+      "fault_checks_passed": null,
+      "fault_injection": false,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 3.606
+      },
+      "scene_age_ms": 99.2,
+      "scene_timestamp_ns": 1795145347709556464,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_002-dev_fault_offset_and_timeout-1795145365050682077",
+      "execution": {
+        "command_id": "craft-dev-cand_002-dev_fault_offset_and_timeout-1795145365050682077",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "command_ack_timeout_unknown",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 1,
+        "wall_s": 26.017
+      },
+      "fault_checks_passed": true,
+      "fault_injection": true,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 4.386
+      },
+      "scene_age_ms": 96.6,
+      "scene_timestamp_ns": 1795145365432508463,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_003-dev_normal-1795145419984950203",
+      "execution": {
+        "command_id": "craft-dev-cand_003-dev_normal-1795145419984950203",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 0,
+        "wall_s": 68.049
+      },
+      "fault_checks_passed": null,
+      "fault_injection": false,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 3.306
+      },
+      "scene_age_ms": 99.5,
+      "scene_timestamp_ns": 1795145420286353465,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_003-dev_fault_offset_and_timeout-1795145488450530887",
+      "execution": {
+        "command_id": "craft-dev-cand_003-dev_fault_offset_and_timeout-1795145488450530887",
+        "detail": "Host runtime finished with status=failed_recenter",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "failed_recenter",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 0
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 0,
+        "wall_s": 11.913
+      },
+      "fault_checks_passed": false,
+      "fault_injection": true,
+      "oracle_post_run": {
+        "cup_filled": false,
+        "delivery_error_mm": 406.057
+      },
+      "scene_age_ms": 87.0,
+      "scene_timestamp_ns": 1795145488831468896,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_004-dev_normal-1795145530157176776",
+      "execution": {
+        "command_id": "craft-dev-cand_004-dev_normal-1795145530157176776",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 0,
+        "wall_s": 17.704
+      },
+      "fault_checks_passed": null,
+      "fault_injection": false,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 4.245
+      },
+      "scene_age_ms": 92.2,
+      "scene_timestamp_ns": 1795145530438889252,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_004-dev_fault_offset_and_timeout-1795145548256971080",
+      "execution": {
+        "command_id": "craft-dev-cand_004-dev_fault_offset_and_timeout-1795145548256971080",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "command_ack_timeout_unknown",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 1,
+        "wall_s": 25.844
+      },
+      "fault_checks_passed": true,
+      "fault_injection": true,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 4.061
+      },
+      "scene_age_ms": 209.8,
+      "scene_timestamp_ns": 1795145548513034997,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_005-dev_normal-1795145601937242339",
+      "execution": {
+        "command_id": "craft-dev-cand_005-dev_normal-1795145601937242339",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 0,
+        "wall_s": 17.387
+      },
+      "fault_checks_passed": null,
+      "fault_injection": false,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 2.973
+      },
+      "scene_age_ms": 102.7,
+      "scene_timestamp_ns": 1795145602223558900,
+      "task_passed": false
+    },
+    {
+      "command_id": "craft-dev-cand_005-dev_fault_offset_and_timeout-1795145619735619695",
+      "execution": {
+        "command_id": "craft-dev-cand_005-dev_fault_offset_and_timeout-1795145619735619695",
+        "detail": "Host runtime finished with status=done",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "host_runtime_status": "done",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "observe_scene",
+          "place_cup_under_machine",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "start_coffee_machine",
+          "command_ack_timeout_unknown",
+          "query_command_status",
+          "wait_for_coffee_ready",
+          "query_command_status",
+          "observe_scene",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "query_command_status",
+          "observe_scene",
+          "complete_order_delivery",
+          "query_command_status"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "queried_after_unknown": true,
+        "sandbox_mode": "os_subprocess_isolated",
+        "status": "failed",
+        "unknown_events_observed": 1,
+        "wall_s": 25.948
+      },
+      "fault_checks_passed": true,
+      "fault_injection": true,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 4.657
+      },
+      "scene_age_ms": 87.3,
+      "scene_timestamp_ns": 1795145620115922822,
+      "task_passed": false
+    }
+  ]
+}

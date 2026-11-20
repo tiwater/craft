@@ -1,0 +1,20 @@
+{
+  "candidate_id": "cand_001",
+  "condition": "dev_normal",
+  "delivery_error_mm": 3.551,
+  "duplicate_non_idempotent": false,
+  "evidence_source": "simulator",
+  "failure_detail": "",
+  "human_interventions": 0,
+  "needs_clarification": null,
+  "non_idempotent_counts": {
+    "start_coffee_machine": 1
+  },
+  "passed": true,
+  "queried_after_unknown": true,
+  "recorded_at_utc": "2026-11-20T03:36:10.449999+00:00",
+  "status": "completed",
+  "trial_id": "dev_trial_001",
+  "unknown_events_observed": 0,
+  "wall_s": 17.758
+}

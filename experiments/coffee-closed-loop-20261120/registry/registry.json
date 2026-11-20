@@ -1,0 +1,43 @@
+{
+  "active_version": "v1",
+  "history": [
+    {
+      "at_utc": "2026-11-20T03:39:30.818853+00:00",
+      "deployment_scope": "simulator",
+      "event": "publish",
+      "policy_sha256": "f4bb6c68d4339cf02682cba0c6ed5779906a0d860d4e5be96831a26b5fc3e3c9",
+      "report_id": "acc-v1",
+      "version": "v1"
+    }
+  ],
+  "optimization_queue": [
+    {
+      "baseline_report_id": "acc-v1",
+      "baseline_version": "v1",
+      "candidate_report_id": "acc-v2-cand",
+      "created_at_utc": "2026-11-20T03:39:30.819118+00:00",
+      "decision": "rejected",
+      "decision_reason": "Candidate did not improve reliability or speed over baseline",
+      "published_version": null,
+      "queue_id": "opt-001",
+      "reason": "Scheduled feedback-driven improvement candidate check (reduce redundant observe_scene calls without sacrificing reliability)",
+      "resolved_at_utc": "2026-11-20T03:40:47.321351+00:00",
+      "status": "rejected"
+    }
+  ],
+  "releases": {
+    "v1": {
+      "config_sha256": "e34b61c96a8deef28ce7045d11552561d914b5c4a20189f333c41f9feb84853c",
+      "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+      "deployment_scope": "simulator",
+      "notes": "Initial Phase 1 single-cup coffee release",
+      "policy_path": "releases/v1/policy.py",
+      "policy_sha256": "f4bb6c68d4339cf02682cba0c6ed5779906a0d860d4e5be96831a26b5fc3e3c9",
+      "published_at_utc": "2026-11-20T03:39:30.818841+00:00",
+      "report_id": "acc-v1",
+      "report_path": "releases/v1/acceptance_report.json",
+      "sdk_contract_sha256": "15fcbdce0816a49f1534acbff8c247f5bf843a625aca0b299ea65ef644313e56",
+      "version": "v1"
+    }
+  }
+}

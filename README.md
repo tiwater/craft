@@ -13,16 +13,22 @@ contracts and deterministic fault-injection fixtures. It does **not** claim
 validated physical coffee/bagel manipulation, a completed benchmark, or a paper.
 It has not replaced the live ticos-edge CaP runtime.
 
-## Reuse decision (2026-11-19)
+## Product direction and reuse boundary (2026-11-20)
 
-The necessity audit does **not** justify a new general CaP framework. Keep CRAFT
-as a literature, evaluation and thin integration workspace; do not expand or
-promote the alpha interpreter as a production replacement. Prioritize an ASPIRE
-policy-development adapter to the existing edge host. Actual deployment and
-learning benefits remain unverified. See the [decision and evidence limits](docs/decisions/0002-current-reuse-recommendation.md).
+CRAFT is the unified product entry point for scene configuration, teaching
+interaction, policy development, independent acceptance verification,
+fixed-version release management, and iterative improvement. CRAFT implements
+its core business orchestration directly in `src/craft/`, delegates perception
+and actuation to existing `ticos-edge` / EvidenceScene authorities, selectively
+reuses proven patterns from NVlabs/ASPIRE (Apache-2.0) without making the full
+ASPIRE stack a mandatory dependency, and uses ACE-CaP strictly as a teaching
+methodology reference.
 
-The architecture and examples below describe the existing alpha fixtures,
-not an approved live integration or a demonstrated research contribution.
+Phase 1 targets an end-to-end single-cup coffee closed loop in simulation;
+bagel/oven automation remains blocked on host appliance capability contracts.
+See [product architecture and reuse boundary](docs/decisions/0003-product-architecture-and-reuse-boundary.md)
+and the earlier research-necessity record in
+[0002-current-reuse-recommendation.md](docs/decisions/0002-current-reuse-recommendation.md).
 
 ## Quick start
 

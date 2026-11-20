@@ -1,0 +1,21 @@
+{
+  "skill-coffee-recenter-and-brew-reconcile": {
+    "applicability_notes": "Verified on single-cup coffee simulator with default and offset+timeout fault conditions.",
+    "evidence_source": "simulator",
+    "guidance": "After place_cup_under_machine, re-observe via sdk.observe_scene() and call recenter_cup_under_spout if l2_pouring_safety.safe_to_pour is False. On unknown start_coffee_machine receipt, call query_command_status(brew_cmd_id) once; never reissue brew.",
+    "required_methods": [
+      "observe_scene",
+      "place_cup_under_machine",
+      "recenter_cup_under_spout",
+      "start_coffee_machine",
+      "query_command_status"
+    ],
+    "sdk_contract_sha256": "15fcbdce0816a49f1534acbff8c247f5bf843a625aca0b299ea65ef644313e56",
+    "skill_id": "skill-coffee-recenter-and-brew-reconcile",
+    "task_name": "single_cup_coffee",
+    "title": "Closed-loop recentering and unknown brew receipt reconciliation",
+    "verification_report_id": "acc-v1",
+    "verified": true,
+    "verified_at_utc": "2026-11-20T03:39:30.819032+00:00"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "acceptance": {
+    "max_delivery_error_mm": 15.0,
+    "max_duplicate_non_idempotent": 0,
+    "max_human_interventions": 0,
+    "max_unknown_outcomes": 0,
+    "min_completion_rate": 1.0,
+    "min_heldout_trials": 2,
+    "slow_step_threshold_s": 20.0,
+    "target_wall_s": 90.0
+  },
+  "budget": {
+    "allow_live_actuation": false,
+    "allow_sim_reset": false,
+    "deployment_scope": "simulator",
+    "max_model_calls": 6,
+    "max_trials": 10,
+    "max_wall_s": 600.0
+  },
+  "capabilities": {
+    "expected_sdk_contract_sha256": null,
+    "non_idempotent_methods": [
+      "start_coffee_machine"
+    ],
+    "required_methods": [
+      "get_order",
+      "observe_scene",
+      "query_command_status",
+      "place_cup_under_machine",
+      "recenter_cup_under_spout",
+      "start_coffee_machine",
+      "wait_for_coffee_ready",
+      "retrieve_and_deliver_cup",
+      "complete_order_delivery",
+      "retract_safe_pose",
+      "escalate_to_human_operator"
+    ]
+  },
+  "generation": {
+    "model": "",
+    "provider": "codex_cli",
+    "reasoning_effort": "medium",
+    "timeout_s": 180.0
+  },
+  "host": {
+    "cap_execute_path": "/cap/execute",
+    "cap_reset_path": "/cap/reset",
+    "cap_state_path": "/cap/state",
+    "edge_base_url": "http://127.0.0.1:8080",
+    "execute_timeout_s": 180.0,
+    "max_evidence_age_ms": 2000.0,
+    "scene_path": "/edge-scene",
+    "sim_base_url": "http://127.0.0.1:8090",
+    "timeout_s": 10.0
+  },
+  "metadata": {
+    "description": "Sanitized Phase 1 single-cup coffee simulation configuration example. Replace placeholder URLs at runtime.",
+    "oven_capability_note": "Bagel/oven heating is excluded from Phase 1 pending host appliance contracts."
+  },
+  "objects": [
+    {
+      "allow_ambiguous": false,
+      "min_confidence": 0.5,
+      "name": "coffee_cup",
+      "required_count": 1,
+      "semantic_classes": [
+        "dine_in_red",
+        "takeout_green"
+      ]
+    }
+  ],
+  "scene_id": "cafe-single-cup-sim",
+  "task_name": "single_cup_coffee"
+}

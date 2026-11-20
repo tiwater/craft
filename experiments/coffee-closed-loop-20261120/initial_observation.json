@@ -1,0 +1,53 @@
+{
+  "age_ms": 86.7,
+  "bound_objects": {
+    "coffee_cup": [
+      {
+        "center_world_m": [
+          0.4443,
+          -0.0022,
+          1.0755
+        ],
+        "confidence": 0.98,
+        "corroborated_surfels": 671,
+        "label": "Tims \u70ed\u996e\u7ea2\u676f",
+        "mean_rgb": [
+          168,
+          128,
+          116
+        ],
+        "object_id": "obj-cup-a",
+        "rim_aperture": {
+          "center_m": [
+            0.4443,
+            -0.0022,
+            1.1273
+          ],
+          "normal": [
+            -0.0782,
+            -0.0072,
+            0.9969
+          ],
+          "plane_inlier_rmse_m": 0.00265,
+          "radius_m": 0.0436,
+          "ransac_consensus_agreed": true,
+          "support_point_count": 446
+        },
+        "rim_radius_m": 0.0436,
+        "rle_area_px": 1050,
+        "schur_admitted": true,
+        "semantic_class": "dine_in_red",
+        "supporting_cameras": [
+          "chest",
+          "head"
+        ],
+        "tilt_deg": 4.503
+      }
+    ]
+  },
+  "detail": "Fresh EvidenceScene snapshot bound without inference",
+  "evidence_source": "simulator",
+  "snapshot_sha256": "6ee527f03ead18d8040076cbc8ffa33d729078c23b8712e30447acc78aec6f25",
+  "status": "ok",
+  "timestamp_ns": 1795145850241873122
+}
