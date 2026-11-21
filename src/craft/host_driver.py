@@ -644,6 +644,7 @@ class HttpHostDriver:
             "status": exec_res.status,
             "wall_s": round(exec_res.wall_s, 3),
             "methods": list(exec_res.methods),
+            "step_records": list((exec_res.raw_runtime or {}).get("steps") or []),
             "non_idempotent_counts": dict(exec_res.non_idempotent_counts),
             "duplicate_non_idempotent": exec_res.duplicate_non_idempotent,
             "unknown_events_observed": exec_res.unknown_events_observed,
@@ -669,10 +670,16 @@ HttpEdgeHostDriver = HttpHostDriver
 
 DriverFactory = Callable[[SceneConfig], SceneHostDriver]
 
+def _create_recorded_driver(config: SceneConfig) -> SceneHostDriver:
+    from .recorded_driver import RecordedDataHostDriver
+    return RecordedDataHostDriver(config)
+
+
 _DRIVER_REGISTRY: dict[str, DriverFactory] = {
     "fixture": FixtureHostDriver,
     "http": HttpHostDriver,
     "http_edge": HttpHostDriver,
+    "recorded": _create_recorded_driver,
 }
 
 

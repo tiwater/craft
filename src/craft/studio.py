@@ -15,6 +15,7 @@ import time
 from typing import Any, Mapping, Sequence
 from urllib.parse import urlparse
 
+from .autonomy import AutonomyPromotionLedger
 from .benchmark import (
     PolicyEntry,
     builtin_reference_policy_source,
@@ -25,6 +26,9 @@ from .benchmark import (
 from .coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
 from .config import SceneConfig
 from .host_driver import SceneHostDriver
+from .portability import check_policy_portability
+from .profiler import aggregate_trial_profiles
+from .regression import RegressionSuite
 from .release import ReleaseRegistry
 from .teaching import TeachingMaterial, build_task_specification
 
@@ -411,6 +415,17 @@ STUDIO_HTML = r"""<!DOCTYPE html>
     <div class="card">
       <div class="card-title"><span>独立验收与改进门禁实证（本工作区归档）</span></div>
       <div id="gov-evidence-cards" class="two-col"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title"><span>四层失败归因与步骤耗时瓶颈剖析</span></div>
+        <div id="profiler-panel" style="font-size:13px;color:var(--muted)">加载中...</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>踩坑永久回归题库（Failure-to-Testcase）与跨店迁移检查</span></div>
+        <div id="regression-portability-panel" style="font-size:13px;color:var(--muted)">加载中...</div>
+      </div>
     </div>
   </div>
 
@@ -935,6 +950,40 @@ function renderBenchmarkTab(st) {
     </div>`);
   }
   document.getElementById('gov-evidence-cards').innerHTML = cards.join('') || '<div style="color:var(--muted);font-size:13px">暂无发布验收记录。</div>';
+
+  // Phase 2: Profiler + Four-Layer Attribution
+  const prof = st.phase2_profiler || {};
+  const attrCounts = prof.attribution_counts || {};
+  const bns = (prof.method_bottlenecks || []).slice(0, 6);
+  const pp = st.phase2_throughput;
+  document.getElementById('profiler-panel').innerHTML = `
+    <div class="chips" style="margin-top:0;margin-bottom:10px">
+      <span class="chip">感知 perception: ${attrCounts.perception || 0}</span>
+      <span class="chip">控制 control: ${attrCounts.control || 0}</span>
+      <span class="chip">外设 device: ${attrCounts.device || 0}</span>
+      <span class="chip">策略 policy: ${attrCounts.policy || 0}</span>
+    </div>
+    ${bns.length ? `<table>
+      <thead><tr><th>宿主步骤</th><th>平均调用</th><th>平均耗时(s)</th><th>最大单步(s)</th></tr></thead>
+      <tbody>${bns.map(b => `<tr><td><code>${b.method}</code></td><td>${b.mean_calls_per_trial}</td><td>${b.mean_s_per_timed_trial ?? '-'}</td><td>${b.max_step_s ?? '-'}</td></tr>`).join('')}</tbody>
+    </table>` : '<div style="font-size:12px">暂无步骤剖析数据</div>'}
+    ${pp && pp.pipeline_projection_2slot ? `<div style="margin-top:10px;font-size:12px;color:#86efac">⚡ 实测单均 ${pp.throughput.mean_order_s}s（${pp.throughput.throughput_orders_per_hour} 单/时）；2 工位异步流水线调度模型预计可提升 <strong>+${pp.pipeline_projection_2slot.projected_throughput_gain_pct}%</strong>（${pp.pipeline_projection_2slot.pipelined_orders_per_hour} 单/时，标明 schedule_model）</div>` : ''}
+  `;
+
+  // Phase 2: Regression Suite + Portability + Autonomy Gate
+  const regCases = st.regression_cases || [];
+  const ports = st.portability_checks || {};
+  const promo = st.autonomy_physical_gate;
+  document.getElementById('regression-portability-panel').innerHTML = `
+    <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:6px">永久回归考题库（共 ${regCases.length} 题）</div>
+    ${regCases.length ? regCases.map(c => `<div class="scen-card" style="margin-bottom:6px;padding:8px 10px">
+      <div style="font-size:12.5px;font-weight:700">${c.case_id} · <span class="badge warn">${c.attribution_layer}/${c.attribution_code}</span></div>
+      <div style="font-size:11.5px;color:var(--muted)">${c.scenario.label}（命中 ${c.hit_count} 次）</div>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">暂无已沉淀失败考题</div>'}
+    <div style="font-size:12px;font-weight:600;color:var(--blue);margin:10px 0 6px">跨店无坐标迁移静态校验</div>
+    <div class="chips" style="margin-top:0">${Object.entries(ports).map(([pid, r]) => `<span class="chip ${r.portable ? 'ok' : 'miss'}">${pid}: ${r.portable ? '无硬编码 ✅' : '含硬编码 ❌'}</span>`).join('')}</div>
+    ${promo ? `<div style="margin-top:10px;font-size:12px;color:${promo.allowed ? '#86efac' : '#fde047'}">🛡️ 真机上线门禁（physical_live）：<strong>${promo.allowed ? '已放行' : '安全阻断'}</strong>${promo.missing_prerequisites && promo.missing_prerequisites.length ? ' — 待完成前置阶段: ' + promo.missing_prerequisites.join(', ') : ''}</div>` : ''}
+  `;
 }
 
 function renderGovTab(st) {
@@ -1300,10 +1349,33 @@ class CraftStudioApp:
         cap = self.driver.discover_capabilities(allow_busy=True)
         obs = self.driver.observe_scene()
         oven_gap = self.driver.check_missing_capabilities(OVEN_REQUIRED_METHODS)
+        bm = self._load_benchmark()
+        p2_tput = _read_optional_json(self.workspace_dir / "phase2_profile_and_throughput.json")
+        if p2_tput and p2_tput.get("aggregate_profile"):
+            profiler_data = p2_tput["aggregate_profile"]
+        elif bm and bm.get("trials"):
+            profiler_data = aggregate_trial_profiles(bm["trials"])
+        else:
+            profiler_data = aggregate_trial_profiles([])
+
+        reg_path = self.workspace_dir / "regression_suite.json"
+        reg_cases = [c.to_dict() for c in RegressionSuite(reg_path).cases] if reg_path.is_file() else []
+        portability = {pid: check_policy_portability(pol.source) for pid, pol in self._policies.items()}
+
+        promo_gate = None
+        auto_path = self.workspace_dir / "autonomy_ledger.json"
+        active_rel_id = self._active_release_id()
+        if auto_path.is_file() and active_rel_id and "active_release" in self._policies:
+            pol_sha = self._policies["active_release"].source_sha256
+            promo_gate = AutonomyPromotionLedger(auto_path).check_promotion(
+                policy_sha256=pol_sha,
+                target_stage="physical_live",
+            )
+
         return {
             "driver": self.driver.driver_name,
             "evidence_source": self.driver.evidence_source,
-            "active_release": self._active_release_id(),
+            "active_release": active_rel_id,
             "capability_check": cap.to_dict(),
             "oven_gap": oven_gap,
             "scene_observation": {
@@ -1314,13 +1386,18 @@ class CraftStudioApp:
             "run_state": self._snapshot_run_state(),
             "cameras": list(self.driver.list_cameras()),
             "policies": [p.to_meta() for p in self._policies.values()],
-            "benchmark": self._load_benchmark(),
+            "benchmark": bm,
             "benchmark_running": self._bench_running,
             "workspace_summary": _read_optional_json(self.workspace_dir / "summary.json"),
             "v1_acceptance": _read_optional_json(self.workspace_dir / "v1_acceptance_report.json"),
             "v2_acceptance": _read_optional_json(self.workspace_dir / "v2_acceptance_report.json"),
             "registry": _read_optional_json(self.workspace_dir / "registry" / "registry.json"),
             "skills": _read_optional_json(self.workspace_dir / "skills.json"),
+            "phase2_profiler": profiler_data,
+            "phase2_throughput": p2_tput,
+            "regression_cases": reg_cases,
+            "portability_checks": portability,
+            "autonomy_physical_gate": promo_gate,
         }
 
     def get_policy(self, policy_id: str) -> dict[str, Any]:

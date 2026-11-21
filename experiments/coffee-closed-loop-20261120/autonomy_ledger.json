@@ -1,0 +1,18 @@
+{
+  "evidence": [
+    {
+      "config_sha256": "e34b61c96a8deef28ce7045d11552561d914b5c4a20189f333c41f9feb84853c",
+      "human_interventions": 0,
+      "intervention_rate": 0.0,
+      "notes": "Verified Phase 1 held-out simulator acceptance",
+      "passed": true,
+      "policy_sha256": "f4bb6c68d4339cf02682cba0c6ed5779906a0d860d4e5be96831a26b5fc3e3c9",
+      "recorded_at_utc": "2026-11-21T13:41:43.059605+00:00",
+      "report_id": "acc-v1",
+      "sdk_contract_sha256": "15fcbdce0816a49f1534acbff8c247f5bf843a625aca0b299ea65ef644313e56",
+      "stage": "simulator",
+      "total_trials": 2
+    }
+  ],
+  "schema_version": 1
+}

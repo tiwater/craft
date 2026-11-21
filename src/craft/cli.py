@@ -16,6 +16,7 @@ from .benchmark import (
 from .coffee_loop import check_oven_capability_gap, run_coffee_closed_loop
 from .config import SceneConfig
 from .edge_adapter import EdgeHostAdapter
+from .engine_api import CraftEngineService, create_engine_server
 from .fixtures import DEPLOYMENT, FixtureAdapter, example_policy
 from .host_driver import create_host_driver
 from .journal import Journal
@@ -128,6 +129,17 @@ def main() -> None:
     studio.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
     studio.add_argument("--allow-actuation", action="store_true")
     studio.add_argument("--allow-sim-reset", action="store_true")
+
+    engine = sub.add_parser("serve-engine", help="Launch headless CRAFT Engine /v1/... REST API for control planes")
+    engine.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
+    engine.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, recorded, or plugin)")
+    engine.add_argument("--workspace", required=True, help="Workspace dir for releases, regression & autonomy ledgers")
+    engine.add_argument("--host", default="127.0.0.1", help="Bind host (default 127.0.0.1)")
+    engine.add_argument("--port", type=int, default=8870, help="Bind port (default 8870)")
+    engine.add_argument("--host-base", "--edge-base", dest="edge_base", help="Override host base URL")
+    engine.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
+    engine.add_argument("--allow-actuation", action="store_true")
+    engine.add_argument("--allow-sim-reset", action="store_true")
 
     args = parser.parse_args()
 
@@ -273,6 +285,29 @@ def main() -> None:
         server = create_studio_server(app, host=args.host, port=args.port)
         print(
             f"CRAFT Studio listening on http://{args.host}:{args.port} "
+            f"(driver={driver.driver_name}, evidence_source={driver.evidence_source})",
+            flush=True,
+        )
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            server.shutdown()
+        return
+
+    if args.command == "serve-engine":
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            edge_base=args.edge_base,
+            sim_base=args.sim_base,
+            allow_actuation=args.allow_actuation,
+            allow_sim_reset=args.allow_sim_reset,
+            scope="fixture" if args.driver == "fixture" else ("recorded_data" if args.driver == "recorded" else None),
+        )
+        driver = create_host_driver(args.driver, cfg)
+        service = CraftEngineService(cfg, driver, args.workspace)
+        server = create_engine_server(service, host=args.host, port=args.port)
+        print(
+            f"CRAFT Engine API (/v1) listening on http://{args.host}:{args.port} "
             f"(driver={driver.driver_name}, evidence_source={driver.evidence_source})",
             flush=True,
         )

@@ -1,0 +1,883 @@
+{
+  "scope": "phase2_live_simulator_step_profiling_and_throughput",
+  "evidence_source": "simulator",
+  "portability": {
+    "portable": true,
+    "error_count": 0,
+    "warning_count": 0,
+    "findings": []
+  },
+  "throughput": {
+    "policy_id": "craft_v1",
+    "evidence_source": "simulator",
+    "total_orders": 3,
+    "completed_orders": 3,
+    "completion_rate": 1.0,
+    "sum_execution_wall_s": 61.425,
+    "batch_wall_s": 62.907,
+    "mean_order_s": 20.475,
+    "throughput_orders_per_hour": 175.82
+  },
+  "trial_summaries": [
+    {
+      "order_index": 1,
+      "host_runtime_status": "completed",
+      "task_passed": true,
+      "wall_s": 17.472,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 3.801
+      },
+      "step_profile": {
+        "step_count": 18,
+        "measured_total_s": 17.452,
+        "total_wall_s": 17.472,
+        "slow_step_threshold_s": 5.0,
+        "slow_steps": [
+          {
+            "index": 3,
+            "method": "place_cup_under_machine",
+            "duration_s": 8.055,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 13,
+            "method": "retrieve_and_deliver_cup",
+            "duration_s": 8.414,
+            "receipt": "done",
+            "slow": true
+          }
+        ],
+        "by_method": [
+          {
+            "method": "retrieve_and_deliver_cup",
+            "calls": 1,
+            "total_s": 8.414,
+            "mean_s": 8.414,
+            "max_s": 8.414,
+            "pct_of_wall": 48.2
+          },
+          {
+            "method": "place_cup_under_machine",
+            "calls": 1,
+            "total_s": 8.055,
+            "mean_s": 8.055,
+            "max_s": 8.055,
+            "pct_of_wall": 46.1
+          },
+          {
+            "method": "wait_for_coffee_ready",
+            "calls": 1,
+            "total_s": 0.87,
+            "mean_s": 0.87,
+            "max_s": 0.87,
+            "pct_of_wall": 5.0
+          },
+          {
+            "method": "observe_scene",
+            "calls": 7,
+            "total_s": 0.095,
+            "mean_s": 0.014,
+            "max_s": 0.093,
+            "pct_of_wall": 0.5
+          },
+          {
+            "method": "start_coffee_machine",
+            "calls": 1,
+            "total_s": 0.018,
+            "mean_s": 0.018,
+            "max_s": 0.018,
+            "pct_of_wall": 0.1
+          },
+          {
+            "method": "query_command_status",
+            "calls": 5,
+            "total_s": 0.0,
+            "mean_s": 0.0,
+            "max_s": 0.0,
+            "pct_of_wall": 0.0
+          },
+          {
+            "method": "complete_order_delivery",
+            "calls": 1,
+            "total_s": 0.0,
+            "mean_s": 0.0,
+            "max_s": 0.0,
+            "pct_of_wall": 0.0
+          },
+          {
+            "method": "get_order",
+            "calls": 1,
+            "total_s": null,
+            "mean_s": null,
+            "max_s": null,
+            "pct_of_wall": null
+          }
+        ],
+        "steps": [
+          {
+            "index": 0,
+            "method": "get_order",
+            "duration_s": null,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 1,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 2,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 3,
+            "method": "place_cup_under_machine",
+            "duration_s": 8.055,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 4,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 5,
+            "method": "observe_scene",
+            "duration_s": 0.001,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 6,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 7,
+            "method": "start_coffee_machine",
+            "duration_s": 0.018,
+            "receipt": "running",
+            "slow": false
+          },
+          {
+            "index": 8,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "running",
+            "slow": false
+          },
+          {
+            "index": 9,
+            "method": "wait_for_coffee_ready",
+            "duration_s": 0.87,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 10,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 11,
+            "method": "observe_scene",
+            "duration_s": 0.093,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 12,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 13,
+            "method": "retrieve_and_deliver_cup",
+            "duration_s": 8.414,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 14,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 15,
+            "method": "observe_scene",
+            "duration_s": 0.001,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 16,
+            "method": "complete_order_delivery",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 17,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          }
+        ],
+        "optimization_hints": [
+          "High observe_scene frequency (7 calls); audit redundant re-observations."
+        ]
+      }
+    },
+    {
+      "order_index": 2,
+      "host_runtime_status": "completed",
+      "task_passed": true,
+      "wall_s": 17.965,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 3.92
+      },
+      "step_profile": {
+        "step_count": 18,
+        "measured_total_s": 17.944,
+        "total_wall_s": 17.965,
+        "slow_step_threshold_s": 5.0,
+        "slow_steps": [
+          {
+            "index": 3,
+            "method": "place_cup_under_machine",
+            "duration_s": 8.339,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 13,
+            "method": "retrieve_and_deliver_cup",
+            "duration_s": 8.548,
+            "receipt": "done",
+            "slow": true
+          }
+        ],
+        "by_method": [
+          {
+            "method": "retrieve_and_deliver_cup",
+            "calls": 1,
+            "total_s": 8.548,
+            "mean_s": 8.548,
+            "max_s": 8.548,
+            "pct_of_wall": 47.6
+          },
+          {
+            "method": "place_cup_under_machine",
+            "calls": 1,
+            "total_s": 8.339,
+            "mean_s": 8.339,
+            "max_s": 8.339,
+            "pct_of_wall": 46.4
+          },
+          {
+            "method": "wait_for_coffee_ready",
+            "calls": 1,
+            "total_s": 0.874,
+            "mean_s": 0.874,
+            "max_s": 0.874,
+            "pct_of_wall": 4.9
+          },
+          {
+            "method": "start_coffee_machine",
+            "calls": 1,
+            "total_s": 0.095,
+            "mean_s": 0.095,
+            "max_s": 0.095,
+            "pct_of_wall": 0.5
+          },
+          {
+            "method": "observe_scene",
+            "calls": 7,
+            "total_s": 0.088,
+            "mean_s": 0.013,
+            "max_s": 0.086,
+            "pct_of_wall": 0.5
+          },
+          {
+            "method": "query_command_status",
+            "calls": 5,
+            "total_s": 0.0,
+            "mean_s": 0.0,
+            "max_s": 0.0,
+            "pct_of_wall": 0.0
+          },
+          {
+            "method": "complete_order_delivery",
+            "calls": 1,
+            "total_s": 0.0,
+            "mean_s": 0.0,
+            "max_s": 0.0,
+            "pct_of_wall": 0.0
+          },
+          {
+            "method": "get_order",
+            "calls": 1,
+            "total_s": null,
+            "mean_s": null,
+            "max_s": null,
+            "pct_of_wall": null
+          }
+        ],
+        "steps": [
+          {
+            "index": 0,
+            "method": "get_order",
+            "duration_s": null,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 1,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 2,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 3,
+            "method": "place_cup_under_machine",
+            "duration_s": 8.339,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 4,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 5,
+            "method": "observe_scene",
+            "duration_s": 0.001,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 6,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 7,
+            "method": "start_coffee_machine",
+            "duration_s": 0.095,
+            "receipt": "running",
+            "slow": false
+          },
+          {
+            "index": 8,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "running",
+            "slow": false
+          },
+          {
+            "index": 9,
+            "method": "wait_for_coffee_ready",
+            "duration_s": 0.874,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 10,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 11,
+            "method": "observe_scene",
+            "duration_s": 0.086,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 12,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 13,
+            "method": "retrieve_and_deliver_cup",
+            "duration_s": 8.548,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 14,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 15,
+            "method": "observe_scene",
+            "duration_s": 0.001,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 16,
+            "method": "complete_order_delivery",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 17,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          }
+        ],
+        "optimization_hints": [
+          "High observe_scene frequency (7 calls); audit redundant re-observations."
+        ]
+      }
+    },
+    {
+      "order_index": 3,
+      "host_runtime_status": "completed",
+      "task_passed": true,
+      "wall_s": 25.988,
+      "oracle_post_run": {
+        "cup_filled": true,
+        "delivery_error_mm": 4.357
+      },
+      "step_profile": {
+        "step_count": 24,
+        "measured_total_s": 25.967,
+        "total_wall_s": 25.988,
+        "slow_step_threshold_s": 5.0,
+        "slow_steps": [
+          {
+            "index": 3,
+            "method": "place_cup_under_machine",
+            "duration_s": 8.015,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 7,
+            "method": "observe_scene",
+            "duration_s": 8.396,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 19,
+            "method": "retrieve_and_deliver_cup",
+            "duration_s": 8.548,
+            "receipt": "done",
+            "slow": true
+          }
+        ],
+        "by_method": [
+          {
+            "method": "retrieve_and_deliver_cup",
+            "calls": 1,
+            "total_s": 8.548,
+            "mean_s": 8.548,
+            "max_s": 8.548,
+            "pct_of_wall": 32.9
+          },
+          {
+            "method": "observe_scene",
+            "calls": 10,
+            "total_s": 8.508,
+            "mean_s": 0.851,
+            "max_s": 8.396,
+            "pct_of_wall": 32.7
+          },
+          {
+            "method": "place_cup_under_machine",
+            "calls": 1,
+            "total_s": 8.015,
+            "mean_s": 8.015,
+            "max_s": 8.015,
+            "pct_of_wall": 30.8
+          },
+          {
+            "method": "wait_for_coffee_ready",
+            "calls": 1,
+            "total_s": 0.871,
+            "mean_s": 0.871,
+            "max_s": 0.871,
+            "pct_of_wall": 3.4
+          },
+          {
+            "method": "start_coffee_machine",
+            "calls": 1,
+            "total_s": 0.025,
+            "mean_s": 0.025,
+            "max_s": 0.025,
+            "pct_of_wall": 0.1
+          },
+          {
+            "method": "query_command_status",
+            "calls": 6,
+            "total_s": 0.0,
+            "mean_s": 0.0,
+            "max_s": 0.0,
+            "pct_of_wall": 0.0
+          },
+          {
+            "method": "recenter_cup_under_spout",
+            "calls": 1,
+            "total_s": 0.0,
+            "mean_s": 0.0,
+            "max_s": 0.0,
+            "pct_of_wall": 0.0
+          },
+          {
+            "method": "command_ack_timeout_unknown",
+            "calls": 1,
+            "total_s": 0.0,
+            "mean_s": 0.0,
+            "max_s": 0.0,
+            "pct_of_wall": 0.0
+          },
+          {
+            "method": "complete_order_delivery",
+            "calls": 1,
+            "total_s": 0.0,
+            "mean_s": 0.0,
+            "max_s": 0.0,
+            "pct_of_wall": 0.0
+          },
+          {
+            "method": "get_order",
+            "calls": 1,
+            "total_s": null,
+            "mean_s": null,
+            "max_s": null,
+            "pct_of_wall": null
+          }
+        ],
+        "steps": [
+          {
+            "index": 0,
+            "method": "get_order",
+            "duration_s": null,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 1,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 2,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 3,
+            "method": "place_cup_under_machine",
+            "duration_s": 8.015,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 4,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 5,
+            "method": "observe_scene",
+            "duration_s": 0.001,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 6,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 7,
+            "method": "observe_scene",
+            "duration_s": 8.396,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 8,
+            "method": "recenter_cup_under_spout",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 9,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 10,
+            "method": "observe_scene",
+            "duration_s": 0.001,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 11,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 12,
+            "method": "start_coffee_machine",
+            "duration_s": 0.025,
+            "receipt": "running",
+            "slow": false
+          },
+          {
+            "index": 13,
+            "method": "command_ack_timeout_unknown",
+            "duration_s": 0.0,
+            "receipt": "unknown",
+            "slow": false
+          },
+          {
+            "index": 14,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "running",
+            "slow": false
+          },
+          {
+            "index": 15,
+            "method": "wait_for_coffee_ready",
+            "duration_s": 0.871,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 16,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 17,
+            "method": "observe_scene",
+            "duration_s": 0.109,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 18,
+            "method": "observe_scene",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 19,
+            "method": "retrieve_and_deliver_cup",
+            "duration_s": 8.548,
+            "receipt": "done",
+            "slow": true
+          },
+          {
+            "index": 20,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 21,
+            "method": "observe_scene",
+            "duration_s": 0.001,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 22,
+            "method": "complete_order_delivery",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          },
+          {
+            "index": 23,
+            "method": "query_command_status",
+            "duration_s": 0.0,
+            "receipt": "done",
+            "slow": false
+          }
+        ],
+        "optimization_hints": [
+          "High observe_scene frequency (10 calls); audit redundant re-observations."
+        ]
+      }
+    }
+  ],
+  "aggregate_profile": {
+    "total_trials": 3,
+    "passed_trials": 3,
+    "failed_trials": 0,
+    "pass_rate": 1.0,
+    "mean_wall_s": 20.475,
+    "attribution_counts": {
+      "perception": 0,
+      "control": 0,
+      "device": 0,
+      "policy": 0
+    },
+    "failure_code_counts": {},
+    "auto_repair_eligible_failures": 0,
+    "attributed_failures": [],
+    "method_bottlenecks": [
+      {
+        "method": "retrieve_and_deliver_cup",
+        "total_calls": 3,
+        "mean_calls_per_trial": 1.0,
+        "total_s": 25.51,
+        "mean_s_per_timed_trial": 8.503,
+        "max_step_s": 8.548
+      },
+      {
+        "method": "place_cup_under_machine",
+        "total_calls": 3,
+        "mean_calls_per_trial": 1.0,
+        "total_s": 24.409,
+        "mean_s_per_timed_trial": 8.136,
+        "max_step_s": 8.339
+      },
+      {
+        "method": "observe_scene",
+        "total_calls": 24,
+        "mean_calls_per_trial": 8.0,
+        "total_s": 8.691,
+        "mean_s_per_timed_trial": 2.897,
+        "max_step_s": 8.396
+      },
+      {
+        "method": "wait_for_coffee_ready",
+        "total_calls": 3,
+        "mean_calls_per_trial": 1.0,
+        "total_s": 2.615,
+        "mean_s_per_timed_trial": 0.872,
+        "max_step_s": 0.874
+      },
+      {
+        "method": "start_coffee_machine",
+        "total_calls": 3,
+        "mean_calls_per_trial": 1.0,
+        "total_s": 0.138,
+        "mean_s_per_timed_trial": 0.046,
+        "max_step_s": 0.095
+      },
+      {
+        "method": "query_command_status",
+        "total_calls": 16,
+        "mean_calls_per_trial": 5.33,
+        "total_s": 0.0,
+        "mean_s_per_timed_trial": 0.0,
+        "max_step_s": 0.0
+      },
+      {
+        "method": "complete_order_delivery",
+        "total_calls": 3,
+        "mean_calls_per_trial": 1.0,
+        "total_s": 0.0,
+        "mean_s_per_timed_trial": 0.0,
+        "max_step_s": 0.0
+      },
+      {
+        "method": "recenter_cup_under_spout",
+        "total_calls": 1,
+        "mean_calls_per_trial": 0.33,
+        "total_s": 0.0,
+        "mean_s_per_timed_trial": 0.0,
+        "max_step_s": 0.0
+      },
+      {
+        "method": "command_ack_timeout_unknown",
+        "total_calls": 1,
+        "mean_calls_per_trial": 0.33,
+        "total_s": 0.0,
+        "mean_s_per_timed_trial": 0.0,
+        "max_step_s": 0.0
+      },
+      {
+        "method": "get_order",
+        "total_calls": 3,
+        "mean_calls_per_trial": 1.0,
+        "total_s": null,
+        "mean_s_per_timed_trial": null,
+        "max_step_s": null
+      }
+    ]
+  },
+  "pipeline_projection_2slot": {
+    "evidence_source": "schedule_model_from_measured_steps",
+    "num_orders": 10,
+    "appliance_slots": 2,
+    "serial_total_s": 204.54,
+    "serial_orders_per_hour": 176.0,
+    "pipelined_total_s": 195.36,
+    "pipelined_orders_per_hour": 184.28,
+    "projected_throughput_gain_pct": 4.7
+  }
+}

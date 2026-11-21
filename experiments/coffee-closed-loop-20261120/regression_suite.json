@@ -1,0 +1,34 @@
+{
+  "cases": {
+    "c1022b3e2ada9cca": {
+      "attribution_code": "failed_verify",
+      "attribution_layer": "control",
+      "captured_at_utc": "2026-11-21T13:41:43.059273+00:00",
+      "case_id": "reg_001_c1022b",
+      "evidence_source": "simulator",
+      "fingerprint": "c1022b3e2ada9cca",
+      "hit_count": 1,
+      "last_seen_utc": "2026-11-21T13:41:43.059273+00:00",
+      "notes": "Host physical/simulated manipulation step failed (failed_verify)",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": [
+          0.038,
+          -0.012
+        ],
+        "label": "Slip (38,-12 mm) + Brew Ack Timeout",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_001_c1022b",
+        "simulate_timeout": true,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "bench-craft_reference-s5_fault_slip_strong_timeout-r1-1795147635525740361"
+    }
+  },
+  "schema_version": 1
+}
