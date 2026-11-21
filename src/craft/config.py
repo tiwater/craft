@@ -45,36 +45,57 @@ def _check_sanitized(value: Any, path: str = "$") -> None:
 
 @dataclass(frozen=True)
 class HostConnectionConfig:
-    """Explicit connection settings for an existing ticos-edge host."""
+    """Explicit connection settings for any HTTP-accessible host (no host repo assumed)."""
 
     edge_base_url: str
     scene_path: str = "/edge-scene"
     cap_state_path: str = "/cap/state"
     cap_execute_path: str = "/cap/execute"
     cap_reset_path: str = "/cap/reset"
+    confirm_path: str = "/cap/confirm"
+    camera_path_template: str = "/cameras/{camera}.jpg"
     sim_base_url: str | None = None
+    testbed_setup_path: str = "/v1/sim/testbed/setup"
+    testbed_oracle_path: str = "/v1/sim/testbed/oracle"
     timeout_s: float = 10.0
     execute_timeout_s: float = 180.0
     max_evidence_age_ms: float = 2000.0
 
     def __post_init__(self) -> None:
         if not self.edge_base_url or not self.edge_base_url.startswith(("http://", "https://")):
-            raise ValueError("edge_base_url must be an explicit http:// or https:// URL")
+            raise ValueError("Host base URL must be an explicit http:// or https:// URL")
         if self.sim_base_url is not None and not self.sim_base_url.startswith(("http://", "https://")):
-            raise ValueError("sim_base_url must be an explicit http:// or https:// URL when provided")
+            raise ValueError("Evaluator/sim base URL must be an explicit http:// or https:// URL when provided")
         if self.timeout_s <= 0 or self.execute_timeout_s <= 0 or self.max_evidence_age_ms <= 0:
             raise ValueError("Timeouts and max_evidence_age_ms must be positive")
-        for p in (self.scene_path, self.cap_state_path, self.cap_execute_path, self.cap_reset_path):
+        for p in (
+            self.scene_path,
+            self.cap_state_path,
+            self.cap_execute_path,
+            self.cap_reset_path,
+            self.confirm_path,
+            self.camera_path_template,
+            self.testbed_setup_path,
+            self.testbed_oracle_path,
+        ):
             if not p.startswith("/"):
                 raise ValueError(f"Endpoint path must start with '/': {p}")
 
     @property
-    def normalized_edge_base(self) -> str:
+    def normalized_base_url(self) -> str:
         return self.edge_base_url.rstrip("/")
 
     @property
-    def normalized_sim_base(self) -> str | None:
+    def normalized_edge_base(self) -> str:
+        return self.normalized_base_url
+
+    @property
+    def normalized_evaluator_base(self) -> str | None:
         return self.sim_base_url.rstrip("/") if self.sim_base_url else None
+
+    @property
+    def normalized_sim_base(self) -> str | None:
+        return self.normalized_evaluator_base
 
 
 @dataclass(frozen=True)
@@ -231,12 +252,16 @@ class SceneConfig:
         _check_sanitized(data)
         host_raw = data["host"]
         host = HostConnectionConfig(
-            edge_base_url=str(host_raw["edge_base_url"]),
+            edge_base_url=str(host_raw.get("base_url") or host_raw["edge_base_url"]),
             scene_path=str(host_raw.get("scene_path", "/edge-scene")),
             cap_state_path=str(host_raw.get("cap_state_path", "/cap/state")),
             cap_execute_path=str(host_raw.get("cap_execute_path", "/cap/execute")),
             cap_reset_path=str(host_raw.get("cap_reset_path", "/cap/reset")),
-            sim_base_url=host_raw.get("sim_base_url"),
+            confirm_path=str(host_raw.get("confirm_path", "/cap/confirm")),
+            camera_path_template=str(host_raw.get("camera_path_template", "/cameras/{camera}.jpg")),
+            sim_base_url=host_raw.get("evaluator_base_url") or host_raw.get("sim_base_url"),
+            testbed_setup_path=str(host_raw.get("testbed_setup_path", "/v1/sim/testbed/setup")),
+            testbed_oracle_path=str(host_raw.get("testbed_oracle_path", "/v1/sim/testbed/oracle")),
             timeout_s=float(host_raw.get("timeout_s", 10.0)),
             execute_timeout_s=float(host_raw.get("execute_timeout_s", 180.0)),
             max_evidence_age_ms=float(host_raw.get("max_evidence_age_ms", 2000.0)),

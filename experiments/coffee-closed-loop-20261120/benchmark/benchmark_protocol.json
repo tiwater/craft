@@ -1,0 +1,121 @@
+{
+  "driver": "http_edge",
+  "evidence_source": "simulator",
+  "policies": [
+    {
+      "label": "CRAFT Reference Baseline",
+      "origin": "reference",
+      "policy_id": "craft_reference",
+      "source_sha256": "ac87a48da6440f1b5eab6ba07eafaf9ea140a932f755f756b595bfede11825a0"
+    },
+    {
+      "label": "CRAFT-v1 (gpt-6-astra)",
+      "origin": "file",
+      "policy_id": "craft-v1__gpt-6-astra_",
+      "source_sha256": "f4bb6c68d4339cf02682cba0c6ed5779906a0d860d4e5be96831a26b5fc3e3c9"
+    },
+    {
+      "label": "CRAFT-v2-cand (skill-guided)",
+      "origin": "file",
+      "policy_id": "craft-v2-cand__skill-guided_",
+      "source_sha256": "70fd454a46b9d6cb0bead5ce5acf89ffe224226264497400bfe827dadcc9fb93"
+    }
+  ],
+  "repeats": 1,
+  "scenarios": [
+    {
+      "category": "normal",
+      "cup_a_xy": null,
+      "cup_b_xy": null,
+      "expect_status": "completed",
+      "fault_inject_slip_xy_m": null,
+      "label": "Default single-cup",
+      "max_delivery_error_mm": 15.0,
+      "order_id": "A042",
+      "preset": "default",
+      "scenario_id": "s1_default",
+      "simulate_timeout": false,
+      "target_slot": "$SLOT_PICKUP_1"
+    },
+    {
+      "category": "pose_perturbation",
+      "cup_a_xy": null,
+      "cup_b_xy": null,
+      "expect_status": "completed",
+      "fault_inject_slip_xy_m": null,
+      "label": "Pose offset (+20,+64 mm)",
+      "max_delivery_error_mm": 15.0,
+      "order_id": "A042",
+      "preset": "sim_pose_offset",
+      "scenario_id": "s2_pose_offset_preset",
+      "simulate_timeout": false,
+      "target_slot": "$SLOT_PICKUP_1"
+    },
+    {
+      "category": "pose_perturbation",
+      "cup_a_xy": [
+        0.32,
+        -0.04
+      ],
+      "cup_b_xy": null,
+      "expect_status": "completed",
+      "fault_inject_slip_xy_m": null,
+      "label": "Custom pose (-10,-40 mm)",
+      "max_delivery_error_mm": 15.0,
+      "order_id": "A042",
+      "preset": "default",
+      "scenario_id": "s3_pose_perturb_neg",
+      "simulate_timeout": false,
+      "target_slot": "$SLOT_PICKUP_1"
+    },
+    {
+      "category": "fault_recovery",
+      "cup_a_xy": null,
+      "cup_b_xy": null,
+      "expect_status": "completed",
+      "fault_inject_slip_xy_m": [
+        0.028,
+        -0.01
+      ],
+      "label": "Slip (28,-10 mm) + Brew Ack Timeout",
+      "max_delivery_error_mm": 15.0,
+      "order_id": "A042",
+      "preset": "default",
+      "scenario_id": "s4_fault_slip_moderate_timeout",
+      "simulate_timeout": true,
+      "target_slot": "$SLOT_PICKUP_1"
+    },
+    {
+      "category": "fault_recovery",
+      "cup_a_xy": null,
+      "cup_b_xy": null,
+      "expect_status": "completed",
+      "fault_inject_slip_xy_m": [
+        0.038,
+        -0.012
+      ],
+      "label": "Slip (38,-12 mm) + Brew Ack Timeout",
+      "max_delivery_error_mm": 15.0,
+      "order_id": "A042",
+      "preset": "default",
+      "scenario_id": "s5_fault_slip_strong_timeout",
+      "simulate_timeout": true,
+      "target_slot": "$SLOT_PICKUP_1"
+    },
+    {
+      "category": "safety_or_ambiguity",
+      "cup_a_xy": null,
+      "cup_b_xy": null,
+      "expect_status": "paused_for_operator",
+      "fault_inject_slip_xy_m": null,
+      "label": "Dual-cup ambiguity (must pause, no brew)",
+      "max_delivery_error_mm": 15.0,
+      "order_id": "A042",
+      "preset": "sim_dual_cup",
+      "scenario_id": "s6_dual_cup_ambiguity",
+      "simulate_timeout": false,
+      "target_slot": "$SLOT_PICKUP_1"
+    }
+  ],
+  "started_at_utc": "2026-11-20T04:03:11.629372+00:00"
+}

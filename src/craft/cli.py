@@ -1,4 +1,4 @@
-"""Unified CRAFT CLI entry point: fixture demo, host discovery, and coffee closed loop."""
+"""Unified CRAFT CLI: fixture demo, host discovery, closed loop, paired benchmark, and Studio."""
 from __future__ import annotations
 
 import argparse
@@ -7,12 +7,20 @@ from pathlib import Path
 import tempfile
 
 from . import __version__
+from .benchmark import (
+    PolicyEntry,
+    builtin_reference_policy_source,
+    default_coffee_benchmark_suite,
+    run_paired_benchmark,
+)
 from .coffee_loop import check_oven_capability_gap, run_coffee_closed_loop
 from .config import SceneConfig
 from .edge_adapter import EdgeHostAdapter
 from .fixtures import DEPLOYMENT, FixtureAdapter, example_policy
+from .host_driver import create_host_driver
 from .journal import Journal
 from .runtime import execute
+from .studio import CraftStudioApp, create_studio_server
 
 
 def _override_config(
@@ -25,6 +33,7 @@ def _override_config(
     effort: str | None = None,
     allow_actuation: bool = False,
     allow_sim_reset: bool = False,
+    scope: str | None = None,
 ) -> SceneConfig:
     data = cfg.to_dict()
     if edge_base:
@@ -41,7 +50,32 @@ def _override_config(
         data["budget"]["allow_live_actuation"] = True
     if allow_sim_reset:
         data["budget"]["allow_sim_reset"] = True
+    if scope:
+        data["budget"]["deployment_scope"] = scope
     return SceneConfig.from_dict(data)
+
+
+def _parse_policy_specs(specs: list[str], *, include_builtin_ref: bool = True) -> list[PolicyEntry]:
+    entries: list[PolicyEntry] = []
+    if include_builtin_ref:
+        entries.append(
+            PolicyEntry(
+                policy_id="craft_reference",
+                label="CRAFT Reference Baseline",
+                source=builtin_reference_policy_source(),
+                origin="reference",
+            )
+        )
+    for idx, spec in enumerate(specs, start=1):
+        if "=" in spec:
+            label, path_str = spec.split("=", 1)
+        else:
+            path_str = spec
+            label = Path(path_str).stem
+        pid = "".join(ch if ch.isalnum() or ch in ("_", "-") else "_" for ch in label.lower()) or f"policy_{idx}"
+        source = Path(path_str).read_text(encoding="utf-8")
+        entries.append(PolicyEntry(policy_id=pid, label=label, source=source, origin="file"))
+    return entries
 
 
 def main() -> None:
@@ -53,22 +87,47 @@ def main() -> None:
     demo.add_argument("--task", choices=["coffee", "bagel", "combo"], default="combo")
     demo.add_argument("--lost-receipt", action="store_true")
 
-    disc = sub.add_parser("discover", help="Read-only host capability discovery and EvidenceScene check")
+    disc = sub.add_parser("discover", help="Read-only host capability discovery and scene check")
     disc.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
-    disc.add_argument("--edge-base", help="Override edge_base_url at runtime")
+    disc.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or craft.drivers plugin)")
+    disc.add_argument("--host-base", "--edge-base", dest="edge_base", help="Override host base URL at runtime")
     disc.add_argument("--check-oven-gap", action="store_true", help="Also report oven/bagel capability gap")
 
     loop = sub.add_parser("run-coffee-loop", help="Run Phase 1 single-cup coffee simulation closed loop")
     loop.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
     loop.add_argument("--workspace", required=True, help="Output directory for persistent session & artifacts")
-    loop.add_argument("--edge-base", help="Override edge_base_url at runtime")
-    loop.add_argument("--sim-base", help="Override sim_base_url at runtime")
+    loop.add_argument("--host-base", "--edge-base", dest="edge_base", help="Override host base URL at runtime")
+    loop.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL at runtime")
     loop.add_argument("--provider", choices=["codex_cli", "openai_api"], help="Override generation provider")
     loop.add_argument("--model", help="Override generation model")
     loop.add_argument("--effort", choices=["low", "medium", "high", "xhigh"], help="Override reasoning effort")
-    loop.add_argument("--allow-actuation", action="store_true", help="Explicitly authorize /cap/execute dispatch")
-    loop.add_argument("--allow-sim-reset", action="store_true", help="Explicitly authorize simulator reset")
+    loop.add_argument("--allow-actuation", action="store_true", help="Explicitly authorize policy execution")
+    loop.add_argument("--allow-sim-reset", action="store_true", help="Explicitly authorize scenario reset")
     loop.add_argument("--skip-improvement", action="store_true", help="Skip Stage 6 improvement candidate step")
+
+    bench = sub.add_parser("benchmark", help="Run host-agnostic paired benchmark and generate HTML report")
+    bench.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
+    bench.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or craft.drivers plugin)")
+    bench.add_argument("--output", required=True, help="Output directory for JSON and HTML benchmark report")
+    bench.add_argument("--repeats", type=int, default=1, help="Repeats per scenario")
+    bench.add_argument("--policy", action="append", default=[], help="Policy spec as label=/path/to/policy.py")
+    bench.add_argument("--no-builtin-ref", action="store_true", help="Exclude built-in reference policy")
+    bench.add_argument("--host-base", "--edge-base", dest="edge_base", help="Override host base URL (for http/plugin drivers)")
+    bench.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
+    bench.add_argument("--allow-actuation", action="store_true")
+    bench.add_argument("--allow-sim-reset", action="store_true")
+
+    studio = sub.add_parser("studio", help="Launch standalone interactive CRAFT Studio Web Demo")
+    studio.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
+    studio.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or craft.drivers plugin)")
+    studio.add_argument("--workspace", required=True, help="Workspace dir for releases & benchmark results")
+    studio.add_argument("--host", default="127.0.0.1", help="Bind host (default 127.0.0.1)")
+    studio.add_argument("--port", type=int, default=8860, help="Bind port (default 8860)")
+    studio.add_argument("--policy", action="append", default=[], help="Extra policy as label=/path/to/policy.py")
+    studio.add_argument("--host-base", "--edge-base", dest="edge_base", help="Override host base URL (for http/plugin drivers)")
+    studio.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
+    studio.add_argument("--allow-actuation", action="store_true")
+    studio.add_argument("--allow-sim-reset", action="store_true")
 
     args = parser.parse_args()
 
@@ -118,14 +177,20 @@ def main() -> None:
         return
 
     if args.command == "discover":
-        cfg = _override_config(SceneConfig.from_file(args.config), edge_base=args.edge_base)
-        host = EdgeHostAdapter(cfg)
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            edge_base=args.edge_base,
+            scope="fixture" if args.driver == "fixture" else None,
+        )
+        drv = create_host_driver(args.driver, cfg)
         out = {
-            "capability_check": host.discover_capabilities().to_dict(),
-            "scene_observation": host.observe_scene().to_dict(),
+            "driver": drv.driver_name,
+            "capability_check": drv.discover_capabilities().to_dict(),
+            "scene_observation": drv.observe_scene().to_dict(),
         }
         if args.check_oven_gap:
-            out["oven_gap"] = check_oven_capability_gap(cfg, host)
+            from .coffee_loop import OVEN_REQUIRED_METHODS
+            out["oven_gap"] = drv.check_missing_capabilities(OVEN_REQUIRED_METHODS)
         print(json.dumps(out, indent=2))
         return
 
@@ -148,6 +213,73 @@ def main() -> None:
         print(json.dumps(summary, indent=2))
         if summary.get("status") != "completed":
             raise SystemExit(1)
+        return
+
+    if args.command == "benchmark":
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            edge_base=args.edge_base,
+            sim_base=args.sim_base,
+            allow_actuation=args.allow_actuation,
+            allow_sim_reset=args.allow_sim_reset,
+            scope="fixture" if args.driver == "fixture" else None,
+        )
+        driver = create_host_driver(args.driver, cfg)
+        policies = _parse_policy_specs(args.policy, include_builtin_ref=not args.no_builtin_ref)
+        if not policies:
+            raise SystemExit("At least one policy is required for benchmark")
+
+        def _log_trial(row: dict) -> None:
+            print(
+                json.dumps(
+                    {
+                        "repeat": row["repeat"],
+                        "policy": row["policy_id"],
+                        "scenario": row["scenario_id"],
+                        "passed": row["task_passed"],
+                        "status": row["host_runtime_status"],
+                        "wall_s": row["wall_s"],
+                        "err_mm": (row.get("oracle_post_run") or {}).get("delivery_error_mm"),
+                    }
+                ),
+                flush=True,
+            )
+
+        report = run_paired_benchmark(
+            driver,
+            policies,
+            default_coffee_benchmark_suite(),
+            args.output,
+            repeats=args.repeats,
+            on_trial_complete=_log_trial,
+        )
+        print(json.dumps({"status": report["status"], "summary_by_policy": report["summary_by_policy"]}, indent=2))
+        if report.get("status") != "completed":
+            raise SystemExit(1)
+        return
+
+    if args.command == "studio":
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            edge_base=args.edge_base,
+            sim_base=args.sim_base,
+            allow_actuation=args.allow_actuation,
+            allow_sim_reset=args.allow_sim_reset,
+            scope="fixture" if args.driver == "fixture" else None,
+        )
+        driver = create_host_driver(args.driver, cfg)
+        policies = _parse_policy_specs(args.policy, include_builtin_ref=False)
+        app = CraftStudioApp(cfg, driver, args.workspace, policies=policies)
+        server = create_studio_server(app, host=args.host, port=args.port)
+        print(
+            f"CRAFT Studio listening on http://{args.host}:{args.port} "
+            f"(driver={driver.driver_name}, evidence_source={driver.evidence_source})",
+            flush=True,
+        )
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            server.shutdown()
 
 
 if __name__ == "__main__":

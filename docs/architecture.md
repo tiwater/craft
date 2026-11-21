@@ -32,6 +32,26 @@ flowchart LR
     ACC --> UI
 ```
 
+## Dependency Direction (Host Independence)
+
+CRAFT is a standalone package (`tiwater-craft`) and **must never assume any
+specific downstream host (such as `ticos-edge`) exists**:
+
+```
+External Robot/Sim Host (e.g. ticos-edge, ROS2 bridge, custom sim)
+        │
+        ▼  depends on & plugs into
+tiwater-craft (SceneHostDriver protocol / `craft.drivers` entry points / generic `http` driver)
+```
+
+- Built-in `fixture` driver (`FixtureHostDriver`) runs benchmarks and CRAFT
+  Studio completely offline with zero external services.
+- Built-in `http` driver (`HttpHostDriver`) consumes any compatible HTTP host
+  purely via runtime configuration (`HostConnectionConfig`).
+- External hosts can also register custom drivers via
+  `craft.host_driver.register_host_driver(...)` or Python
+  `[project.entry-points."craft.drivers"]`.
+
 ## Ownership Boundaries
 
 Strict separation of ownership is mandatory:
