@@ -1,0 +1,18 @@
+{
+  "policy_id": "craft_evolved",
+  "model": "gpt-6-astra",
+  "reasoning_effort": "medium",
+  "wall_s": 28.4,
+  "prompt_sha256": "e4a3140d0f0cf0d993a4d6c91abab97426b5d01016f4760d76792b3fb60862b1",
+  "policy_sha256": "4eef3f2a2c5afd71f9ce86308db7aa585952d1e6df0fb47c381face6072c9016",
+  "syntax": [
+    true,
+    ""
+  ],
+  "portability": {
+    "portable": true,
+    "error_count": 0,
+    "warning_count": 0,
+    "findings": []
+  }
+}

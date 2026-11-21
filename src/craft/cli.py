@@ -13,6 +13,7 @@ from .benchmark import (
     default_coffee_benchmark_suite,
     run_paired_benchmark,
 )
+from .cafebench import run_cafebench_v1
 from .coffee_loop import check_oven_capability_gap, run_coffee_closed_loop
 from .config import SceneConfig
 from .edge_adapter import EdgeHostAdapter
@@ -117,6 +118,19 @@ def main() -> None:
     bench.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
     bench.add_argument("--allow-actuation", action="store_true")
     bench.add_argument("--allow-sim-reset", action="store_true")
+
+    cb = sub.add_parser("cafebench", help="Run standardized 20-scenario CRAFT-CafeBench v1 suite")
+    cb.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
+    cb.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, recorded, or plugin)")
+    cb.add_argument("--output", required=True, help="Output directory for sealed JSON & HTML report")
+    cb.add_argument("--repeats", type=int, default=1, help="Repeats per scenario")
+    cb.add_argument("--no-resume", action="store_true", help="Ignore prior partial results")
+    cb.add_argument("--policy", action="append", default=[], help="Policy spec as label=/path/to/policy.py")
+    cb.add_argument("--no-builtin-ref", action="store_true", help="Exclude built-in reference policy")
+    cb.add_argument("--host-base", "--edge-base", dest="edge_base", help="Override host base URL")
+    cb.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
+    cb.add_argument("--allow-actuation", action="store_true")
+    cb.add_argument("--allow-sim-reset", action="store_true")
 
     studio = sub.add_parser("studio", help="Launch standalone interactive CRAFT Studio Web Demo")
     studio.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
@@ -264,6 +278,50 @@ def main() -> None:
             args.output,
             repeats=args.repeats,
             on_trial_complete=_log_trial,
+        )
+        print(json.dumps({"status": report["status"], "summary_by_policy": report["summary_by_policy"]}, indent=2))
+        if report.get("status") != "completed":
+            raise SystemExit(1)
+        return
+
+    if args.command == "cafebench":
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            edge_base=args.edge_base,
+            sim_base=args.sim_base,
+            allow_actuation=args.allow_actuation,
+            allow_sim_reset=args.allow_sim_reset,
+            scope="fixture" if args.driver == "fixture" else None,
+        )
+        driver = create_host_driver(args.driver, cfg)
+        policies = _parse_policy_specs(args.policy, include_builtin_ref=not args.no_builtin_ref)
+        if not policies:
+            raise SystemExit("At least one policy is required for cafebench")
+
+        def _log_cb(row: dict) -> None:
+            print(
+                json.dumps(
+                    {
+                        "repeat": row["repeat"],
+                        "policy": row["policy_id"],
+                        "scenario": row["scenario_id"],
+                        "tier": row["category"],
+                        "passed": row["task_passed"],
+                        "status": row["host_runtime_status"],
+                        "wall_s": row["wall_s"],
+                        "err_mm": (row.get("oracle_post_run") or {}).get("delivery_error_mm"),
+                    }
+                ),
+                flush=True,
+            )
+
+        report = run_cafebench_v1(
+            driver,
+            policies,
+            args.output,
+            repeats=args.repeats,
+            resume=not args.no_resume,
+            on_trial_complete=_log_cb,
         )
         print(json.dumps({"status": report["status"], "summary_by_policy": report["summary_by_policy"]}, indent=2))
         if report.get("status") != "completed":

@@ -1,0 +1,18 @@
+{
+  "policy_id": "naive_zeroshot",
+  "model": "gpt-6-astra",
+  "reasoning_effort": "medium",
+  "wall_s": 49.35,
+  "prompt_sha256": "1075c925d50b04ab31d6ba89357983de627ec262c581d617c828011f56aa1172",
+  "policy_sha256": "b45aa528ef23fedb34f96f45adb74fee0fde73f8a9213c85678d8b753eb6867a",
+  "syntax": [
+    true,
+    ""
+  ],
+  "portability": {
+    "portable": true,
+    "error_count": 0,
+    "warning_count": 0,
+    "findings": []
+  }
+}

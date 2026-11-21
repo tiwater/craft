@@ -97,12 +97,15 @@ class _FixturePolicySDK:
 
     def get_order(self, order_id: str = "A042") -> dict[str, Any]:
         self._rec("get_order")
+        special = self._scenario.get("special_request")
+        if special is None and order_id == "A044":
+            special = "steam_wand_manual_purge_and_latte_art"
         return {
             "order_id": order_id,
-            "drink": "hot_americano",
-            "cup_preference": "dine_in_red",
-            "destination_slot": str(self._scenario.get("target_slot", "$SLOT_PICKUP_1")),
-            "special_request": self._scenario.get("special_request"),
+            "drink": "steam_wand_purge_and_latte_art" if order_id == "A044" else "hot_americano",
+            "cup_preference": "takeout_green" if order_id == "A043" else "dine_in_red",
+            "destination_slot": str(self._scenario.get("target_slot", "$SLOT_PICKUP_2" if order_id == "A043" else "$SLOT_PICKUP_1")),
+            "special_request": special,
             "status": "pending",
         }
 
@@ -420,7 +423,9 @@ class FixtureHostDriver:
 
         wall_s = time.monotonic() - started
         cup_pos = self._state["objects"][0]["center_world_m"] if self._state["objects"] else [0.0, 0.0, 0.0]
-        err_mm = round(math.hypot(float(cup_pos[0]) - 0.38, float(cup_pos[1]) + 0.17) * 1000.0, 3)
+        target_slot = str(scenario.get("target_slot", "$SLOT_PICKUP_1"))
+        goal_xy = (0.38, 0.17) if target_slot == "$SLOT_PICKUP_2" else (0.38, -0.17)
+        err_mm = round(math.hypot(float(cup_pos[0]) - goal_xy[0], float(cup_pos[1]) - goal_xy[1]) * 1000.0, 3)
         expect_status = str(scenario.get("expect_status", "completed"))
         max_err = float(scenario.get("max_delivery_error_mm", self.config.acceptance.max_delivery_error_mm))
         fault = bool(scenario.get("simulate_timeout", False) or scenario.get("fault_inject_slip_xy_m"))
@@ -436,7 +441,10 @@ class FixtureHostDriver:
             if scenario.get("fault_inject_slip_xy_m"):
                 passed = passed and any(s["method"] == "recenter_cup_under_spout" for s in sdk.steps)
         else:
-            passed = host_status == expect_status and sdk.brew_count == 0
+            acceptable = {expect_status}
+            if expect_status == "paused_for_operator":
+                acceptable.add("rejected_observation_not_ready")
+            passed = (host_status in acceptable) and sdk.brew_count == 0
 
         self._last_command = {
             "command_id": command_id,
@@ -600,13 +608,15 @@ class HttpHostDriver:
         oracle: dict[str, Any] = {}
         err_mm: float | None = None
         cup_filled = False
+        target_slot = str(scenario.get("target_slot", "$SLOT_PICKUP_1"))
+        goal_xy = (0.38, 0.17) if target_slot == "$SLOT_PICKUP_2" else (0.38, -0.17)
         if self.config.host.normalized_evaluator_base:
             oracle = self.adapter.transport.get_json(
                 self.config.host.normalized_evaluator_base + self.config.host.testbed_oracle_path,
                 self.config.host.timeout_s,
             )
             cup_pos = oracle.get("cup") or [0.0, 0.0, 0.0]
-            err_mm = round(math.hypot(float(cup_pos[0]) - 0.38, float(cup_pos[1]) + 0.17) * 1000.0, 3)
+            err_mm = round(math.hypot(float(cup_pos[0]) - goal_xy[0], float(cup_pos[1]) - goal_xy[1]) * 1000.0, 3)
             cup_filled = bool((oracle.get("coffee_machine") or {}).get("cup_filled"))
 
         brew_count = int(exec_res.non_idempotent_counts.get("start_coffee_machine", 0))

@@ -1308,6 +1308,7 @@ class CraftStudioApp:
 
     def _load_benchmark(self) -> dict[str, Any] | None:
         for candidate in (
+            self.workspace_dir / "cafebench-v1" / "cafebench_results.json",
             self.workspace_dir / "benchmark" / "benchmark_results.json",
             self.workspace_dir / "benchmark_results.json",
         ):
@@ -1552,6 +1553,10 @@ def create_studio_server(
                 self._send_json(app.get_live())
                 return
             if path == "/benchmark_report.html":
+                cb_html = app.workspace_dir / "cafebench-v1" / "cafebench_report.html"
+                if cb_html.is_file():
+                    self._send_bytes(cb_html.read_bytes(), "text/html; charset=utf-8")
+                    return
                 bm = app._load_benchmark()
                 if bm:
                     self._send_bytes(render_benchmark_html(bm).encode("utf-8"), "text/html; charset=utf-8")
