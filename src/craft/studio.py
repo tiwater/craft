@@ -400,7 +400,9 @@ STUDIO_HTML = r"""<!DOCTYPE html>
           <label style="font-size:12px;color:var(--muted)">每工况重复</label>
           <input id="bench-repeats" type="number" min="1" max="5" value="1" style="width:58px"/>
           <button id="btn-start-bench" class="ok" onclick="startBenchmark()">重跑配对 Benchmark</button>
-          <a href="benchmark_report.html" target="_blank" class="badge" style="text-decoration:none">独立 HTML 报告 ↗</a>
+          <a href="benchmark_report.html" target="_blank" class="badge" style="text-decoration:none">CafeBench 报告 ↗</a>
+          <a href="prior_work_report.html" target="_blank" class="badge ok" style="text-decoration:none">CafeBench 先行对比 ↗</a>
+          <a href="robosuite_report.html" target="_blank" class="badge ok" style="text-decoration:none">Robosuite 公共基准 ↗</a>
         </div>
       </div>
       <div id="bench-bars" style="margin-bottom:14px"></div>
@@ -1551,6 +1553,20 @@ def create_studio_server(
                 return
             if path == "/api/live":
                 self._send_json(app.get_live())
+                return
+            if path == "/robosuite_report.html":
+                rb_html = app.workspace_dir / "robosuite-parity-v1" / "robosuite_prior_work_report.html"
+                if rb_html.is_file():
+                    self._send_bytes(rb_html.read_bytes(), "text/html; charset=utf-8")
+                else:
+                    self._send_bytes(b"<h3>No Robosuite parity report generated yet.</h3>", "text/html; charset=utf-8", 404)
+                return
+            if path == "/prior_work_report.html":
+                pw_html = app.workspace_dir / "cafebench-v1-prior-work" / "prior_work_report.html"
+                if pw_html.is_file():
+                    self._send_bytes(pw_html.read_bytes(), "text/html; charset=utf-8")
+                else:
+                    self._send_bytes(b"<h3>No prior-work comparison report generated yet.</h3>", "text/html; charset=utf-8", 404)
                 return
             if path == "/benchmark_report.html":
                 cb_html = app.workspace_dir / "cafebench-v1" / "cafebench_report.html"

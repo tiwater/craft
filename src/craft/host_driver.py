@@ -685,11 +685,17 @@ def _create_recorded_driver(config: SceneConfig) -> SceneHostDriver:
     return RecordedDataHostDriver(config)
 
 
+def _create_mujoco_cafe_driver(config: SceneConfig) -> SceneHostDriver:
+    from .mujoco_cafe_driver import MuJoCoCafeHostDriver
+    return MuJoCoCafeHostDriver(config)
+
+
 _DRIVER_REGISTRY: dict[str, DriverFactory] = {
     "fixture": FixtureHostDriver,
     "http": HttpHostDriver,
     "http_edge": HttpHostDriver,
     "recorded": _create_recorded_driver,
+    "mujoco_cafe": _create_mujoco_cafe_driver,
 }
 
 

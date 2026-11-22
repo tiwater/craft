@@ -132,6 +132,37 @@ def main() -> None:
     cb.add_argument("--allow-actuation", action="store_true")
     cb.add_argument("--allow-sim-reset", action="store_true")
 
+    pw = sub.add_parser(
+        "prior-work-bench",
+        help="Run matched-budget prior-work comparison (Strong Zero-Shot / ASPIRE / CaP-X / RoboRepair / CRAFT)",
+    )
+    pw.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
+    pw.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or plugin)")
+    pw.add_argument("--output", required=True, help="Output directory for artifacts, JSON & HTML report")
+    pw.add_argument("--provider", default="codex_cli", choices=["codex_cli", "openai_api"])
+    pw.add_argument("--model", default="gpt-6-astra", help="Shared LLM model name")
+    pw.add_argument("--effort", default="medium", choices=["low", "medium", "high", "xhigh"])
+    pw.add_argument("--max-dev-calls", type=int, default=3, help="Matched max dev LLM calls per offline method")
+    pw.add_argument("--max-online-regen", type=int, default=1, help="Max online regen turns for CaP-X / RoboRepair")
+    pw.add_argument("--host-base", "--edge-base", dest="edge_base", help="Override host base URL")
+    pw.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
+    pw.add_argument("--allow-actuation", action="store_true")
+    pw.add_argument("--allow-sim-reset", action="store_true")
+
+    rb = sub.add_parser(
+        "robosuite-bench",
+        help="Run Phase 3B public MuJoCo Robosuite parity benchmark (Zero-Shot / ASPIRE / CaP-X / CRAFT)",
+    )
+    rb.add_argument("--output", required=True, help="Output directory for Robosuite policies, JSON & HTML report")
+    rb.add_argument("--tasks", default="Lift,PickPlaceCan,NutAssemblySquare,Door", help="Comma-separated Robosuite tasks")
+    rb.add_argument("--dev-seeds", default="101,102,103,104,105", help="Comma-separated dev seeds")
+    rb.add_argument("--eval-seeds", default="1-20", help="Seed range (e.g. 1-20) or comma list")
+    rb.add_argument("--provider", default="codex_cli", choices=["codex_cli", "openai_api"])
+    rb.add_argument("--model", default="gpt-6-astra")
+    rb.add_argument("--effort", default="medium", choices=["low", "medium", "high", "xhigh"])
+    rb.add_argument("--max-dev-calls", type=int, default=4)
+    rb.add_argument("--no-online-regen", action="store_true", help="Disable CaP-X online Turn-2 regen during eval")
+
     studio = sub.add_parser("studio", help="Launch standalone interactive CRAFT Studio Web Demo")
     studio.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
     studio.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or craft.drivers plugin)")
@@ -154,6 +185,16 @@ def main() -> None:
     engine.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
     engine.add_argument("--allow-actuation", action="store_true")
     engine.add_argument("--allow-sim-reset", action="store_true")
+
+    simhost = sub.add_parser(
+        "serve-sim-host",
+        help="Serve a local simulator driver (e.g., mujoco_cafe) as a standalone HTTP host for --driver http / ticos-edge",
+    )
+    simhost.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
+    simhost.add_argument("--driver", default="mujoco_cafe", help="Underlying sim driver (mujoco_cafe or fixture)")
+    simhost.add_argument("--host", default="127.0.0.1", help="Bind host (default 127.0.0.1)")
+    simhost.add_argument("--port", type=int, default=8880, help="Bind port (default 8880)")
+    simhost.add_argument("--realtime-pacing", action="store_true", help="Enable smooth real-time arm motion pacing")
 
     args = parser.parse_args()
 
@@ -328,6 +369,89 @@ def main() -> None:
             raise SystemExit(1)
         return
 
+    if args.command == "prior-work-bench":
+        from .prior_work_bench import make_live_llm_fn, run_prior_work_comparison
+
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            edge_base=args.edge_base,
+            sim_base=args.sim_base,
+            provider=args.provider,
+            model=args.model,
+            effort=args.effort,
+            allow_actuation=args.allow_actuation,
+            allow_sim_reset=args.allow_sim_reset,
+            scope="fixture" if args.driver == "fixture" else None,
+        )
+        driver = create_host_driver(args.driver, cfg)
+        llm_fn = make_live_llm_fn(
+            provider=args.provider,
+            model=args.model,
+            reasoning_effort=args.effort,
+        )
+        report = run_prior_work_comparison(
+            driver,
+            llm_fn=llm_fn,
+            output_dir=args.output,
+            model=args.model,
+            reasoning_effort=args.effort,
+            max_dev_llm_calls=args.max_dev_calls,
+            max_online_regen=args.max_online_regen,
+            progress_cb=lambda msg: print(msg, flush=True),
+        )
+        print(
+            json.dumps(
+                {
+                    "benchmark_version": report["benchmark_version"],
+                    "summary_by_method": report["summary_by_method"],
+                    "paired_mcnemar_craft_vs": report["paired_mcnemar_craft_vs"],
+                },
+                indent=2,
+            )
+        )
+        return
+
+    if args.command == "robosuite-bench":
+        from .prior_work_bench import make_live_llm_fn
+        from .robosuite_bench import run_robosuite_parity_benchmark
+
+        tasks = tuple(x.strip() for x in args.tasks.split(",") if x.strip())
+        dev_seeds = tuple(int(x.strip()) for x in args.dev_seeds.split(",") if x.strip())
+        if "-" in args.eval_seeds and "," not in args.eval_seeds:
+            lo, hi = args.eval_seeds.split("-", 1)
+            eval_seeds = tuple(range(int(lo), int(hi) + 1))
+        else:
+            eval_seeds = tuple(int(x.strip()) for x in args.eval_seeds.split(",") if x.strip())
+
+        llm_fn = make_live_llm_fn(
+            provider=args.provider,
+            model=args.model,
+            reasoning_effort=args.effort,
+        )
+        report = run_robosuite_parity_benchmark(
+            llm_fn=llm_fn,
+            output_dir=args.output,
+            tasks=tasks,
+            dev_seeds=dev_seeds,
+            eval_seeds=eval_seeds,
+            model=args.model,
+            reasoning_effort=args.effort,
+            max_dev_llm_calls=args.max_dev_calls,
+            enable_capx_online_regen=not args.no_online_regen,
+            progress_cb=lambda msg: print(msg, flush=True),
+        )
+        print(
+            json.dumps(
+                {
+                    "benchmark_version": report["benchmark_version"],
+                    "summary_by_method": report["summary_by_method"],
+                    "paired_mcnemar_craft_vs": report["paired_mcnemar_craft_vs"],
+                },
+                indent=2,
+            )
+        )
+        return
+
     if args.command == "studio":
         cfg = _override_config(
             SceneConfig.from_file(args.config),
@@ -338,6 +462,8 @@ def main() -> None:
             scope="fixture" if args.driver == "fixture" else None,
         )
         driver = create_host_driver(args.driver, cfg)
+        if getattr(driver, "driver_name", "") == "mujoco_cafe":
+            driver._realtime_pacing = True  # smooth visible arm motion in live Studio video
         policies = _parse_policy_specs(args.policy, include_builtin_ref=False)
         app = CraftStudioApp(cfg, driver, args.workspace, policies=policies)
         server = create_studio_server(app, host=args.host, port=args.port)
@@ -366,6 +492,31 @@ def main() -> None:
         server = create_engine_server(service, host=args.host, port=args.port)
         print(
             f"CRAFT Engine API (/v1) listening on http://{args.host}:{args.port} "
+            f"(driver={driver.driver_name}, evidence_source={driver.evidence_source})",
+            flush=True,
+        )
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            server.shutdown()
+        return
+
+    if args.command == "serve-sim-host":
+        from .sim_host_server import StandaloneSimHostApp, create_sim_host_server
+
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            allow_actuation=True,
+            allow_sim_reset=True,
+            scope="fixture" if args.driver == "fixture" else "simulator",
+        )
+        driver = create_host_driver(args.driver, cfg)
+        if args.realtime_pacing and hasattr(driver, "_realtime_pacing"):
+            driver._realtime_pacing = True
+        app = StandaloneSimHostApp(driver)
+        server = create_sim_host_server(app, host=args.host, port=args.port)
+        print(
+            f"CRAFT Standalone Sim Host listening on http://{args.host}:{args.port} "
             f"(driver={driver.driver_name}, evidence_source={driver.evidence_source})",
             flush=True,
         )
