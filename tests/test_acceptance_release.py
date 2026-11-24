@@ -3,15 +3,15 @@ from __future__ import annotations
 
 import pytest
 
-from craft.acceptance import (
+from trax.acceptance import (
     FrozenArtifact,
     HeldoutTrialOutcome,
     compare_improvement_candidate,
     evaluate_acceptance,
 )
-from craft.config import AcceptanceCriteriaConfig
-from craft.release import ReleaseRegistry
-from craft.skills import SkillExperience, SkillExperienceStore
+from trax.config import AcceptanceCriteriaConfig
+from trax.release import ReleaseRegistry
+from trax.skills import SkillExperience, SkillExperienceStore
 
 
 POLICY_V1 = "def run_policy(sdk, params):\n    return {'status': 'completed', 'v': 1}\n"

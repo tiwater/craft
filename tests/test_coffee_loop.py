@@ -4,9 +4,9 @@ from __future__ import annotations
 from typing import Any, Mapping
 import time
 
-from craft.coffee_loop import run_coffee_closed_loop
-from craft.config import SceneConfig
-from craft.edge_adapter import EdgeHostAdapter
+from trax.coffee_loop import run_coffee_closed_loop
+from trax.config import SceneConfig
+from trax.edge_adapter import EdgeHostAdapter
 
 
 COFFEE_METHODS = [

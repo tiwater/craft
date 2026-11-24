@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Generate reproducible LaTeX tables and vector SVG figures from archived CRAFT JSON reports.
+"""Generate reproducible LaTeX tables and vector SVG figures from archived TRAX JSON reports.
 
-All numbers in papers/craft/tables/*.tex and docs/assets/figures/*.svg are computed
-deterministically from archived benchmark JSON receipts under experiments/.
+All numbers in papers/trax/tables/*.tex and docs/assets/figures/*.svg are computed
+deterministically from immutable archived benchmark JSON receipts under experiments/
+(which retain legacy internal codename keys such as 'craft_full' from earlier milestones).
 Zero numbers are fabricated or hand-edited.
 """
 from __future__ import annotations
@@ -20,7 +21,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 EXP_V2 = ROOT / "experiments" / "goal-v2-20261122"
 EXP_V3 = ROOT / "experiments" / "goal-v3-simex-parity"
-PAPER_DIR = ROOT / "papers" / "craft"
+PAPER_DIR = ROOT / "papers" / "trax"
 PAPER_TABLES = PAPER_DIR / "tables"
 PAPER_FIGURES = PAPER_DIR / "figures"
 DOCS_FIGURES = ROOT / "docs" / "assets" / "figures"
@@ -38,10 +39,6 @@ def _fmt_pct(rate: float) -> str:
     return f"{rate * 100.0:.1f}\\%"
 
 
-def _fmt_ci(ci: list[float]) -> str:
-    return f"[{ci[0] * 100.0:.1f}, {ci[1] * 100.0:.1f}]"
-
-
 def _fmt_p(p: float | None) -> str:
     if p is None:
         return "---"
@@ -54,7 +51,7 @@ def generate_cafebench_v2_table(data: dict[str, Any], src: Path) -> str:
     s = data["summary_by_method"]
     mc = data["paired_mcnemar_craft_vs"]
     order = [
-        ("craft_full", "\\textbf{CRAFT (Ours)}"),
+        ("craft_full", "\\textbf{TRAX (Ours)}"),
         ("aspire_protocol", "ASPIRE-Protocol (Adapted)"),
         ("capx_protocol", "CaP-X-Protocol (Adapted)"),
         ("simex_direct_repair", "SimEX-Direct-Repair (Ablation)"),
@@ -64,7 +61,7 @@ def generate_cafebench_v2_table(data: dict[str, Any], src: Path) -> str:
         f"% Auto-generated from {src.relative_to(ROOT)} (sha256:{_sha256_short(src)})",
         "\\begin{tabular}{@{}lcccccc@{}}",
         "\\toprule",
-        "Method & Held-Out & Sim / Shadow & Dup / False & Dev LLM & Wall (s) & $p$ vs.\\ CRAFT \\\\",
+        "Method & Held-Out & Sim / Shadow & Dup / False & Dev LLM & Wall (s) & $p$ vs.\\ TRAX \\\\",
         "\\midrule",
     ]
     for key, label in order:
@@ -92,7 +89,7 @@ def generate_sim2sim_table(r2: dict[str, Any], r1: dict[str, Any], src_r2: Path,
     s1 = r1["summary_by_method"]
     mc = r2["paired_mcnemar_craft_vs"]
     order = [
-        ("craft_full", "\\textbf{CRAFT (Ours, Run 2)}"),
+        ("craft_full", "\\textbf{TRAX (Ours, Run 2)}"),
         ("simex_protocol", "SimEX-Protocol (Adapted)"),
         ("direct_repair", "Direct Target Repair"),
         ("zeroshot_sim2sim", "Zero-Shot Sim2Sim"),
@@ -101,7 +98,7 @@ def generate_sim2sim_table(r2: dict[str, Any], r1: dict[str, Any], src_r2: Path,
         f"% Auto-generated from {src_r2.relative_to(ROOT)} (sha256:{_sha256_short(src_r2)}) and {src_r1.relative_to(ROOT)} (sha256:{_sha256_short(src_r1)})",
         "\\begin{tabular}{@{}lcccccc@{}}",
         "\\toprule",
-        "Method & Overall ($n{=}20$) & Target / Shadow & Trials / Cal & LLM & Run 1 & $p$ vs.\\ CRAFT \\\\",
+        "Method & Overall ($n{=}20$) & Target / Shadow & Trials / Cal & LLM & Run 1 & $p$ vs.\\ TRAX \\\\",
         "\\midrule",
     ]
     for key, label in order:
@@ -123,7 +120,7 @@ def generate_sim2sim_table(r2: dict[str, Any], r1: dict[str, Any], src_r2: Path,
 def generate_combo_table(data: dict[str, Any], src: Path) -> str:
     s = data["summary_by_method"]
     order = [
-        ("craft_pipelined_journaled", "\\textbf{CRAFT Pipelined + Journal}"),
+        ("craft_pipelined_journaled", "\\textbf{TRAX Pipelined + Journal}"),
         ("pipelined_stateless", "Pipelined Stateless"),
         ("sequential_stateless", "Sequential Stateless"),
     ]
@@ -161,7 +158,7 @@ def generate_robosuite_v3_table(
     s_full = full_v3["summary_by_method"]
     s_nut = nut_fix["summary_by_method"]
     order = [
-        ("craft_full", "\\textbf{CRAFT (ActiveProbe + Screener)}"),
+        ("craft_full", "\\textbf{TRAX (ActiveProbe + Screener)}"),
         ("capx_protocol", "CaP-X-Protocol (Online Regen)"),
         ("aspire_protocol", "ASPIRE-Protocol (Adapted)"),
         ("simex_protocol", "SimEX-Protocol (Adapted)"),
@@ -199,47 +196,9 @@ def generate_robosuite_v3_table(
     return "\n".join(lines)
 
 
-def generate_libero_table(libero_path: Path) -> str | None:
-    if not libero_path.exists():
-        return None
-    d = _load_json(libero_path)
-    s = d.get("summary_by_method", {})
-    if not s:
-        return None
-    order = [
-        ("craft_full", "\\textbf{CRAFT (ActiveProbe + Screener)}"),
-        ("aspire_protocol", "ASPIRE-Protocol (Adapted)"),
-        ("simex_protocol", "SimEX-Protocol (Adapted)"),
-        ("strong_zeroshot", "Strong Zero-Shot"),
-    ]
-    tasks = d.get("tasks", [])
-    task_hdr = " / ".join(f"T{t}" for t in tasks) if tasks else "Tasks"
-    lines = [
-        f"% Auto-generated from {libero_path.relative_to(ROOT)} (sha256:{_sha256_short(libero_path)})",
-        "\\begin{tabular}{@{}lccccc@{}}",
-        "\\toprule",
-        f"Method & Overall & {task_hdr} & Dev LLM & Eval LLM & P95 (s) \\\\",
-        "\\midrule",
-    ]
-    for key, label in order:
-        if key not in s:
-            continue
-        r = s[key]
-        bt = r.get("by_task", {})
-        per_t = " / ".join(str(bt[f"libero_spatial_t{t}"]["passed"]) for t in tasks if f"libero_spatial_t{t}" in bt)
-        overall = f"{r['passed']}/{r['total_trials']} ({_fmt_pct(r['pass_rate'])})"
-        if key == "craft_full":
-            overall = f"\\textbf{{{overall}}}"
-        lines.append(
-            f"{label} & {overall} & {per_t} & {r['dev_llm_calls']} & {r.get('eval_llm_calls', 0)} & {r['p95_wall_s']:.2f} \\\\"
-        )
-    lines.extend(["\\bottomrule", "\\end{tabular}", ""])
-    return "\n".join(lines)
-
-
 def build_architecture_svg() -> str:
-    """Crisp academic architecture diagram showing strict ownership boundaries and closed-loop evolution."""
-    return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 420" width="980" height="420" role="img" aria-label="CRAFT Ownership-Separated Architecture">
+    """Crisp academic architecture diagram showing strict ownership boundaries and transactional evolution."""
+    return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 420" width="980" height="420" role="img" aria-label="TRAX Ownership-Separated Transactional Architecture">
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
       <path d="M 0 1 L 10 5 L 0 9 z" fill="#334155"/>
@@ -277,18 +236,18 @@ def build_architecture_svg() -> str:
 
   <rect x="32" y="274" width="182" height="110" rx="6" fill="#fefce8" stroke="#eab308" stroke-width="1.1"/>
   <text x="44" y="295" class="t-title">Boundary Contract</text>
-  <text x="44" y="313" class="t-sub">CRAFT never fabricates</text>
+  <text x="44" y="313" class="t-sub">TRAX never fabricates</text>
   <text x="44" y="329" class="t-sub">scene geometry or invents</text>
   <text x="44" y="345" class="t-sub">missing sensor estimates.</text>
   <text x="44" y="366" class="t-mono">fail-closed on stale/ambig</text>
 
-  <!-- Zone 2: CRAFT Policy Core (Pure Python stdlib) -->
+  <!-- Zone 2: TRAX Policy Core (Pure Python stdlib) -->
   <rect x="246" y="18" width="486" height="384" rx="8" fill="#eff6ff" fill-opacity="0.45" stroke="#93c5fd" stroke-width="1.4"/>
-  <text x="262" y="39" class="t-zone" fill="#1d4ed8">2. CRAFT Core (Pure Python Stdlib Governance &amp; Evolution)</text>
+  <text x="262" y="39" class="t-zone" fill="#1d4ed8">2. TRAX Core (Pure Python Stdlib Governance &amp; Evolution)</text>
 
   <!-- Online Execution Path -->
   <rect x="262" y="54" width="454" height="114" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="1.4"/>
-  <text x="276" y="75" class="t-title">Online Deterministic Execution (0 Online LLM Calls)</text>
+  <text x="276" y="75" class="t-title">Online Transactional Execution (0 Online LLM Calls)</text>
 
   <rect x="276" y="88" width="136" height="66" rx="5" fill="#f8fafc" stroke="#cbd5e1"/>
   <text x="286" y="107" class="t-title">Frozen Bundle</text>
@@ -385,7 +344,6 @@ def _hbar_panel(
     subtitle: str,
     rows: list[tuple[str, float, tuple[float, float] | None, str, bool]],
 ) -> str:
-    """Render a clean horizontal bar chart panel with optional Wilson 95% CI whiskers."""
     out = [
         f'<text x="{x0}" y="{y0}" class="p-title">{html.escape(title)}</text>',
         f'<text x="{x0}" y="{y0 + 16}" class="p-sub">{html.escape(subtitle)}</text>',
@@ -395,7 +353,6 @@ def _hbar_panel(
     bar_w = w - label_w - 78.0
     top = y0 + 34.0
     row_h = 34.0
-    # Grid lines at 0, 25, 50, 75, 100%
     chart_h = len(rows) * row_h
     for pct in (0, 25, 50, 75, 100):
         gx = bar_x + bar_w * (pct / 100.0)
@@ -430,14 +387,14 @@ def build_cafebench_sim2sim_svg(cafe: dict[str, Any], s2s: dict[str, Any]) -> st
     sc = cafe["summary_by_method"]
     ss = s2s["summary_by_method"]
     left_rows = [
-        ("CRAFT (Ours)", sc["craft_full"]["pass_rate"], tuple(sc["craft_full"]["wilson_95_ci"]), f"{sc['craft_full']['passed']}/30 (100%)", True),
+        ("TRAX (Ours)", sc["craft_full"]["pass_rate"], tuple(sc["craft_full"]["wilson_95_ci"]), f"{sc['craft_full']['passed']}/30 (100%)", True),
         ("ASPIRE (Adapted)", sc["aspire_protocol"]["pass_rate"], tuple(sc["aspire_protocol"]["wilson_95_ci"]), f"{sc['aspire_protocol']['passed']}/30 (76.7%)", False),
         ("CaP-X (Adapted)", sc["capx_protocol"]["pass_rate"], tuple(sc["capx_protocol"]["wilson_95_ci"]), f"{sc['capx_protocol']['passed']}/30 (76.7%)", False),
         ("SimEX-Direct", sc["simex_direct_repair"]["pass_rate"], tuple(sc["simex_direct_repair"]["wilson_95_ci"]), f"{sc['simex_direct_repair']['passed']}/30 (70.0%)", False),
         ("Zero-Shot", sc["strong_zeroshot"]["pass_rate"], tuple(sc["strong_zeroshot"]["wilson_95_ci"]), f"{sc['strong_zeroshot']['passed']}/30 (23.3%)", False),
     ]
     right_rows = [
-        ("CRAFT (Ours)", ss["craft_full"]["pass_rate"], tuple(ss["craft_full"]["wilson_95_ci"]), f"{ss['craft_full']['passed']}/20 (95.0%)", True),
+        ("TRAX (Ours)", ss["craft_full"]["pass_rate"], tuple(ss["craft_full"]["wilson_95_ci"]), f"{ss['craft_full']['passed']}/20 (95.0%)", True),
         ("SimEX-Protocol", ss["simex_protocol"]["pass_rate"], tuple(ss["simex_protocol"]["wilson_95_ci"]), f"{ss['simex_protocol']['passed']}/20 (80.0%)", False),
         ("Direct Repair", ss["direct_repair"]["pass_rate"], tuple(ss["direct_repair"]["wilson_95_ci"]), f"{ss['direct_repair']['passed']}/20 (80.0%)", False),
         ("Zero-Shot Sim2Sim", ss["zeroshot_sim2sim"]["pass_rate"], tuple(ss["zeroshot_sim2sim"]["wilson_95_ci"]), f"{ss['zeroshot_sim2sim']['passed']}/20 (65.0%)", False),
@@ -474,7 +431,7 @@ def build_robosuite_combo_svg(nut_fix: dict[str, Any], combo: dict[str, Any]) ->
     sn = nut_fix["summary_by_method"]
     sc = combo["summary_by_method"]
     left_rows = [
-        ("CRAFT (0 eval LLM)", sn["craft_full"]["pass_rate"], tuple(sn["craft_full"]["wilson_95_ci"]), f"{sn['craft_full']['passed']}/20 (60%)", True),
+        ("TRAX (0 eval LLM)", sn["craft_full"]["pass_rate"], tuple(sn["craft_full"]["wilson_95_ci"]), f"{sn['craft_full']['passed']}/20 (60%)", True),
         ("CaP-X Turn-1 Frozen", sn["capx_protocol"]["turn1_pass_rate"], None, f"{sn['capx_protocol']['turn1_passed']}/20 (60%)", False),
         ("CaP-X (+8 eval LLM)", sn["capx_protocol"]["pass_rate"], tuple(sn["capx_protocol"]["wilson_95_ci"]), f"{sn['capx_protocol']['passed']}/20 (80%)", False),
         ("ASPIRE (Adapted)", sn["aspire_protocol"]["pass_rate"], tuple(sn["aspire_protocol"]["wilson_95_ci"]), f"{sn['aspire_protocol']['passed']}/20 (30%)", False),
@@ -484,18 +441,17 @@ def build_robosuite_combo_svg(nut_fix: dict[str, Any], combo: dict[str, Any]) ->
     p_left = _hbar_panel(
         22, 30, 452,
         "(a) Zero-Leakage NutAssemblySquare (Selective Subroutine)",
-        "Robosuite Panda (n=20); CRAFT 3x jump (4->12/20), p=0.0005 vs SimEX",
+        "Robosuite Panda (n=20); TRAX 3x jump (4->12/20), p=0.0005 vs SimEX",
         left_rows,
     )
 
-    # Right panel: Multi-Appliance Combo throughput + zero-violation comparison
-    c_craft = sc["craft_pipelined_journaled"]
+    c_trax = sc["craft_pipelined_journaled"]
     c_pipe = sc["pipelined_stateless"]
     c_seq = sc["sequential_stateless"]
     right_rows = [
-        ("CRAFT Pipe+Journal", c_craft["pass_rate"], tuple(c_craft["wilson_95_ci"]), f"12/12 | 75.9/hr", True),
-        ("Pipelined Stateless", c_pipe["pass_rate"], tuple(c_pipe["wilson_95_ci"]), f"9/12 | 6 locks", False),
-        ("Sequential Stateless", c_seq["pass_rate"], tuple(c_seq["wilson_95_ci"]), f"9/12 | 46.7/hr", False),
+        ("TRAX Pipe+Journal", c_trax["pass_rate"], tuple(c_trax["wilson_95_ci"]), "12/12 | 75.9/hr", True),
+        ("Pipelined Stateless", c_pipe["pass_rate"], tuple(c_pipe["wilson_95_ci"]), "9/12 | 6 locks", False),
+        ("Sequential Stateless", c_seq["pass_rate"], tuple(c_seq["wilson_95_ci"]), "9/12 | 46.7/hr", False),
     ]
     p_right = _hbar_panel(
         506, 30, 452,
@@ -506,7 +462,7 @@ def build_robosuite_combo_svg(nut_fix: dict[str, Any], combo: dict[str, Any]) ->
     callout = """
   <rect x="520" y="198" width="424" height="72" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
   <text x="534" y="219" class="p-lbl-hi">Operational Safety &amp; Throughput Summary (Combo v3)</text>
-  <text x="534" y="238" class="p-sub">• CRAFT Pipelined + Journal: 100% pass, 0 dup brews/heats, 0 interlocks, 47.45 s/order</text>
+  <text x="534" y="238" class="p-sub">• TRAX Pipelined + Journal: 100% pass, 0 dup brews/heats, 0 interlocks, 47.45 s/order</text>
   <text x="534" y="256" class="p-sub">• Stateless baselines: 3 duplicate appliance starts, 4–6 interlock violations</text>
 """
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 296" width="980" height="296" role="img" aria-label="Zero-Leakage Robosuite Subroutine Repair and Multi-Appliance Combo Benchmarks">
@@ -564,7 +520,6 @@ def main() -> int:
     src_combo = EXP_V3 / "combo-v3" / "combo_report.json"
     src_robo_v3 = EXP_V3 / "robosuite-parity-v3" / "robosuite_prior_work_report.json"
     src_robo_nut = EXP_V3 / "robosuite-v3-nut-subroutine-fix" / "robosuite_prior_work_report.json"
-    src_libero = EXP_V3 / "libero-spatial-pilot" / "libero_report.json"
 
     cafe = _load_json(src_cafe)
     s2s_r2 = _load_json(src_s2s_r2)
@@ -585,12 +540,8 @@ def main() -> int:
     (PAPER_TABLES / "robosuite_v3_table.tex").write_text(
         generate_robosuite_v3_table(robo_v3, robo_nut, src_robo_v3, src_robo_nut), encoding="utf-8"
     )
-    libero_tex = generate_libero_table(src_libero)
-    if libero_tex is not None:
-        (PAPER_TABLES / "libero_pilot_table.tex").write_text(libero_tex, encoding="utf-8")
 
-    # Generate vector SVG figures
-    (DOCS_FIGURES / "craft_architecture.svg").write_text(build_architecture_svg(), encoding="utf-8")
+    (DOCS_FIGURES / "trax_architecture.svg").write_text(build_architecture_svg(), encoding="utf-8")
     (DOCS_FIGURES / "cafebench_sim2sim_comparison.svg").write_text(
         build_cafebench_sim2sim_svg(cafe, s2s_r2), encoding="utf-8"
     )
@@ -598,7 +549,6 @@ def main() -> int:
         build_robosuite_combo_svg(robo_nut, combo), encoding="utf-8"
     )
 
-    # Copy curated MuJoCo 7-DOF Panda PBR café workstation renders into docs & paper figures
     previews_dir = EXP_V2 / "fidelity-previews"
     for fname in ("panda_pbr_overview.jpg", "panda_pbr_overhead.jpg", "panda_pbr_spout.jpg"):
         src_img = previews_dir / fname
@@ -606,7 +556,7 @@ def main() -> int:
             shutil.copy2(src_img, DOCS_FIGURES / fname)
             shutil.copy2(src_img, PAPER_FIGURES / fname)
 
-    print("Generated LaTeX tables in papers/craft/tables/ and figures in docs/assets/figures/.")
+    print("Generated LaTeX tables in papers/trax/tables/ and figures in docs/assets/figures/.")
     return 0
 
 

@@ -1,12 +1,12 @@
 # High-Fidelity Simulation Architecture: Gazebo Fortress (OGRE2 PBR + ROS 2 Humble) & 7-DOF Franka Panda MuJoCo
 
-This document records producer/state ownership, fidelity upgrades, and evidence boundaries for CRAFT's two high-fidelity simulator host drivers: **`gazebo_cafe`** and **`mujoco_cafe`**.
+This document records producer/state ownership, fidelity upgrades, and evidence boundaries for TRAX's two high-fidelity simulator host drivers: **`gazebo_cafe`** and **`mujoco_cafe`**.
 
 ---
 
 ## 1. Producer & State Ownership (Preserved Strictly per `AGENTS.md`)
 
-| Concern | `gazebo_cafe` (`src/craft/gazebo_cafe_driver.py`) | `mujoco_cafe` (`src/craft/mujoco_cafe_driver.py`) | CRAFT Core Policy Layer |
+| Concern | `gazebo_cafe` (`src/trax/gazebo_cafe_driver.py`) | `mujoco_cafe` (`src/trax/mujoco_cafe_driver.py`) | TRAX Core Policy Layer |
 |---|---|---|---|
 | **Perception owner** | Gazebo Fortress `ignition-gazebo-sensors-system` (OGRE2 PBR 800×450 RGB cameras with Gaussian imaging noise `stddev=0.007`) + `PosePublisher` bridged via ROS 2 Humble `ros_gz_bridge` | MuJoCo 3.3 EGL renderer (800×450 HD PBR) + optional host-owned CMOS camera noise & RGB-D 3D pose jitter (`sensor_noise=True`) | Read-only consumer of `EvidenceScene` snapshots (never fabricates scene state) |
 | **Actuation & Physics owner** | Gazebo Fortress DART 500 Hz physics + 7-DOF Franka Emika Panda `JointPositionController` plugins + parallel fingers | MuJoCo 3.3 implicitfast physics + 7-DOF Franka Emika Panda damped least-squares Jacobian IK + parallel fingers + optional mass/friction/placement DR (`domain_randomization=True`) | AST-sandboxed `run_policy(sdk, params)` calling only the 13-method `EdgeZeroGtCoffeeSDK` contract |
@@ -40,7 +40,7 @@ bash sim/gazebo/setup_gazebo_fortress.sh
 # 2. Launch Gazebo Fortress (add --gui to open the OGRE2 PBR viewport on GPU)
 bash sim/gazebo/launch_cafe_gazebo.sh --gui
 
-# 3. Connect CRAFT Engine / Studio / Sim Host
+# 3. Connect TRAX Engine / Studio / Sim Host
 .venv/bin/craft serve-sim-host --config examples/single_cup_coffee_config.json --driver gazebo_cafe --port 8880
 ```
 

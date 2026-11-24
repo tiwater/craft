@@ -1,10 +1,10 @@
-"""Tests for CRAFT-CafeBench v1 20-scenario suite, false-actuation scoring, and resumability."""
+"""Tests for TRAX-CafeBench v1 20-scenario suite, false-actuation scoring, and resumability."""
 from __future__ import annotations
 
-from craft.benchmark import PolicyEntry, builtin_reference_policy_source
-from craft.cafebench import cafebench_v1_scenarios, run_cafebench_v1
-from craft.config import SceneConfig
-from craft.host_driver import create_host_driver
+from trax.benchmark import PolicyEntry, builtin_reference_policy_source
+from trax.cafebench import cafebench_v1_scenarios, run_cafebench_v1
+from trax.config import SceneConfig
+from trax.host_driver import create_host_driver
 
 
 NAIVE_UNSAFE_POLICY = """def run_policy(sdk, params):
@@ -41,7 +41,7 @@ def test_cafebench_v1_has_20_balanced_scenarios_and_detects_false_actuations(tmp
     driver = create_host_driver("fixture", _fixture_config())
     policies = [
         PolicyEntry("naive", "Naive Unsafe", NAIVE_UNSAFE_POLICY, origin="baseline"),
-        PolicyEntry("ref", "CRAFT Reference", builtin_reference_policy_source(), origin="reference"),
+        PolicyEntry("ref", "TRAX Reference", builtin_reference_policy_source(), origin="reference"),
     ]
     out_dir = tmp_path / "cb"
     rep = run_cafebench_v1(driver, policies, out_dir, repeats=1)

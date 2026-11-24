@@ -9,15 +9,15 @@ import urllib.request
 
 import pytest
 
-from craft.benchmark import builtin_reference_policy_source
-from craft.config import SceneConfig
-from craft.dev_loop import DevelopmentLoop, TrialRecord
-from craft.engine_api import CraftEngineService, create_engine_server
-from craft.host_driver import create_host_driver
-from craft.regression import RegressionSuite
-from craft.repair_screener import RepairHypothesis, RepairScreener
-from craft.skills import SkillExperience, SkillExperienceStore
-from craft.teaching import TaskStep, build_task_specification
+from trax.benchmark import builtin_reference_policy_source
+from trax.config import SceneConfig
+from trax.dev_loop import DevelopmentLoop, TrialRecord
+from trax.engine_api import TraxEngineService, create_engine_server
+from trax.host_driver import create_host_driver
+from trax.regression import RegressionSuite
+from trax.repair_screener import RepairHypothesis, RepairScreener
+from trax.skills import SkillExperience, SkillExperienceStore
+from trax.teaching import TaskStep, build_task_specification
 
 
 # Fails on slip+timeout (no recenter, no query_command_status)
@@ -390,7 +390,7 @@ def test_skill_experience_measured_limits_and_backward_compat(tmp_path):
 def test_engine_api_repair_screen_endpoint(tmp_path):
     cfg = _fixture_config()
     drv = create_host_driver("fixture", cfg)
-    svc = CraftEngineService(cfg, drv, tmp_path / "eng_ws")
+    svc = TraxEngineService(cfg, drv, tmp_path / "eng_ws")
     slip_case, _ = _capture_slip_and_ambiguity_cases(svc.regression)
 
     server = create_engine_server(svc, host="127.0.0.1", port=0)

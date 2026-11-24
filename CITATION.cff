@@ -1,11 +1,11 @@
 cff-version: 1.2.0
-message: "Please cite this software; CRAFT does not yet have a research paper."
+message: "If you use TRAX in your research, please cite this software and preprint."
 type: software
-title: "CRAFT: Code-based Robotic Automation for Fast-Food Tasks"
+title: "TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies for Real-World Robotics"
 authors:
   - name: "Tiwater"
-version: 0.1.0
-date-released: 2026-11-19
-url: "https://github.com/tiwater/craft"
-repository-code: "https://github.com/tiwater/craft"
+version: 0.3.0
+date-released: 2026-11-24
+url: "https://tiwater.github.io/trax/"
+repository-code: "https://github.com/tiwater/trax"
 license: Apache-2.0

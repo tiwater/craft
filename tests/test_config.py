@@ -1,8 +1,8 @@
-"""Tests for CRAFT declarative scene configuration and sanitization rules."""
+"""Tests for TRAX declarative scene configuration and sanitization rules."""
 from pathlib import Path
 import pytest
 
-from craft.config import (
+from trax.config import (
     AcceptanceCriteriaConfig,
     CapabilityRequirementConfig,
     ExperimentBudgetConfig,

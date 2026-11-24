@@ -1,6 +1,6 @@
-# CRAFT Architecture, Execution, and Ownership
+# TRAX Architecture, Execution, and Ownership
 
-CRAFT is the unified user-facing orchestration layer for configuring scenes,
+TRAX is the unified user-facing orchestration layer for configuring scenes,
 teaching manipulation tasks, developing code policies, running independent
 acceptance verification, managing fixed-version releases, and queuing
 evidence-backed improvements.
@@ -34,17 +34,17 @@ flowchart LR
 
 ## Dependency Direction (Host Independence)
 
-CRAFT is a standalone package (`tiwater-craft`) and **must never assume any
+TRAX is a standalone package (`tiwater-trax`) and **must never assume any
 specific downstream host (such as `ticos-edge`) exists**:
 
 ```
 External Robot/Sim Host (e.g. ticos-edge, ROS2 bridge, custom sim)
         │
         ▼  depends on & plugs into
-tiwater-craft (SceneHostDriver protocol / `craft.drivers` entry points / generic `http` driver)
+tiwater-trax (SceneHostDriver protocol / `craft.drivers` entry points / generic `http` driver)
 ```
 
-- Built-in `fixture` driver (`FixtureHostDriver`) runs benchmarks and CRAFT
+- Built-in `fixture` driver (`FixtureHostDriver`) runs benchmarks and TRAX
   Studio completely offline with zero external services.
 - Built-in `http` driver (`HttpHostDriver`) consumes any compatible HTTP host
   purely via runtime configuration (`HostConnectionConfig`).
@@ -60,16 +60,16 @@ Strict separation of ownership is mandatory:
    - `ticos-edge` owns RGB-D ingestion, SAM2/BundleTrack pose ownership,
      `OnlineTableWorldModel`, and scene snapshots returned by `/cap/state` and
      `EdgeZeroGtCoffeeSDK.observe_scene`.
-   - CRAFT consumes scene observations read-only. It never adds a parallel
+   - TRAX consumes scene observations read-only. It never adds a parallel
      detector, tracker, world model, or coordinate estimator. Video teaching
      materials are teaching evidence only and never override live scene state.
 2. **Host Actuation & Sandbox Authority (`ticos-edge`):**
    - `EdgeCapRuntime._run_job`, `EdgeZeroGtCoffeeSDK` (`ConstrainedCoffeeRobotSDK`
      + `SDKPublicProxy`), and `execute_policy_in_subprocess_sandbox` own device
      interlocks, timeouts, command execution, and OS-level policy sandboxing.
-   - CRAFT delegates live/simulator policy execution through the host adapter
+   - TRAX delegates live/simulator policy execution through the host adapter
      and never bypasses host interlocks or command identities.
-3. **CRAFT Orchestration & Governance (`src/craft/`):**
+3. **TRAX Orchestration & Governance (`src/trax/`):**
    - **Configuration & Discovery (`config`, `edge_adapter`):** Declarative
      scene/object/capability/acceptance/budget contracts, automatic host
      capability discovery, staleness/ambiguity/disconnect checks, and
@@ -97,7 +97,7 @@ Strict separation of ownership is mandatory:
      `PolicyBundle` (content-hashed frozen policy), `Journal` (SQLite
      intent-before-dispatch), and `Execution` (restricted AST fixture runtime).
 4. **Presentation Consumer (`ticos`):**
-   - Read-only consumer of CRAFT/edge statuses, traces, and acceptance evidence.
+   - Read-only consumer of TRAX/edge statuses, traces, and acceptance evidence.
    - Never runs inference, policy generation, or fallback object recognition.
 
 ## Receipt Lifecycle & Reconciliation

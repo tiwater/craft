@@ -1,6 +1,6 @@
 # Deployment contract
 
-The package distribution is `tiwater-craft`; the Python namespace is `craft`.
+The package distribution is `tiwater-trax`; the Python namespace is `craft`.
 Only GitHub wheel/sdist releases are planned for this bootstrap; no PyPI upload
 is implied. Install into an isolated virtual environment.
 

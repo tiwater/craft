@@ -4,16 +4,16 @@ from __future__ import annotations
 from typing import Any, Mapping
 import pytest
 
-from craft.config import (
+from trax.config import (
     CapabilityRequirementConfig,
     ExperimentBudgetConfig,
     HostConnectionConfig,
     ObjectBindingConfig,
     SceneConfig,
 )
-from craft.contracts import digest
-from craft.edge_adapter import EdgeHostAdapter, TransportError, TransportTimeoutError
-from craft.journal import Journal
+from trax.contracts import digest
+from trax.edge_adapter import EdgeHostAdapter, TransportError, TransportTimeoutError
+from trax.journal import Journal
 
 
 COFFEE_METHODS = [

@@ -1,4 +1,4 @@
-"""Phase 4 (CRAFT v3) verification tests:
+"""Phase 4 (TRAX v3) verification tests:
 - Zero task-hint leakage audit in Robosuite attribution & hypotheses
 - Public-SDK Active Physical Probing (grasp-offset scan & articulated sweep)
 - Closed-loop simulator parameter calibration in RepairScreener
@@ -14,28 +14,28 @@ from typing import Any
 
 import pytest
 
-from craft.benchmark import builtin_reference_policy_source
-from craft.combo_bench import (
+from trax.benchmark import builtin_reference_policy_source
+from trax.combo_bench import (
     ComboWorkstationHost,
     builtin_pipelined_combo_policy_source,
     builtin_sequential_combo_policy_source,
     run_combo_operations_benchmark,
     run_combo_trial,
 )
-from craft.config import SceneConfig
-from craft.host_driver import create_host_driver
-from craft.journal import Journal
-from craft.probing import (
+from trax.config import SceneConfig
+from trax.host_driver import create_host_driver
+from trax.journal import Journal
+from trax.probing import (
     analyze_policy_subroutines,
     build_articulated_sweep_probe_source,
     build_grasp_offset_scan_probe_source,
     parse_llm_hypotheses_json,
     parse_probe_telemetry,
 )
-from craft.regression import RegressionSuite
-from craft.repair_screener import RepairScreener, calibrate_simulator_alignment
-from craft.sim2sim_bench import run_sim2sim_adaptation_benchmark
-from craft.skills import (
+from trax.regression import RegressionSuite
+from trax.repair_screener import RepairScreener, calibrate_simulator_alignment
+from trax.sim2sim_bench import run_sim2sim_adaptation_benchmark
+from trax.skills import (
     SkillExperience,
     SkillExperienceStore,
     inject_toolbox_into_policy,
@@ -67,7 +67,7 @@ def _fixture_cfg() -> SceneConfig:
 
 
 def test_zero_task_hint_leakage_in_robosuite_attribution_and_hypotheses() -> None:
-    from craft.robosuite_bench import _robo_craft_hypotheses, attribute_robosuite_failure
+    from trax.robosuite_bench import _robo_craft_hypotheses, attribute_robosuite_failure
 
     # Verify Door & NutAssemblySquare hypotheses contain ZERO hardcoded oracle physics numbers
     door_fail = {
@@ -135,7 +135,7 @@ def test_probing_parsers_and_llm_hypothesis_extraction() -> None:
 def test_robosuite_real_active_probing_public_sdk() -> None:
     os.environ.setdefault("MUJOCO_GL", "egl")
     pytest.importorskip("robosuite")
-    from craft.robosuite_bench import check_robosuite_ast_compliance, run_robosuite_active_probe
+    from trax.robosuite_bench import check_robosuite_ast_compliance, run_robosuite_active_probe
 
     assert check_robosuite_ast_compliance(build_grasp_offset_scan_probe_source())["compliant"] is True
     assert check_robosuite_ast_compliance(build_articulated_sweep_probe_source())["compliant"] is True
@@ -338,7 +338,7 @@ def test_combo_multi_appliance_interlocks_crash_recovery_and_throughput(tmp_path
     assert res_bad["task_passed"] is False
 
     # 2. Verify full CafeBench v3 combo benchmark:
-    #    - CRAFT pipelined+journaled achieves 12/12, 0 duplicates, 0 interlock violations
+    #    - TRAX pipelined+journaled achieves 12/12, 0 duplicates, 0 interlock violations
     #    - Stateless baselines fail mid-brew & mid-heat crash scenarios with duplicate non-idempotent actuations
     #    - Pipelined scheduling cuts cycle time significantly vs sequential (+40% throughput!)
     rep = run_combo_operations_benchmark(tmp_path / "combo_out")
@@ -359,7 +359,7 @@ def test_combo_multi_appliance_interlocks_crash_recovery_and_throughput(tmp_path
 
 
 def test_selective_subroutine_analysis_and_adaptive_polish_escape() -> None:
-    from craft.robosuite_bench import _robo_craft_hypotheses, _robo_craft_prompt
+    from trax.robosuite_bench import _robo_craft_hypotheses, _robo_craft_prompt
 
     sample_policy = """def grasp_obj(sdk, pos):
     sdk.move_to(pos, gripper="open")

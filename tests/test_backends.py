@@ -8,11 +8,11 @@ import io
 
 import pytest
 
-from craft import backends
+from trax import backends
 
 
 def test_codex_preserves_prompt_and_uses_subscription_isolation(monkeypatch):
-    monkeypatch.setenv("CRAFT_MODEL", "test-model")
+    monkeypatch.setenv("TRAX_MODEL", "test-model")
     monkeypatch.setenv("OPENAI_API_KEY", "must-not-forward")
     def run(command, **kwargs):
         assert kwargs["input"] == "existing scene and repair feedback"
@@ -32,7 +32,7 @@ def test_codex_preserves_prompt_and_uses_subscription_isolation(monkeypatch):
 
 @pytest.mark.parametrize("failure", ["timeout", "exit", "empty"])
 def test_codex_fails_closed(monkeypatch, failure):
-    monkeypatch.setenv("CRAFT_MODEL", "test-model")
+    monkeypatch.setenv("TRAX_MODEL", "test-model")
     def run(command, **kwargs):
         if failure == "timeout":
             raise subprocess.TimeoutExpired(command, 1)
@@ -44,8 +44,8 @@ def test_codex_fails_closed(monkeypatch, failure):
 
 @pytest.mark.parametrize("status", ["completed", "incomplete"])
 def test_api_preserves_prompt_and_rejects_incomplete(monkeypatch, status):
-    monkeypatch.delenv("CRAFT_REASONING_EFFORT", raising=False)
-    monkeypatch.setenv("CRAFT_MODEL", "api-test-model")
+    monkeypatch.delenv("TRAX_REASONING_EFFORT", raising=False)
+    monkeypatch.setenv("TRAX_MODEL", "api-test-model")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     def urlopen(request, **kwargs):
         body = json.loads(request.data)
@@ -65,15 +65,15 @@ def test_api_preserves_prompt_and_rejects_incomplete(monkeypatch, status):
 
 
 def test_configuration_required(monkeypatch):
-    monkeypatch.delenv("CRAFT_MODEL", raising=False)
-    with pytest.raises(ValueError, match="CRAFT_MODEL"):
+    monkeypatch.delenv("TRAX_MODEL", raising=False)
+    with pytest.raises(ValueError, match="TRAX_MODEL"):
         backends.invoke_backend("openai_api", "prompt", 1)
-    monkeypatch.setenv("CRAFT_MODEL", "test")
+    monkeypatch.setenv("TRAX_MODEL", "test")
     with pytest.raises(ValueError, match="Unknown"):
         backends.invoke_backend("typo", "prompt", 1)
 
 
 def test_invalid_effort_rejected_before_transport(monkeypatch):
-    monkeypatch.setenv("CRAFT_REASONING_EFFORT", "typo")
-    with pytest.raises(ValueError, match="CRAFT_REASONING_EFFORT"):
+    monkeypatch.setenv("TRAX_REASONING_EFFORT", "typo")
+    with pytest.raises(ValueError, match="TRAX_REASONING_EFFORT"):
         backends.invoke_backend("codex_cli", "prompt", 1)

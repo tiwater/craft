@@ -1,9 +1,9 @@
 import dataclasses
 import pytest
-from craft.contracts import Receipt
-from craft.fixtures import DEPLOYMENT, FixtureAdapter, example_policy
-from craft.journal import Journal
-from craft.runtime import PolicyBundle, execute
+from trax.contracts import Receipt
+from trax.fixtures import DEPLOYMENT, FixtureAdapter, example_policy
+from trax.journal import Journal
+from trax.runtime import PolicyBundle, execute
 
 
 def invoke(bundle, adapter, path, **changes):
@@ -39,7 +39,7 @@ def test_unknown_remains_pending_without_redispatch(tmp_path):
 
 
 def test_crash_after_claim_before_dispatch_does_not_assume_no_effect(tmp_path):
-    from craft.contracts import digest
+    from trax.contracts import digest
     bundle = example_policy('combo')
     with Journal(tmp_path/'j') as j:
         j.claim(digest(['order-1','place_cup']), {'action':'place_cup','arguments':{'order_id':'order-1'}})

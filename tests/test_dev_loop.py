@@ -3,15 +3,15 @@ from __future__ import annotations
 
 import pytest
 
-from craft.config import (
+from trax.config import (
     CapabilityRequirementConfig,
     ExperimentBudgetConfig,
     HostConnectionConfig,
     ObjectBindingConfig,
     SceneConfig,
 )
-from craft.dev_loop import DevelopmentLoop, TrialRecord
-from craft.teaching import (
+from trax.dev_loop import DevelopmentLoop, TrialRecord
+from trax.teaching import (
     ClarificationRequest,
     TaskStep,
     TeachingMaterial,

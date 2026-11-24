@@ -1,4 +1,4 @@
-name: Deploy CRAFT Project Page to GitHub Pages
+name: Deploy TRAX Project Page to GitHub Pages
 
 on:
   push:

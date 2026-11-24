@@ -11,19 +11,19 @@ import urllib.request
 
 import pytest
 
-from craft.benchmark import builtin_reference_policy_source
-from craft.config import SceneConfig
-from craft.engine_api import CraftEngineService, create_engine_server
-from craft.host_driver import create_host_driver
-from craft.operations import (
+from trax.benchmark import builtin_reference_policy_source
+from trax.config import SceneConfig
+from trax.engine_api import TraxEngineService, create_engine_server
+from trax.host_driver import create_host_driver
+from trax.operations import (
     run_continuous_shift,
     run_nightly_evolution,
     run_recorded_shadow_check,
 )
-from craft.regression import RegressionSuite
-from craft.release import ReleaseRegistry
-from craft.skills import SkillExperienceStore
-from craft.studio import CraftStudioApp, create_studio_server
+from trax.regression import RegressionSuite
+from trax.release import ReleaseRegistry
+from trax.skills import SkillExperienceStore
+from trax.studio import TraxStudioApp, create_studio_server
 
 
 BROKEN_BASELINE = """def run_policy(sdk, params):
@@ -88,7 +88,7 @@ def test_mujoco_mid_brew_crash_stateless_duplicates_vs_craft_journal_recovers(tm
         assert stateless["trials"][0]["restarted_after_crash"] is True
         assert stateless["trials"][0]["non_idempotent_counts"]["start_coffee_machine"] == 2
 
-        # 2. CRAFT Journaled restart: reconciles committed brew intent via query_command_status -> 0 duplicates!
+        # 2. TRAX Journaled restart: reconciles committed brew intent via query_command_status -> 0 duplicates!
         journaled = run_continuous_shift(
             driver,
             cfg,
@@ -220,7 +220,7 @@ def test_recorded_shadow_check_and_engine_studio_operations_endpoints(tmp_path):
     assert shadow["false_actuations"] == 0
 
     driver = create_host_driver("fixture", cfg)
-    svc = CraftEngineService(cfg, driver, tmp_path / "eng_ws")
+    svc = TraxEngineService(cfg, driver, tmp_path / "eng_ws")
     server = create_engine_server(svc, host="127.0.0.1", port=0)
     port = server.server_address[1]
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -251,7 +251,7 @@ def test_recorded_shadow_check_and_engine_studio_operations_endpoints(tmp_path):
         server.server_close()
 
     # Studio exposes latest_shift_report and screening_sessions cleanly
-    studio_app = CraftStudioApp(cfg, driver, tmp_path / "eng_ws")
+    studio_app = TraxStudioApp(cfg, driver, tmp_path / "eng_ws")
     st = studio_app.get_state()
     assert st["latest_shift_report"]["passed_orders"] == 1
     assert "screening_sessions" in st

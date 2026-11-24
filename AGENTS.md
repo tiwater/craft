@@ -1,6 +1,6 @@
-# CRAFT contribution rules
+# TRAX contribution rules
 
-- Preserve the separation between perception owner, CRAFT policy execution and host actuation.
+- Preserve the separation between perception owner, TRAX policy execution and host actuation.
 - Never add inferred or fabricated scene state to improve a demonstration.
 - Document existing producer/state ownership before changing an integration.
 - Unknown physical outcomes require reconciliation; do not automatically retry non-idempotent actions.

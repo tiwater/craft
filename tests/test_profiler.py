@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from craft.profiler import aggregate_trial_profiles, attribute_trial, profile_steps
+from trax.profiler import aggregate_trial_profiles, attribute_trial, profile_steps
 
 
 def test_four_layer_attribution_separates_ownership():

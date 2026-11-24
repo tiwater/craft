@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRAFT: Verifiable, Crash-Recoverable, and Ownership-Separated Code Policies for Commercial Fast-Food Robotics</title>
-  <meta name="description" content="CRAFT: Code-based Robotic Automation for Fast-Food Tasks — pure-Python-stdlib policy governance, crash reconciliation, zero-leakage active physical probing, closed-loop simulator calibration, and reproducible benchmarks." />
+  <title>TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies for Real-World Robotics</title>
+  <meta name="description" content="TRAX (Transactional Robot Action Execution) — pure-Python-stdlib policy governance, crash reconciliation, zero-leakage active physical probing, closed-loop simulator calibration, and reproducible benchmarks." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -15,15 +15,15 @@
   <!-- Sticky Top Navigation -->
   <nav class="top-nav">
     <div class="nav-container">
-      <a href="#" class="nav-brand">CRAFT</a>
+      <a href="#" class="nav-brand">TRAX</a>
       <ul class="nav-links">
         <li><a href="#overview">Overview</a></li>
-        <li><a href="#positioning">Why CRAFT</a></li>
+        <li><a href="#positioning">Why TRAX</a></li>
         <li><a href="#architecture">Method</a></li>
         <li><a href="#benchmarks">Benchmarks</a></li>
         <li><a href="#limitations">Evidence Scope</a></li>
         <li><a href="#paper">Paper</a></li>
-        <li><a href="https://github.com/tiwater/craft" target="_blank" rel="noopener">Code</a></li>
+        <li><a href="https://github.com/tiwater/trax" target="_blank" rel="noopener">Code</a></li>
       </ul>
     </div>
   </nav>
@@ -33,7 +33,7 @@
     <div class="hero-container">
       <div class="hero-kicker">Tiwater Robotics Research · v0.3 Preprint &amp; Benchmark Release</div>
       <h1 class="hero-title">
-        CRAFT: Verifiable, Crash-Recoverable, and Ownership-Separated Code Policies for Commercial Fast-Food Robotics
+        TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies for Real-World Robotics
       </h1>
 
       <div class="authors-block">
@@ -42,11 +42,11 @@
       </div>
 
       <div class="cta-buttons">
-        <a href="assets/papers/craft.pdf" class="btn-pill btn-dark" target="_blank" rel="noopener">
+        <a href="assets/papers/trax.pdf" class="btn-pill btn-dark" target="_blank" rel="noopener">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/></svg>
           Paper (PDF)
         </a>
-        <a href="https://github.com/tiwater/craft" class="btn-pill btn-outline" target="_blank" rel="noopener">
+        <a href="https://github.com/tiwater/trax" class="btn-pill btn-outline" target="_blank" rel="noopener">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
           Code
         </a>
@@ -63,7 +63,7 @@
         </div>
         <p class="caption">
           <strong>MuJoCo 3.3.0 7-DOF Franka Panda PBR Café Workstation</strong> <span class="ev-badge ev-sim">evidence: simulator</span>.
-          CRAFT separates perception ownership (e.g., <a href="https://tiwater.github.io/evidencescene/" target="_blank" rel="noopener">EvidenceScene</a>), deterministic AST-sandboxed policy execution with SQLite intent journaling, and host actuation interlocks. Online service executes frozen policies with <code>0</code> online LLM calls; offline evolution performs bounded public-SDK active probing, simulator parameter calibration, multi-hypothesis screening, and zero-actuation <code>recorded_data</code> shadow gating.
+          TRAX separates perception ownership (e.g., <a href="https://tiwater.github.io/evidencescene/" target="_blank" rel="noopener">EvidenceScene</a>), deterministic AST-sandboxed policy execution with SQLite intent journaling, and host actuation interlocks. Online service executes frozen policies with <code>0</code> online LLM calls; offline evolution performs bounded public-SDK active probing, simulator parameter calibration, multi-hypothesis screening, and zero-actuation <code>recorded_data</code> shadow gating.
         </p>
       </div>
     </div>
@@ -74,15 +74,15 @@
     <div class="container">
       <div class="section-header">
         <h2 class="section-title">Overview</h2>
-        <p class="section-subtitle">Turning LLM-generated robot code into auditable, crash-recoverable, ownership-separated commercial operations</p>
+        <p class="section-subtitle">Turning LLM-generated robot code into auditable, crash-recoverable, transactional physical operations</p>
       </div>
 
       <div class="abstract-box">
         <p>
-          Recent agentic code-as-policies frameworks—including <strong>ASPIRE</strong>, <strong>CaP-X</strong>, <strong>SimEX</strong>, and <strong>RAX</strong>—demonstrate impressive program synthesis and iterative repair in single-arm research environments. However, deploying autonomous code policies in commercial fast-food cells (espresso preparation, bagel/oven heating, and shared-arm combo fulfillment) exposes five operational failure modes that research harnesses leave unresolved: non-idempotent appliance restarts, blurred authority between perception and safety interlocks, self-graded LLM repairs, multi-hour onboarding budgets or multi-second online LLM tails, and sequential single-appliance bottlenecks.
+          Recent agentic code-as-policies frameworks—including <strong>ASPIRE</strong>, <strong>CaP-X</strong>, <strong>SimEX</strong>, and <strong>RAX</strong>—demonstrate strong program synthesis and iterative repair in single-arm research environments. However, deploying autonomous code policies in commercial robotic cells (espresso brewing, bagel/oven heating, and shared-arm multi-appliance fulfillment) exposes five operational failure modes that research harnesses leave unresolved: non-idempotent appliance restarts, blurred authority between perception and safety interlocks, self-graded LLM repairs, multi-hour onboarding budgets or multi-second online LLM tails, and sequential single-appliance bottlenecks.
         </p>
         <p>
-          <strong>CRAFT</strong> (<em>Code-based Robotic Automation for Fast-Food Tasks</em>) addresses these constraints with a <strong>pure-Python-stdlib core</strong> that enforces strict three-owner separation (Perception Owner ↔ CRAFT Governance ↔ Host Actuation). Online, CRAFT runs SHA-256-frozen policies inside a restricted Python AST sandbox backed by an intent-before-dispatch SQLite journal with query-first reconciliation and zero online LLM calls. Offline, CRAFT runs task-agnostic public-SDK <em>Active Physical Probing</em> (zero hardcoded physics hints), closed-loop simulator calibration, multi-hypothesis <code>RepairScreener</code> with AST-guided selective subroutine repair, zero-actuation <code>recorded_data</code> shadow gating, decoupled independent acceptance, and contract-drift-aware executable skill toolboxes.
+          <strong>TRAX</strong> (<em>Transactional Robot Action Execution</em>) addresses these constraints with a <strong>pure-Python-stdlib core</strong> that enforces strict three-owner separation (Perception Owner ↔ TRAX Governance ↔ Host Actuation). Online, TRAX runs SHA-256-frozen policies inside a restricted Python AST sandbox backed by an intent-before-dispatch SQLite journal with query-first reconciliation and zero online LLM calls. Offline, TRAX runs task-agnostic public-SDK <em>Active Physical Probing</em> (zero hardcoded physics hints), closed-loop simulator calibration, multi-hypothesis <code>RepairScreener</code> with AST-guided selective subroutine repair, zero-actuation <code>recorded_data</code> shadow gating, decoupled independent acceptance, and contract-drift-aware executable skill toolboxes.
         </p>
       </div>
 
@@ -107,18 +107,18 @@
           <div class="value-metric">75.9 orders/hr (+62.5%)</div>
           <h3>Shared-Arm Multi-Appliance Safety</h3>
           <p>
-            On <code>CafeBench v3</code> (Coffee + Bagel/Oven with mid-order crashes and thermal/door interlocks), CRAFT Pipelined+Journal hits <code>12/12 (100%)</code> with <code>0</code> duplicate appliance starts and <code>0</code> interlock violations vs. <code>46.7 orders/hr</code> sequential stateless (<code>9/12</code>, 3 duplicates).
+            On <code>CafeBench v3</code> (Coffee + Bagel/Oven with mid-order crashes and thermal/door interlocks), TRAX Pipelined+Journal hits <code>12/12 (100%)</code> with <code>0</code> duplicate appliance starts and <code>0</code> interlock violations vs. <code>46.7 orders/hr</code> sequential stateless (<code>9/12</code>, 3 duplicates).
           </p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Section 2: Why Not Directly Drop In SimEX or RAX? -->
+  <!-- Section 2: Why TRAX -->
   <section id="positioning" class="section alt-bg">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Why Commercial Fast-Food Cells Need CRAFT</h2>
+        <h2 class="section-title">Why Real-World Workstations Need TRAX</h2>
         <p class="section-subtitle">Architectural positioning against CaP, CaP-X, ASPIRE, SimEX (arXiv:2609.38982), and RAX (arXiv:2610.22496)</p>
       </div>
 
@@ -182,7 +182,7 @@
               <td>No</td>
             </tr>
             <tr class="highlight-row">
-              <td><strong>CRAFT (Ours)</strong></td>
+              <td><strong>TRAX (Ours)</strong></td>
               <td><strong>Strict 3-Owner</strong></td>
               <td><strong>SQLite Query-First</strong></td>
               <td><strong>Indep. Gate + 0-Act</strong></td>
@@ -195,7 +195,7 @@
       </div>
 
       <div class="claim-callout">
-        <strong>Design principle:</strong> CRAFT absorbs the strongest compatible ideas from both recent paradigms—SimEX's closed-loop simulator calibration and paired code+experience library, and RAX's AST-guided selective subroutine repair and failed-attempt working memory—while preserving strict ownership boundaries, crash reconciliation, and pure-Python-stdlib runtime verifiability.
+        <strong>Design principle:</strong> While <strong>RAX</strong> scales online exploration, <strong>TRAX</strong> (<em>Transactional Robot Action Execution</em>) focuses on reliable deployment—absorbing SimEX's closed-loop simulator calibration and RAX's AST selective subroutine repair while enforcing strict ownership boundaries, crash reconciliation, and pure-Python-stdlib runtime verifiability.
       </div>
     </div>
   </section>
@@ -205,11 +205,11 @@
     <div class="container">
       <div class="section-header">
         <h2 class="section-title">Architecture &amp; Core Mechanisms</h2>
-        <p class="section-subtitle">Strict separation of perception owner, pure-stdlib CRAFT governance core, and host actuation interlocks</p>
+        <p class="section-subtitle">Strict separation of perception owner, pure-stdlib TRAX governance core, and host actuation interlocks</p>
       </div>
 
       <div class="teaser-box" style="margin-bottom:1.25rem;">
-        <img src="assets/figures/craft_architecture.svg" alt="CRAFT Ownership-Separated Architecture Diagram" class="zoomable-fig" style="border:none;" />
+        <img src="assets/figures/trax_architecture.svg" alt="TRAX Ownership-Separated Transactional Architecture Diagram" class="zoomable-fig" style="border:none;" />
       </div>
 
       <div class="abstract-box">
@@ -217,7 +217,7 @@
           <strong>1. Frozen AST Sandbox &amp; SQLite Intent-Before-Dispatch Journal:</strong> Promoted policies are SHA-256-frozen bundles executed in a restricted Python AST interpreter (blocking imports, <code>exec</code>/<code>eval</code>, and leading-underscore access). Every non-idempotent appliance call (<code>start_coffee_machine</code>, <code>start_oven_heat</code>) persists an intent before dispatch and reconciles ambiguous crashes via host <code>query_action_status</code> rather than blindly retrying.
         </p>
         <p>
-          <strong>2. Zero-Leakage Active Physical Probing &amp; Closed-Loop Calibration:</strong> Automated tests enforce zero task-specific physics constants in prompts. When failures occur, CRAFT runs a budget-capped (<code>+1</code> sim reset) diagnostic probe strictly over public host SDKs to measure empirical grasp offsets or articulation compliance, and runs bounded simulator calibration when target failures do not reproduce in nominal simulation.
+          <strong>2. Zero-Leakage Active Physical Probing &amp; Closed-Loop Calibration:</strong> Automated tests enforce zero task-specific physics constants in prompts. When failures occur, TRAX runs a budget-capped (<code>+1</code> sim reset) diagnostic probe strictly over public host SDKs to measure empirical grasp offsets or articulation compliance, and runs bounded simulator calibration when target failures do not reproduce in nominal simulation.
         </p>
         <p>
           <strong>3. Multi-Hypothesis <code>RepairScreener</code> &amp; AST Selective Subroutine Repair:</strong> Candidate repairs are AST-preflighted, localized to failing policy subroutines via <code>analyze_policy_subroutines</code>, tracked with negative-attempt memory and adaptive stagnation escape, screened against accumulated <code>RegressionSuite</code> banks, and gated by zero-actuation <code>recorded_data</code> shadow replay plus decoupled independent acceptance.
@@ -227,12 +227,12 @@
         </p>
       </div>
 
-<pre class="code-snippet">git clone https://github.com/tiwater/craft.git &amp;&amp; cd craft
+<pre class="code-snippet">git clone https://github.com/tiwater/trax.git &amp;&amp; cd trax
 python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e ".[dev]"
 make test           # Run full unit &amp; regression suite (110 tests, pure stdlib core)
-make check-stdlib   # Verify zero third-party imports in src/craft/ core
+make check-stdlib   # Verify zero third-party imports in src/trax/ core
 make demo           # Software fixture crash/lost-receipt reconciliation demo
-make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile craft.pdf</pre>
+make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile trax.pdf</pre>
     </div>
   </section>
 
@@ -255,7 +255,7 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
       <div class="teaser-box" style="margin-bottom:1.5rem;">
         <img src="assets/figures/robosuite_combo_comparison.svg" alt="Zero-Leakage Robosuite NutAssemblySquare Subroutine Fix and CafeBench v3 Combo" class="zoomable-fig" style="border:none;" />
         <p class="caption">
-          <strong>Figure 2:</strong> (a) Zero-leakage Robosuite <code>NutAssemblySquare</code> after adding AST selective subroutine repair and adaptive stagnation escape: CRAFT jumps <code>3×</code> (<code>4/20 → 12/20</code>) with <code>0</code> online LLM calls and <code>24×</code> lower p95 latency than online-regenerating CaP-X. (b) <strong>CafeBench v3</strong> shared-arm Coffee+Bagel/Oven concurrent operations: <code>12/12</code>, <code>0</code> duplicates, <code>0</code> interlock violations, and <code>+62.5%</code> throughput.
+          <strong>Figure 2:</strong> (a) Zero-leakage Robosuite <code>NutAssemblySquare</code> after adding AST selective subroutine repair and adaptive stagnation escape: TRAX jumps <code>3×</code> (<code>4/20 → 12/20</code>) with <code>0</code> online LLM calls and <code>24×</code> lower p95 latency than online-regenerating CaP-X. (b) <strong>CafeBench v3</strong> shared-arm Coffee+Bagel/Oven concurrent operations: <code>12/12</code>, <code>0</code> duplicates, <code>0</code> interlock violations, and <code>+62.5%</code> throughput.
         </p>
       </div>
 
@@ -273,12 +273,12 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
                 <th>Dup / False Act</th>
                 <th>Dev LLM / Resets</th>
                 <th>Dev Wall (s)</th>
-                <th>McNemar p vs. CRAFT</th>
+                <th>McNemar p vs. TRAX</th>
               </tr>
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td><strong>CRAFT (RepairScreener + RegressionSuite + Journal)</strong></td>
+                <td><strong>TRAX (RepairScreener + RegressionSuite + Journal)</strong></td>
                 <td><strong>30/30 (100.0%)</strong></td>
                 <td>[88.7%, 100.0%]</td>
                 <td><strong>26/26 · 4/4</strong></td>
@@ -346,12 +346,12 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
                 <th>Target Trials / Cal</th>
                 <th>LLM Calls</th>
                 <th>Run 1 (Preserved)</th>
-                <th>McNemar p vs. CRAFT</th>
+                <th>McNemar p vs. TRAX</th>
               </tr>
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td><strong>CRAFT (Calibrated Sim + Screener + Shadow + Journal)</strong></td>
+                <td><strong>TRAX (Calibrated Sim + Screener + Shadow + Journal)</strong></td>
                 <td><strong>19/20 (95.0%)</strong></td>
                 <td>[76.4%, 99.1%]</td>
                 <td><strong>15/16 · 4/4</strong></td>
@@ -394,7 +394,7 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
           </table>
         </div>
         <p class="caption">
-          <strong>Honest iteration log:</strong> Run 1 exposed missing AST sandbox rules and failed step traces in <code>RepairScreener.build_hypothesis_repair_prompt()</code> plus missing AST preflight validation. Fixing both lifted CRAFT from <code>8/20</code> to <code>19/20 (95.0%)</code>; Run 1 artifacts remain archived.
+          <strong>Honest iteration log:</strong> Run 1 exposed missing AST sandbox rules and failed step traces in <code>RepairScreener.build_hypothesis_repair_prompt()</code> plus missing AST preflight validation. Fixing both lifted TRAX from <code>8/20</code> to <code>19/20 (95.0%)</code>; Run 1 artifacts remain archived.
         </p>
       </div>
 
@@ -415,7 +415,7 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td><strong>CRAFT Pipelined + Dual-Appliance Journal</strong></td>
+                <td><strong>TRAX Pipelined + Dual-Appliance Journal</strong></td>
                 <td><strong>12/12 (100.0%)</strong></td>
                 <td><strong>0</strong></td>
                 <td><strong>0</strong></td>
@@ -461,7 +461,7 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td><strong>CRAFT (ActiveProbe + RepairScreener + Skills)</strong></td>
+                <td><strong>TRAX (ActiveProbe + RepairScreener + Skills)</strong></td>
                 <td><strong>64/80 (80.0%)</strong></td>
                 <td><strong>20 / 20 / 20</strong></td>
                 <td>4/20 (20%)</td>
@@ -518,7 +518,7 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
           </table>
         </div>
         <p class="caption">
-          <strong>Zero-leakage guarantee:</strong> Zero task-specific physics hints exist anywhere in prompts or attribution code (enforced by <code>test_zero_task_hint_leakage</code>). On <code>NutAssemblySquare</code>, adding RAX-inspired AST selective subroutine repair and stagnation escape tripled CRAFT's pass rate (<code>4/20 → 12/20</code>), tying CaP-X's frozen Turn-1 policy at <code>24×</code> lower p95 latency.
+          <strong>Zero-leakage guarantee:</strong> Zero task-specific physics hints exist anywhere in prompts or attribution code (enforced by <code>test_zero_task_hint_leakage</code>). On <code>NutAssemblySquare</code>, adding RAX-inspired AST selective subroutine repair and stagnation escape tripled TRAX's pass rate (<code>4/20 → 12/20</code>), tying CaP-X's frozen Turn-1 policy at <code>24×</code> lower p95 latency.
         </p>
       </div>
     </div>
@@ -577,24 +577,24 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
       </div>
 
       <div class="figure-card" style="max-width:880px;margin:0 auto 1.5rem;">
-        <h4>CRAFT: Verifiable, Crash-Recoverable, and Ownership-Separated Code Policies for Commercial Fast-Food Robotics</h4>
+        <h4>TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies for Real-World Robotics</h4>
         <p class="caption" style="margin-bottom:0.85rem;">
           Preprint presenting the three-owner commercial workstation decomposition, restricted AST sandbox, intent-before-dispatch SQLite command journal, zero-leakage public-SDK active physical probing, closed-loop simulator calibration, AST selective subroutine repair, contract-drift-aware executable skill toolboxes, and five reproducible benchmark tracks.
         </p>
         <div style="display:flex;flex-wrap:wrap;gap:0.55rem;">
-          <a href="assets/papers/craft.pdf" class="btn-pill btn-dark" target="_blank" rel="noopener">Download Paper (PDF)</a>
-          <a href="https://github.com/tiwater/craft/tree/main/experiments" class="btn-pill btn-outline" target="_blank" rel="noopener">Archived JSON Receipts</a>
+          <a href="assets/papers/trax.pdf" class="btn-pill btn-dark" target="_blank" rel="noopener">Download Paper (PDF)</a>
+          <a href="https://github.com/tiwater/trax/tree/main/experiments" class="btn-pill btn-outline" target="_blank" rel="noopener">Archived JSON Receipts</a>
         </div>
       </div>
 
       <div id="citation" class="bibtex-wrapper">
         <button class="copy-btn" id="copy-bibtex-btn" onclick="copyBibtex()">Copy BibTeX</button>
-<pre id="bibtex-code">@article{tiwater2026craft,
-  title   = {{CRAFT}: Verifiable, Crash-Recoverable, and Ownership-Separated Code Policies for Commercial Fast-Food Robotics},
+<pre id="bibtex-code">@article{tiwater2026trax,
+  title   = {{TRAX}: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies for Real-World Robotics},
   author  = {{Tiwater}},
   journal = {arXiv preprint},
   year    = {2026},
-  url     = {https://tiwater.github.io/craft/}
+  url     = {https://tiwater.github.io/trax/}
 }</pre>
       </div>
     </div>
@@ -610,7 +610,7 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile c
   <footer class="footer">
     <div class="container">
       <p>
-        <strong>CRAFT</strong> · <a href="mailto:research@tiwater.com">research@tiwater.com</a> · <a href="https://github.com/tiwater/craft" target="_blank" rel="noopener">Code</a> · <a href="assets/papers/craft.pdf" target="_blank" rel="noopener">Paper</a> · <a href="#benchmarks">Benchmarks</a> · Apache-2.0 License
+        <strong>TRAX</strong> · <a href="mailto:research@tiwater.com">research@tiwater.com</a> · <a href="https://github.com/tiwater/trax" target="_blank" rel="noopener">Code</a> · <a href="assets/papers/trax.pdf" target="_blank" rel="noopener">Paper</a> · <a href="#benchmarks">Benchmarks</a> · Apache-2.0 License
       </p>
     </div>
   </footer>

@@ -1,5 +1,5 @@
 import pytest
-from craft.policy import validate, run
+from trax.policy import validate, run
 
 @pytest.mark.parametrize('body',[
  'import os', 'while True:\n        pass', 'sdk.__class__',

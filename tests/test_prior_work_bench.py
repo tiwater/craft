@@ -4,10 +4,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from craft.cafebench import cafebench_v1_scenarios
-from craft.config import SceneConfig
-from craft.host_driver import FixtureHostDriver
-from craft.prior_work_bench import (
+from trax.cafebench import cafebench_v1_scenarios
+from trax.config import SceneConfig
+from trax.host_driver import FixtureHostDriver
+from trax.prior_work_bench import (
     CapXSkillLibrary,
     PRIOR_WORK_LITERATURE_MATRIX,
     cafebench_dev_scenarios,
@@ -150,7 +150,7 @@ def test_v11_scorer_and_mcnemar_exact() -> None:
     # 35mm slip WITHOUT recenter must still fail under v1.1
     assert score_trial_v11(trial_20mm, held["t2_slip_35mm"]) is False
 
-    # McNemar exact test: 6 CRAFT-only wins, 0 baseline-only -> 2 * (0.5**6) = 0.03125
+    # McNemar exact test: 6 TRAX-only wins, 0 baseline-only -> 2 * (0.5**6) = 0.03125
     mc = mcnemar_exact_p([True] * 6 + [False] * 4, [False] * 10)
     assert mc["n_a_only"] == 6
     assert mc["n_b_only"] == 0
@@ -169,8 +169,8 @@ def test_run_prior_work_comparison_end_to_end_on_fixture(tmp_path: Path) -> None
 
     def mock_llm(prompt: str) -> dict[str, Any]:
         calls["n"] += 1
-        # Simulate CRAFT catching an AST error on its first call, then producing CLEAN_POLICY on revision
-        if "CRAFT Structured Policy Evolution" in prompt:
+        # Simulate TRAX catching an AST error on its first call, then producing CLEAN_POLICY on revision
+        if "TRAX Structured Policy Evolution" in prompt:
             return {"source": CLEAN_POLICY, "raw_output": CLEAN_POLICY, "model": "mock", "reasoning_effort": "medium", "wall_s": 0.01}
         if "RoboRepair Trace-Guided Online Recovery" in prompt:
             return {"source": CLEAN_POLICY, "raw_output": CLEAN_POLICY, "model": "mock", "reasoning_effort": "medium", "wall_s": 0.01}
@@ -180,7 +180,7 @@ def test_run_prior_work_comparison_end_to_end_on_fixture(tmp_path: Path) -> None
             # Strong zero-shot fails on Turn 1 after brewing -> tests RoboRepair online trigger + duplicate detection
             return {"source": FAILING_THEN_BREW_POLICY, "raw_output": FAILING_THEN_BREW_POLICY, "model": "mock", "reasoning_effort": "medium", "wall_s": 0.01}
         if calls["n"] == 4:
-            # First CRAFT call returns bad AST -> CRAFT preflight catches without wasting sim resets
+            # First TRAX call returns bad AST -> TRAX preflight catches without wasting sim resets
             return {"source": BAD_AST_POLICY, "raw_output": BAD_AST_POLICY, "model": "mock", "reasoning_effort": "medium", "wall_s": 0.01}
         return {"source": CLEAN_POLICY, "raw_output": CLEAN_POLICY, "model": "mock", "reasoning_effort": "medium", "wall_s": 0.01}
 
@@ -208,7 +208,7 @@ def test_run_prior_work_comparison_end_to_end_on_fixture(tmp_path: Path) -> None
     rr_summary = report["summary_by_method"]["roborepair_style"]
     assert rr_summary["eval_llm_calls"] == 3
     assert rr_summary["duplicate_non_idempotent_total"] == 3
-    # CRAFT preflight rejected BAD_AST_POLICY on iter 1 without burning sim resets on iter 1
+    # TRAX preflight rejected BAD_AST_POLICY on iter 1 without burning sim resets on iter 1
     craft_meta = [m for m in report["methods"] if m["method_id"] == "craft_full"][0]
     assert craft_meta["dev_history"][0]["static_preflight_passed"] is False
     assert craft_meta["dev_sim_resets"] == len(small_dev)

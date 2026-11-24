@@ -9,7 +9,7 @@ import pytest
 os.environ.setdefault("MUJOCO_GL", "egl")
 pytest.importorskip("robosuite")
 
-from craft.robosuite_bench import (
+from trax.robosuite_bench import (
     attribute_robosuite_failure,
     check_robosuite_ast_compliance,
     run_robosuite_parity_benchmark,

@@ -4,10 +4,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from craft.benchmark import builtin_reference_policy_source
-from craft.config import SceneConfig
-from craft.host_driver import create_host_driver
-from craft.regression import RegressionSuite
+from trax.benchmark import builtin_reference_policy_source
+from trax.config import SceneConfig
+from trax.host_driver import create_host_driver
+from trax.regression import RegressionSuite
 
 
 BROKEN_POLICY = """def run_policy(sdk, params):

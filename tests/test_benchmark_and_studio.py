@@ -1,19 +1,19 @@
-"""Standalone tests for decoupled HostDriver, paired Benchmark, and CRAFT Studio."""
+"""Standalone tests for decoupled HostDriver, paired Benchmark, and TRAX Studio."""
 from __future__ import annotations
 
 import json
 import threading
 import urllib.request
 
-from craft.benchmark import (
+from trax.benchmark import (
     PolicyEntry,
     builtin_reference_policy_source,
     default_coffee_benchmark_suite,
     run_paired_benchmark,
 )
-from craft.config import SceneConfig
-from craft.host_driver import FixtureHostDriver, create_host_driver, list_host_drivers, register_host_driver
-from craft.studio import CraftStudioApp, create_studio_server
+from trax.config import SceneConfig
+from trax.host_driver import FixtureHostDriver, create_host_driver, list_host_drivers, register_host_driver
+from trax.studio import TraxStudioApp, create_studio_server
 
 
 BROKEN_NO_RECENTER_POLICY = """def run_policy(sdk, params):
@@ -50,7 +50,7 @@ def test_paired_benchmark_standalone_fixture_and_html_report(tmp_path):
     cfg = _fixture_config()
     driver = create_host_driver("fixture", cfg)
     policies = [
-        PolicyEntry("ref", "CRAFT Reference", builtin_reference_policy_source(), origin="reference"),
+        PolicyEntry("ref", "TRAX Reference", builtin_reference_policy_source(), origin="reference"),
         PolicyEntry("broken", "No-Recenter Ablation", BROKEN_NO_RECENTER_POLICY, origin="ablation"),
     ]
     report = run_paired_benchmark(
@@ -70,7 +70,7 @@ def test_paired_benchmark_standalone_fixture_and_html_report(tmp_path):
     html_path = tmp_path / "bench" / "benchmark_report.html"
     assert html_path.is_file()
     html_text = html_path.read_text(encoding="utf-8")
-    assert "CRAFT Paired Benchmark Report" in html_text
+    assert "TRAX Paired Benchmark Report" in html_text
     assert "No-Recenter Ablation" in html_text
     assert "NOT physical-robot / food-quality certification" in html_text
 
@@ -78,7 +78,7 @@ def test_paired_benchmark_standalone_fixture_and_html_report(tmp_path):
 def test_craft_studio_http_endpoints_standalone(tmp_path):
     cfg = _fixture_config()
     driver = create_host_driver("fixture", cfg)
-    app = CraftStudioApp(cfg, driver, tmp_path / "studio_ws")
+    app = TraxStudioApp(cfg, driver, tmp_path / "studio_ws")
     server = create_studio_server(app, host="127.0.0.1", port=0)
     port = server.server_address[1]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -90,7 +90,7 @@ def test_craft_studio_http_endpoints_standalone(tmp_path):
         with opener.open(base + "/", timeout=5) as r:
             body = r.read().decode("utf-8")
             assert r.status == 200
-            assert "CRAFT Studio" in body
+            assert "TRAX Studio" in body
 
         # State endpoint
         with opener.open(base + "/api/state", timeout=5) as r:
@@ -139,7 +139,7 @@ def test_craft_studio_http_endpoints_standalone(tmp_path):
 
 
 def test_host_driver_plugin_registry_inversion():
-    """External hosts register themselves into CRAFT; CRAFT does not assume any external host."""
+    """External hosts register themselves into TRAX; TRAX does not assume any external host."""
     class CustomExternalHostDriver(FixtureHostDriver):
         driver_name = "custom_external_sim"
 

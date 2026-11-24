@@ -1,6 +1,6 @@
 # Research plan — not reported findings
 
-CRAFT: Code-based Robotic Automation for Fast-Food Tasks.
+TRAX: Code-based Robotic Automation for Fast-Food Tasks.
 
 Question: can applicability-aware reusable programs and explicit execution
 evidence improve recovery under changed task conditions and uncertain physical

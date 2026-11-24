@@ -19,7 +19,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install -e '.[dev]'
       - run: python -m pytest
-      - run: craft demo --task coffee --lost-receipt
-      - run: craft demo --task bagel --lost-receipt
-      - run: craft demo --task combo --lost-receipt
+      - run: trax demo --task coffee --lost-receipt
+      - run: trax demo --task bagel --lost-receipt
+      - run: trax demo --task combo --lost-receipt
       - run: python -m build

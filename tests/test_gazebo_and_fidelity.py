@@ -6,14 +6,14 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 import pytest
 
-from craft.benchmark import builtin_reference_policy_source
-from craft.config import SceneConfig
-from craft.gazebo_cafe_driver import (
+from trax.benchmark import builtin_reference_policy_source
+from trax.config import SceneConfig
+from trax.gazebo_cafe_driver import (
     GazeboCafeHostDriver,
     export_gazebo_cafe_bundle,
     probe_gazebo_runtime,
 )
-from craft.host_driver import create_host_driver, list_host_drivers
+from trax.host_driver import create_host_driver, list_host_drivers
 
 os.environ.setdefault("MUJOCO_GL", "egl")
 
@@ -91,7 +91,7 @@ def test_gazebo_cafe_driver_registered_and_honest_fail_closed(tmp_path: Path) ->
 
 def test_mujoco_high_fidelity_panda_sensor_noise_and_domain_randomization() -> None:
     pytest.importorskip("mujoco")
-    from craft.mujoco_cafe_driver import MuJoCoCafeHostDriver
+    from trax.mujoco_cafe_driver import MuJoCoCafeHostDriver
 
     drv = MuJoCoCafeHostDriver(_cfg(), high_fidelity=True)
     try:
@@ -121,7 +121,7 @@ def test_mujoco_high_fidelity_panda_sensor_noise_and_domain_randomization() -> N
         img_noisy, _ = drv.fetch_camera_image("overview")
         assert img_noisy != img_clean
 
-        # Reference CRAFT policy still completes cleanly under realistic sensor noise + DR
+        # Reference TRAX policy still completes cleanly under realistic sensor noise + DR
         res = drv.run_policy_scenario(
             builtin_reference_policy_source(),
             command_id="hf-panda-noisy-dr-1",

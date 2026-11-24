@@ -1,5 +1,5 @@
 import pytest
-from craft import generation
+from trax import generation
 
 
 def test_generation_is_only_a_draft(monkeypatch):

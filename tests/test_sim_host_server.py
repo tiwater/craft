@@ -6,11 +6,11 @@ from pathlib import Path
 import threading
 import pytest
 
-from craft.benchmark import builtin_reference_policy_source
-from craft.config import SceneConfig
-from craft.host_driver import create_host_driver
-from craft.journal import Journal
-from craft.sim_host_server import StandaloneSimHostApp, create_sim_host_server
+from trax.benchmark import builtin_reference_policy_source
+from trax.config import SceneConfig
+from trax.host_driver import create_host_driver
+from trax.journal import Journal
+from trax.sim_host_server import StandaloneSimHostApp, create_sim_host_server
 
 
 def _run_http_roundtrip(driver_name: str, tmp_path: Path) -> None:

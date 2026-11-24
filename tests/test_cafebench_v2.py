@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import pytest
 
-from craft.cafebench_v2 import (
+from trax.cafebench_v2 import (
     cafebench_v2_dev_scenarios,
     cafebench_v2_eval_scenarios,
     run_cafebench_v2_comparison,
 )
-from craft.config import SceneConfig
-from craft.host_driver import create_host_driver
+from trax.config import SceneConfig
+from trax.host_driver import create_host_driver
 
 
 ROBUST_CAFE_V2_POLICY = """def run_policy(sdk, params):
@@ -143,7 +143,7 @@ def test_cafebench_v2_disjoint_split_and_journal_crash_advantage_on_mujoco(tmp_p
             max_dev_llm_calls=2,
         )
         summ = report["summary_by_method"]
-        # Even given the exact same robust policy, CRAFT's SQLite Journal survives all 7 mid-brew crashes
+        # Even given the exact same robust policy, TRAX's SQLite Journal survives all 7 mid-brew crashes
         # with 0 duplicate brews (30/30 = 100%), while stateless baselines duplicate brew on crashes (23/30 = 76.7%, p=0.0156)
         assert summ["craft_full"]["passed"] == 30
         assert summ["craft_full"]["duplicate_non_idempotent_count"] == 0

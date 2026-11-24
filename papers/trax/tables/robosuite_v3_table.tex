@@ -1,0 +1,13 @@
+% Auto-generated from experiments/goal-v3-simex-parity/robosuite-parity-v3/robosuite_prior_work_report.json (sha256:d21fe16f3ad9) and experiments/goal-v3-simex-parity/robosuite-v3-nut-subroutine-fix/robosuite_prior_work_report.json (sha256:b82fb98b9ac7)
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Method & Full v3 ($n{=}80$) & Lift / Can / Door & Nut (Pre) & Nut (Subr.) & Eval LLM & P95 (s) \\
+\midrule
+\textbf{TRAX (ActiveProbe + Screener)} & \textbf{64/80 (80.0\%)} & \textbf{20/20/20} & 4/20 & \textbf{12/20} & \textbf{0 / 0} & \textbf{2.32 / 2.23} \\
+CaP-X-Protocol (Online Regen) & 78/80 (97.5\%) & 20/20/20 & 18/20 & 16/20 (12$\dagger$) & 3 / 8 & 2.35 / 53.45 \\
+ASPIRE-Protocol (Adapted) & 70/80 (87.5\%) & 20/20/19 & 11/20 & 6/20 & 0 / 0 & 2.35 / 2.12 \\
+SimEX-Protocol (Adapted) & 62/80 (77.5\%) & 20/18/20 & 4/20 & 0/20 & 0 / 0 & 2.70 / 2.13 \\
+SimEX-Direct-Repair (Ablation) & 59/80 (73.8\%) & 20/19/20 & 0/20 & 0/20 & 0 / 0 & 2.39 / 1.96 \\
+Strong Zero-Shot & 40/80 (50.0\%) & 20/0/20 & 0/20 & 0/20 & 0 / 0 & 1.78 / 1.56 \\
+\bottomrule
+\end{tabular}

@@ -3,14 +3,14 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tiwater-craft"
-version = "0.1.0"
-description = "CRAFT: Code-based Robotic Automation for Fast-Food Tasks"
+name = "tiwater-trax"
+version = "0.3.0"
+description = "TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies for Real-World Robotics"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 authors = [{name = "Tiwater"}]
-keywords = ["robotics", "code-as-policies", "fast-food", "skill-reuse", "recovery"]
+keywords = ["robotics", "code-as-policies", "transactional-execution", "skill-reuse", "crash-recovery"]
 classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Topic :: Scientific/Engineering :: Artificial Intelligence"]
 dependencies = []
 
@@ -20,18 +20,19 @@ mujoco = ["mujoco>=3.1,<3.4", "numpy>=1.24,<2.3", "Pillow>=10.0"]
 robosuite = ["mujoco>=3.1,<3.4", "numpy>=1.24,<2.3", "Pillow>=10.0", "scipy>=1.11", "robosuite>=1.4"]
 
 [project.scripts]
-craft = "craft.cli:main"
+trax = "trax.cli:main"
 
 [project.urls]
-Repository = "https://github.com/tiwater/craft"
-Documentation = "https://github.com/tiwater/craft/tree/main/docs"
-Issues = "https://github.com/tiwater/craft/issues"
+Homepage = "https://tiwater.github.io/trax/"
+Repository = "https://github.com/tiwater/trax"
+Documentation = "https://github.com/tiwater/trax/tree/main/docs"
+Issues = "https://github.com/tiwater/trax/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-craft = ["py.typed"]
+trax = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

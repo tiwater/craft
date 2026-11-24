@@ -1,14 +1,14 @@
-"""Contract tests for headless CRAFT Engine /v1/... REST API."""
+"""Contract tests for headless TRAX Engine /v1/... REST API."""
 from __future__ import annotations
 
 import json
 import threading
 import urllib.request
 
-from craft.benchmark import builtin_reference_policy_source
-from craft.config import SceneConfig
-from craft.engine_api import CraftEngineService, create_engine_server
-from craft.host_driver import create_host_driver
+from trax.benchmark import builtin_reference_policy_source
+from trax.config import SceneConfig
+from trax.engine_api import TraxEngineService, create_engine_server
+from trax.host_driver import create_host_driver
 
 
 def _fixture_config() -> SceneConfig:
@@ -37,7 +37,7 @@ def _req(opener, url: str, body=None):
 def test_craft_engine_v1_api_end_to_end(tmp_path):
     cfg = _fixture_config()
     drv = create_host_driver("fixture", cfg)
-    svc = CraftEngineService(cfg, drv, tmp_path / "engine_ws")
+    svc = TraxEngineService(cfg, drv, tmp_path / "engine_ws")
     server = create_engine_server(svc, host="127.0.0.1", port=0)
     port = server.server_address[1]
     threading.Thread(target=server.serve_forever, daemon=True).start()

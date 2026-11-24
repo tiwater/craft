@@ -4,14 +4,14 @@ from __future__ import annotations
 import json
 import pytest
 
-from craft.autonomy import (
+from trax.autonomy import (
     AutonomyPromotionLedger,
     StageEvidence,
     actuation_policy_for_stage,
 )
-from craft.benchmark import builtin_reference_policy_source
-from craft.config import SceneConfig
-from craft.recorded_driver import RecordedDataHostDriver
+from trax.benchmark import builtin_reference_policy_source
+from trax.config import SceneConfig
+from trax.recorded_driver import RecordedDataHostDriver
 
 
 def _sample_config() -> SceneConfig:
