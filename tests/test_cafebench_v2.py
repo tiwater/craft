@@ -1,6 +1,8 @@
 """Behavioral contract tests for CafeBench v2 commercial operations resilience benchmark."""
 from __future__ import annotations
 
+import pytest
+
 from craft.cafebench_v2 import (
     cafebench_v2_dev_scenarios,
     cafebench_v2_eval_scenarios,
@@ -119,6 +121,7 @@ def test_cafebench_v2_disjoint_split_and_journal_crash_advantage_on_mujoco(tmp_p
     assert sum(1 for s in ev if s["evidence_source"] == "simulator") == 26
     assert sum(1 for s in ev if s["evidence_source"] == "recorded_data") == 4
 
+    pytest.importorskip("mujoco")
     cfg = SceneConfig.from_file("examples/single_cup_coffee_config.json")
     data = cfg.to_dict()
     data["budget"]["deployment_scope"] = "simulator"

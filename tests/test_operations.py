@@ -9,6 +9,8 @@ import json
 import threading
 import urllib.request
 
+import pytest
+
 from craft.benchmark import builtin_reference_policy_source
 from craft.config import SceneConfig
 from craft.engine_api import CraftEngineService, create_engine_server
@@ -57,6 +59,7 @@ def _mujoco_config() -> SceneConfig:
 
 
 def test_mujoco_mid_brew_crash_stateless_duplicates_vs_craft_journal_recovers(tmp_path):
+    pytest.importorskip("mujoco")
     cfg = _mujoco_config()
     driver = create_host_driver("mujoco_cafe", cfg)
     try:
@@ -104,6 +107,7 @@ def test_mujoco_mid_brew_crash_stateless_duplicates_vs_craft_journal_recovers(tm
 
 
 def test_full_day_shift_to_nightly_evolution_release_rollback_and_skills(tmp_path):
+    pytest.importorskip("mujoco")
     cfg = _mujoco_config()
     driver = create_host_driver("mujoco_cafe", cfg)
     try:
