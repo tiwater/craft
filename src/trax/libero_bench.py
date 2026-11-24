@@ -39,6 +39,7 @@ from .prior_work_bench import LLMGenerateFn, mcnemar_exact_p
 from .probing import ProbeReport, analyze_policy_subroutines, parse_probe_telemetry
 from .robosuite_bench import (
     _ROBO_SAFE_GLOBALS,
+    _extract_verified_helper_snippet,
     _quat_to_yaw,
     _wrap_angle,
     check_robosuite_ast_compliance,
@@ -310,61 +311,91 @@ def _execute_libero_source(source: str, sdk: LiberoPolicySDK, timeout_s: int = 2
 
 
 def _build_libero_grasp_probe_source(target_obj: str) -> str:
-    """Task-agnostic public-SDK radial/height grasp probe for LIBERO objects (center vs free-space rim)."""
+    """Task-agnostic public-SDK free-space radial + jaw-alignment grasp probe for LIBERO objects."""
     return f"""def run_policy(sdk):
     target = {target_obj!r}
     samples = []
     st0 = sdk.get_state()
     if target not in st0["objects"]:
-        return {{"status": "done", "probe": "grasp_offset_scan", "target": target, "samples": []}}
+        return {{"status": "done", "probe": "grasp_offset_scan", "frame": "world_free_space_radial", "target": target, "samples": []}}
     tpos = st0["objects"][target]["pos"]
-    # Find direction facing AWAY from nearest neighbor object to avoid rim collisions
-    away_ang = 0.0
-    best_d = 999.0
+    eef0_yaw = st0["eef_yaw"]
+    obstacles = []
     for oname, oinfo in st0["objects"].items():
-        if oname == target:
-            continue
-        op = oinfo["pos"]
-        dx = tpos[0] - op[0]
-        dy = tpos[1] - op[1]
-        d = sqrt(dx * dx + dy * dy)
-        if d < best_d and d > 0.005:
-            best_d = d
-            away_ang = atan2(dy, dx)
-    cand_offsets = [
-        (0.0, 0.0, 0.0),
-        (0.045, 0.025, away_ang),
-        (0.055, 0.025, away_ang),
-        (0.045, 0.025, away_ang + 1.5708),
-        (0.045, 0.025, away_ang - 1.5708),
-    ]
-    for r, dz, ang in cand_offsets:
+        if oname != target:
+            obstacles.append(oinfo["pos"])
+    for fname, finfo in (st0.get("fixtures") or {{}}).items():
+        if abs(finfo["pos"][2] - tpos[2]) < 0.12:
+            obstacles.append(finfo["pos"])
+
+    best_ang = 0.0
+    best_clr = -1.0
+    for k in range(8):
+        ang = k * (pi / 4.0)
+        px = tpos[0] + 0.045 * cos(ang)
+        py = tpos[1] + 0.045 * sin(ang)
+        clr = 9.99
+        for op in obstacles:
+            d = hypot(px - op[0], py - op[1])
+            if d < clr:
+                clr = d
+        if clr > best_clr:
+            best_clr = clr
+            best_ang = ang
+
+    def run_sample(r, dz, ang, yaw, jaw_rel):
         st = sdk.get_state()
-        if st["steps_used"] > st["max_steps"] - 75 or target not in st["objects"]:
-            break
+        if st["steps_used"] > st["max_steps"] - 65 or target not in st["objects"]:
+            return None
         o = st["objects"][target]
         pos = o["pos"]
         z0 = pos[2]
         gx = pos[0] + r * cos(ang)
         gy = pos[1] + r * sin(ang)
-        sdk.set_gripper("open", steps=6)
-        sdk.move_to([gx, gy, z0 + 0.12], gripper="open", max_steps=28, tol=0.015)
-        sdk.move_to([gx, gy, z0 + dz], gripper="open", max_steps=25, tol=0.015)
+        clr = 9.99
+        for oname, oinfo in st["objects"].items():
+            if oname != target:
+                d = hypot(gx - oinfo["pos"][0], gy - oinfo["pos"][1])
+                if d < clr:
+                    clr = d
+        sdk.set_gripper("open", steps=5)
+        sdk.move_to([gx, gy, z0 + 0.12], yaw=yaw, gripper="open", max_steps=26, tol=0.015)
+        sdk.move_to([gx, gy, z0 + dz], yaw=yaw, gripper="open", max_steps=22, tol=0.015)
         g = sdk.set_gripper("close", steps=14)
-        sdk.move_to([gx, gy, z0 + 0.12], gripper="close", max_steps=25, tol=0.015)
+        sdk.move_to([gx, gy, z0 + 0.12], yaw=yaw, gripper="close", max_steps=22, tol=0.015)
         st2 = sdk.get_state()
         z1 = st2["objects"][target]["pos"][2]
-        samples.append({{
+        rec = {{
             "target": target,
             "local_offset_m": r,
             "z_offset_m": dz,
             "approach_angle_rad": round(ang, 3),
-            "nearest_neighbor_dist_m": round(best_d, 4),
+            "gripper_yaw_rad": round(yaw, 3),
+            "jaw_rel_angle_rad": round(jaw_rel, 3),
+            "clearance_m": round(clr, 4),
             "closed_width_m": round(g["gripper_width"], 4),
             "lift_delta_m": round(z1 - z0, 4),
-        }})
-        sdk.set_gripper("open", steps=6)
-    return {{"status": "done", "probe": "grasp_offset_scan", "target": target, "samples": samples}}
+        }}
+        samples.append(rec)
+        sdk.set_gripper("open", steps=5)
+        return rec
+
+    run_sample(0.0, 0.0, 0.0, eef0_yaw, 0.0)
+    s_par = run_sample(0.045, 0.025, best_ang, best_ang, 0.0)
+    s_perp = run_sample(0.045, 0.025, best_ang, best_ang + pi / 2.0, pi / 2.0)
+    best_jaw = 0.0
+    if s_perp is not None and (s_par is None or s_perp["lift_delta_m"] > s_par["lift_delta_m"]):
+        best_jaw = pi / 2.0
+    opp_ang = best_ang + pi
+    run_sample(0.045, 0.025, opp_ang, opp_ang + best_jaw, best_jaw)
+    run_sample(0.045, 0.015, best_ang, best_ang + best_jaw, best_jaw)
+    return {{
+        "status": "done",
+        "probe": "grasp_offset_scan",
+        "frame": "world_free_space_radial",
+        "target": target,
+        "samples": samples,
+    }}
 """
 
 
@@ -631,6 +662,47 @@ def _libero_simex_prompt(
     )
 
 
+def _libero_craft_hypotheses(
+    dev_runs: Sequence[Mapping[str, Any]],
+    *,
+    stagnant_iters: int = 0,
+) -> list[tuple[str, str]]:
+    """Task-agnostic multi-hypothesis RepairScreener strategies for LIBERO manipulation."""
+    passed_cnt = sum(1 for r in dev_runs if r.get("success"))
+    fail_codes = [str((r.get("attribution") or {}).get("code", "")) for r in dev_runs if not r.get("success")]
+    if passed_cnt > 0 and stagnant_iters == 0:
+        return [
+            (
+                f"H-Subroutine1: Selective Subroutine Repair ({len(fail_codes)} failing init state(s))",
+                "Keep working target-selection and grasp subroutines frozen; inspect the exact failing init states "
+                "and fix only the failing stage (clearance, alignment, or fallback retry) with 0 regressions.",
+            ),
+            (
+                "H-Subroutine2: Preserve Working Path + Add Closed-Loop Multi-Side Grasp Fallback",
+                "Keep the primary execution path intact for passing init states, and add a compact fallback attempt "
+                "along the next highest-clearance free-space radial direction when lift verification fails.",
+            ),
+        ]
+    return [
+        (
+            "H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment",
+            "Ground grasp radius, z_offset_m, and jaw-to-radial alignment strictly in the Empirical Active-Probe Findings. "
+            "Compute the radial grasp angle dynamically in WORLD coordinates maximizing clearance from ALL neighbor objects/fixtures "
+            "(NEVER rely on random object `yaw`), verify grasp via live object Z lift (>=0.03m), and retry alternate free-space angles if needed.",
+        ),
+        (
+            "H-Ground2: Exact Spatial-Relation Grounding + Unblocked Approach",
+            "Re-verify which object instance satisfies the spatial relation in `task_language` using live `objects`, `fixtures`, "
+            "and `sites` poses; remove overly strict pre-grasp convergence aborts and keep step budget compact so transport completes.",
+        ),
+        (
+            "H-Place3: High-Clearance Transport, Obstacle Avoidance & Precision Release",
+            "Lift well above all surrounding objects/fixtures (e.g. max(obj_z, dest_z) + 0.16m), servo accurately over destination center, "
+            "descend smoothly to seating height before opening the gripper, and verify object rests stably on target.",
+        ),
+    ]
+
+
 def _libero_craft_prompt(
     task_lang: str,
     prev_src: str,
@@ -642,38 +714,50 @@ def _libero_craft_prompt(
     it: int,
     *,
     probe_report: ProbeReport | None = None,
+    hypothesis_title: str = "",
+    hypothesis_strategy: str = "",
 ) -> str:
     failed = [r for r in dev_runs if not r["success"]]
     fail_codes = [str(r["attribution"]["code"]) for r in failed]
     sub = analyze_policy_subroutines(prev_src, fail_codes)
-    passed_cnt = sum(1 for r in dev_runs if r["success"])
 
-    if passed_cnt > 0 and stagnant_iters == 0:
-        focus = (
-            f"Selective Subroutine Repair ({sub['repair_scope']}): {sub['freeze_hint']} "
-            "Preserve passing init states with zero regressions."
-        )
-    else:
-        focus = (
-            f"Full Mechanistic Repair ({sub['repair_scope']}): {sub['freeze_hint']} "
-            "Use exact live object/fixture/site coordinates from sdk.get_state(), verify grasp via lift/gripper_width, "
-            "and complete transport/actuation cleanly within horizon."
-        )
+    hyp_block = (
+        [f"RepairScreener Focus ({hypothesis_title}): {hypothesis_strategy}", ""]
+        if hypothesis_title
+        else []
+    )
+    sub_block = [
+        f"Selective Subroutine Scope ({sub['repair_scope']}): {sub['freeze_hint']}",
+        "",
+    ]
 
     diag = []
+    seen_rx: dict[str, str] = {}
     for r in dev_runs:
         if r["success"]:
             diag.append(f"- init={r['init_idx']}: PASS (steps={r['steps_used']})")
         else:
             a = r["attribution"]
+            seen_rx.setdefault(f"[{a['layer']}:{a['code']}]", f"{a['summary']} -> {a['prescription']}")
             diag.append(
                 f"- init={r['init_idx']}: FAIL [{a['layer']}:{a['code']}] steps={r['steps_used']} "
                 f"min_d={r['min_eef_to_any_obj_m']} closed={r['ever_closed_gripper']} max_lift={r['max_any_obj_lift_m']} "
                 f"err={r['error']!r} ret={r.get('policy_return')}\n"
                 f"    lifts={r['obj_lifts']} eef={r['final_state']['eef_pos']}\n"
                 f"    objs={r['final_state']['objects']}\n"
+                f"    fixtures={r['final_state'].get('fixtures', {})}\n"
                 f"    sites={r['final_state']['sites']}"
             )
+    rx_block = (
+        ["Deduplicated Four-Layer Causal Diagnosis:"] + [f"- {k}: {v}" for k, v in seen_rx.items()] + [""]
+        if seen_rx
+        else []
+    )
+    trace_block = (
+        [f"Sample Trace Tail (init={failed[0]['init_idx']}): {json.dumps(failed[0].get('trace_tail') or [])}", ""]
+        if failed
+        else []
+    )
     att_block = (
         ["Recent Non-Improving Attempts (avoid repeating; obey AST rules strictly — NO leading-underscore names like `for _ in range`, NO imports):"]
         + [
@@ -686,7 +770,9 @@ def _libero_craft_prompt(
         else []
     )
     sk_block = (
-        ["Verified Cross-Task LIBERO SkillExperience:"] + [f"- {s}" for s in skill_hints] + [""]
+        ["Verified Cross-Task LIBERO SkillExperience (contract-verified reusable helpers & findings):"]
+        + [f"- {s}" for s in skill_hints]
+        + [""]
         if skill_hints
         else []
     )
@@ -698,8 +784,8 @@ def _libero_craft_prompt(
     return "\n".join(
         [
             f'TRAX RepairScreener Evolution for LIBERO task "{task_lang}" (iteration {it}):',
-            focus,
-            "",
+            *hyp_block,
+            *sub_block,
             *pr_block,
             *att_block,
             *sk_block,
@@ -711,9 +797,11 @@ def _libero_craft_prompt(
             "```",
             "",
             f"Passing Init States to Preserve: {sorted(passed_ever)}",
-            "Dev Rollout Telemetry & Four-Layer Attribution:",
+            "Dev Rollout Telemetry:",
             *diag,
             "",
+            *rx_block,
+            *trace_block,
             "Return ONLY valid Python code defining `run_policy(sdk)`.",
         ]
     )
@@ -919,9 +1007,20 @@ def run_libero_benchmark(
                 }
 
                 # TRAX Full Engine (ActiveProbe + AST preflight + 4-layer attribution + Selective Subroutine Repair + Adaptive Escape + Skills)
+                def _libero_prog(run_list: Sequence[Mapping[str, Any]]) -> float:
+                    if not run_list:
+                        return 0.0
+                    vals = []
+                    for r in run_list:
+                        lift_c = min(0.15, max(0.0, float(r.get("max_any_obj_lift_m", 0.0))))
+                        dist_p = 0.35 * min(0.5, float(r.get("min_eef_to_any_obj_m", 0.5)))
+                        err_p = 1.0 if r.get("error") else 0.0
+                        vals.append(lift_c - dist_p - err_p)
+                    return round(sum(vals) / len(vals), 5)
+
                 cr_ever = {r["init_idx"] for r in init_runs if r["success"]}
                 cr_src, cr_pass, cr_regs, cr_runs = src0, init_pass, 0, list(init_runs)
-                cr_lift = sum(float(r["max_any_obj_lift_m"]) for r in init_runs) / max(1, len(init_runs))
+                cr_prog = _libero_prog(init_runs)
                 resets, calls = len(dev_indices), 1
                 probe_rep: ProbeReport | None = None
                 if init_pass == 0:
@@ -931,11 +1030,34 @@ def run_libero_benchmark(
                         _log(f"  [{tkey}][TRAX ActiveProbe] +1 sim reset -> {[f.summary for f in probe_rep.findings]}")
                 stagnant = 0
                 failed_atts: list[dict[str, Any]] = []
-                hints = [f"{sk.title}: {sk.guidance}" for sk in skill_store.list_verified(sdk_contract_sha256=contract_sha)]
+                verified_skills = skill_store.list_verified(sdk_contract_sha256=contract_sha)
+                hints: list[str] = []
+                for sk in verified_skills[-2:]:
+                    line = f"{sk.title}: {sk.guidance}"
+                    if sk.code_snippet:
+                        snip = sk.code_snippet.strip()
+                        if len(snip) > 1400:
+                            snip = snip[:1400] + "\n# ..."
+                        line += f"\n  Verified helper snippet:\n```python\n{snip}\n```"
+                    hints.append(line)
                 for it in range(2, max_dev_llm_calls + 1):
                     if cr_pass == len(dev_indices):
                         break
-                    prompt = _libero_craft_prompt(task_lang, cr_src, cr_runs, cr_ever, stagnant, failed_atts, hints, it, probe_report=probe_rep)
+                    hyps = _libero_craft_hypotheses(cr_runs, stagnant_iters=stagnant)
+                    ht, hs = hyps[(it - 2) % len(hyps)]
+                    prompt = _libero_craft_prompt(
+                        task_lang,
+                        cr_src,
+                        cr_runs,
+                        cr_ever,
+                        stagnant,
+                        failed_atts,
+                        hints,
+                        it,
+                        probe_report=probe_rep,
+                        hypothesis_title=ht,
+                        hypothesis_strategy=hs,
+                    )
                     cand = str(llm_fn(prompt)["source"])
                     calls += 1
                     ast_chk = check_robosuite_ast_compliance(cand)
@@ -957,15 +1079,15 @@ def run_libero_benchmark(
                     ok_set = {r["init_idx"] for r in runs if r["success"]}
                     regs = len(cr_ever - ok_set)
                     cr_ever.update(ok_set)
-                    lift_avg = sum(float(r["max_any_obj_lift_m"]) for r in runs) / max(1, len(runs))
-                    _log(f"  [{tkey}][TRAX it={it}] dev={p}/{len(dev_indices)} regs={regs} attr={[r['attribution']['code'] for r in runs if not r['success']]}")
+                    prog = _libero_prog(runs)
+                    _log(f"  [{tkey}][TRAX it={it}] ({ht}) dev={p}/{len(dev_indices)} regs={regs} prog={prog:.3f} attr={[r['attribution']['code'] for r in runs if not r['success']]}")
                     if p > cr_pass:
                         stagnant = 0
                     else:
                         stagnant += 1
                         failed_atts.append({"iter": it, "dev_passed": p, "dev_total": len(dev_indices), "attributions": [r["attribution"]["code"] for r in runs if not r["success"]]})
-                    if (p, -regs, lift_avg) >= (cr_pass, -cr_regs, cr_lift):
-                        cr_pass, cr_regs, cr_lift, cr_src, cr_runs = p, regs, lift_avg, cand, runs
+                    if (p, -regs, prog) >= (cr_pass, -cr_regs, cr_prog):
+                        cr_pass, cr_regs, cr_prog, cr_src, cr_runs = p, regs, prog, cand, runs
                 arts["craft_full"] = {
                     "method_id": "craft_full",
                     "label": "TRAX (ActiveProbe + SubroutineRepair + Skills)",
@@ -989,11 +1111,19 @@ def run_libero_benchmark(
                             ok_cnt += 1
                     _log(f"[{tkey}][EVAL] {mid:16s} -> {ok_cnt}/{len(eval_indices)} ({ok_cnt/len(eval_indices)*100:.1f}%)")
                     if mid == "craft_full" and ok_cnt >= max(1, int(0.7 * len(eval_indices))):
+                        helper_snip = _extract_verified_helper_snippet(src)
+                        if not helper_snip and validate_skill_code_snippet(src)["valid"]:
+                            helper_snip = src.strip()
+                        probe_note = (
+                            f" ActiveProbe: {probe_rep.findings[0].summary}"
+                            if (probe_rep is not None and probe_rep.findings)
+                            else ""
+                        )
                         skill_store.add(
                             SkillExperience(
                                 skill_id=f"libero-{tkey}",
-                                title=f"LIBERO {tkey} Verified Policy",
-                                guidance=f"Verified frozen policy for '{task_lang}' ({ok_cnt}/{len(eval_indices)} held-out).",
+                                title=f"LIBERO {tkey} Verified Manipulation Skill",
+                                guidance=f"Verified frozen policy for '{task_lang}' ({ok_cnt}/{len(eval_indices)} held-out).{probe_note}",
                                 task_name=tkey,
                                 required_methods=("get_state", "move_to", "move_delta", "set_gripper"),
                                 sdk_contract_sha256=contract_sha,
@@ -1002,6 +1132,7 @@ def run_libero_benchmark(
                                 verified=True,
                                 verified_at_utc=_utc_now(),
                                 measured_limits={"heldout_pass_rate": round(ok_cnt / len(eval_indices), 4)},
+                                code_snippet=helper_snip,
                             )
                         )
             finally:

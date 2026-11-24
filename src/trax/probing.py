@@ -228,30 +228,56 @@ def parse_probe_telemetry(
             if samples:
                 best = max(samples, key=lambda s: float(s.get("lift_delta_m", 0.0)))
                 lifted = [s for s in samples if float(s.get("lift_delta_m", 0.0)) >= 0.03]
-                summary = (
-                    f"Scanned {len(samples)} local X offsets on `{out.get('target', 'object')}`; "
-                    f"best empirical lift={best.get('lift_delta_m')}m at local_offset_m={best.get('local_offset_m')} "
-                    f"(closed_width={best.get('closed_width_m')}m; {len(lifted)}/{len(samples)} offsets lifted >=0.03m)."
-                )
+                frame = str(out.get("frame") or ("world_free_space_radial" if "approach_angle_rad" in best else "object_local_x"))
+                is_world_radial = frame == "world_free_space_radial" or ("approach_angle_rad" in best)
+                if is_world_radial:
+                    summary = (
+                        f"Scanned {len(samples)} free-space radial/center grasps on `{out.get('target', 'object')}` "
+                        f"(frame={frame}, NOT random object yaw); best empirical lift={best.get('lift_delta_m')}m "
+                        f"at radius_m={best.get('local_offset_m')}, z_offset_m={best.get('z_offset_m')}, "
+                        f"world_angle_rad={best.get('approach_angle_rad')}, gripper_yaw_rad={best.get('gripper_yaw_rad')} "
+                        f"(jaw_rel_rad={best.get('jaw_rel_angle_rad')}, clearance_m={best.get('clearance_m')}, "
+                        f"closed_width={best.get('closed_width_m')}m; {len(lifted)}/{len(samples)} samples lifted >=0.03m)."
+                    )
+                else:
+                    summary = (
+                        f"Scanned {len(samples)} local X offsets on `{out.get('target', 'object')}`; "
+                        f"best empirical lift={best.get('lift_delta_m')}m at local_offset_m={best.get('local_offset_m')} "
+                        f"(closed_width={best.get('closed_width_m')}m; {len(lifted)}/{len(samples)} offsets lifted >=0.03m)."
+                    )
+                meas: dict[str, Any] = {
+                    "target": out.get("target"),
+                    "frame": frame,
+                    "best_local_offset_m": best.get("local_offset_m"),
+                    "best_lift_delta_m": best.get("lift_delta_m"),
+                    "best_closed_width_m": best.get("closed_width_m"),
+                }
+                for opt_k in ("z_offset_m", "approach_angle_rad", "gripper_yaw_rad", "jaw_rel_angle_rad", "clearance_m"):
+                    if best.get(opt_k) is not None:
+                        meas[f"best_{opt_k}"] = best.get(opt_k)
+                meas["all_samples"] = [
+                    {
+                        k_out: s.get(k_in)
+                        for k_out, k_in in (
+                            ("offset_m", "local_offset_m"),
+                            ("z_offset_m", "z_offset_m"),
+                            ("angle_rad", "approach_angle_rad"),
+                            ("gripper_yaw_rad", "gripper_yaw_rad"),
+                            ("jaw_rel_rad", "jaw_rel_angle_rad"),
+                            ("clearance_m", "clearance_m"),
+                            ("lift_m", "lift_delta_m"),
+                            ("width_m", "closed_width_m"),
+                        )
+                        if s.get(k_in) is not None
+                    }
+                    for s in samples
+                ]
                 findings.append(
                     ProbeFinding(
                         finding_id=f"probe_{idx:02d}_grasp_offset",
                         probe_kind=kind,
                         summary=summary,
-                        measurements={
-                            "target": out.get("target"),
-                            "best_local_offset_m": best.get("local_offset_m"),
-                            "best_lift_delta_m": best.get("lift_delta_m"),
-                            "best_closed_width_m": best.get("closed_width_m"),
-                            "all_samples": [
-                                {
-                                    "offset_m": s.get("local_offset_m"),
-                                    "lift_m": s.get("lift_delta_m"),
-                                    "width_m": s.get("closed_width_m"),
-                                }
-                                for s in samples
-                            ],
-                        },
+                        measurements=meas,
                         evidence_source=evidence_source,
                     )
                 )

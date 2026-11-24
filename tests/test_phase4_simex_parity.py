@@ -122,6 +122,49 @@ def test_probing_parsers_and_llm_hypothesis_extraction() -> None:
     assert rep.findings[0].measurements["best_local_offset_m"] == 0.055
     assert "Empirical Active-Probe Findings" in rep.render_prompt_block()
 
+    rep_world = parse_probe_telemetry(
+        "libero_spatial_t0",
+        [
+            {
+                "probe": "grasp_offset_scan",
+                "frame": "world_free_space_radial",
+                "target": "akita_black_bowl_1",
+                "samples": [
+                    {
+                        "local_offset_m": 0.0,
+                        "z_offset_m": 0.0,
+                        "approach_angle_rad": 0.0,
+                        "gripper_yaw_rad": 0.0,
+                        "jaw_rel_angle_rad": 0.0,
+                        "clearance_m": 0.11,
+                        "closed_width_m": 0.002,
+                        "lift_delta_m": 0.0,
+                    },
+                    {
+                        "local_offset_m": 0.045,
+                        "z_offset_m": 0.025,
+                        "approach_angle_rad": 1.571,
+                        "gripper_yaw_rad": 1.571,
+                        "jaw_rel_angle_rad": 0.0,
+                        "clearance_m": 0.135,
+                        "closed_width_m": 0.021,
+                        "lift_delta_m": 0.091,
+                    },
+                ],
+            }
+        ],
+        evidence_source="simulator",
+        sim_resets_used=1,
+        wall_s=1.0,
+    )
+    f_world = rep_world.findings[0]
+    assert f_world.measurements["frame"] == "world_free_space_radial"
+    assert f_world.measurements["best_z_offset_m"] == 0.025
+    assert f_world.measurements["best_approach_angle_rad"] == 1.571
+    assert f_world.measurements["best_gripper_yaw_rad"] == 1.571
+    assert "z_offset_m=0.025" in f_world.summary
+    assert "NOT random object yaw" in f_world.summary
+
     raw_json = """```json
     [
       {"hypothesis_id": "h1", "title": "Offset grasp", "diagnosis": "missed center", "proposed_strategy": "grasp at +0.055m"}
