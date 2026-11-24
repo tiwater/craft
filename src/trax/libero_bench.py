@@ -310,8 +310,19 @@ def _execute_libero_source(source: str, sdk: LiberoPolicySDK, timeout_s: int = 2
                 signal.signal(signal.SIGALRM, prev_handler)
 
 
+def _reset_and_settle_libero_env(env: Any, init_states: Any, init_idx: int, settle_steps: int = 10) -> Any:
+    """Reset LIBERO env to official init_state and run standard 10-step object settling."""
+    env.seed(int(init_idx))
+    env.reset()
+    env.set_init_state(init_states[int(init_idx) % len(init_states)])
+    obs = None
+    for _ in range(max(1, int(settle_steps))):
+        obs, _, _, _ = env.step([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0])
+    return obs
+
+
 def _build_libero_grasp_probe_source(target_obj: str) -> str:
-    """Task-agnostic public-SDK free-space radial + jaw-alignment grasp probe for LIBERO objects."""
+    """Task-agnostic public-SDK free-space radial + jaw-alignment + lateral-stability grasp probe."""
     return f"""def run_policy(sdk):
     target = {target_obj!r}
     samples = []
@@ -332,8 +343,8 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
     best_clr = -1.0
     for k in range(8):
         ang = k * (pi / 4.0)
-        px = tpos[0] + 0.045 * cos(ang)
-        py = tpos[1] + 0.045 * sin(ang)
+        px = tpos[0] + 0.040 * cos(ang)
+        py = tpos[1] + 0.040 * sin(ang)
         clr = 9.99
         for op in obstacles:
             d = hypot(px - op[0], py - op[1])
@@ -343,9 +354,16 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
             best_clr = clr
             best_ang = ang
 
+    def score_sample(rec):
+        if rec is None:
+            return -9.0
+        lift = rec["lift_delta_m"]
+        pen = 0.045 if (lift >= 0.03 and rec["closed_width_m"] > 0.055) else 0.0
+        return lift - pen
+
     def run_sample(r, dz, ang, yaw, jaw_rel):
         st = sdk.get_state()
-        if st["steps_used"] > st["max_steps"] - 65 or target not in st["objects"]:
+        if st["steps_used"] > st["max_steps"] - 80 or target not in st["objects"]:
             return None
         o = st["objects"][target]
         pos = o["pos"]
@@ -358,11 +376,11 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
                 d = hypot(gx - oinfo["pos"][0], gy - oinfo["pos"][1])
                 if d < clr:
                     clr = d
-        sdk.set_gripper("open", steps=5)
-        sdk.move_to([gx, gy, z0 + 0.12], yaw=yaw, gripper="open", max_steps=26, tol=0.015)
-        sdk.move_to([gx, gy, z0 + dz], yaw=yaw, gripper="open", max_steps=22, tol=0.015)
-        g = sdk.set_gripper("close", steps=14)
-        sdk.move_to([gx, gy, z0 + 0.12], yaw=yaw, gripper="close", max_steps=22, tol=0.015)
+        sdk.set_gripper("open", steps=4)
+        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="open", max_steps=24, tol=0.015)
+        sdk.move_to([gx, gy, z0 + dz], yaw=yaw, gripper="open", max_steps=20, tol=0.012)
+        g = sdk.set_gripper("close", steps=12)
+        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="close", max_steps=20, tol=0.015)
         st2 = sdk.get_state()
         z1 = st2["objects"][target]["pos"][2]
         rec = {{
@@ -377,18 +395,19 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
             "lift_delta_m": round(z1 - z0, 4),
         }}
         samples.append(rec)
+        # Gently set object back down before releasing so next sample starts cleanly
+        if z1 - z0 > 0.02:
+            sdk.move_to([gx, gy, z0 + dz + 0.005], yaw=yaw, gripper="close", max_steps=16, tol=0.015)
         sdk.set_gripper("open", steps=5)
         return rec
 
     run_sample(0.0, 0.0, 0.0, eef0_yaw, 0.0)
-    s_par = run_sample(0.045, 0.025, best_ang, best_ang, 0.0)
-    s_perp = run_sample(0.045, 0.025, best_ang, best_ang + pi / 2.0, pi / 2.0)
-    best_jaw = 0.0
-    if s_perp is not None and (s_par is None or s_perp["lift_delta_m"] > s_par["lift_delta_m"]):
-        best_jaw = pi / 2.0
+    s_perp = run_sample(0.040, 0.020, best_ang, best_ang + pi / 2.0, pi / 2.0)
+    s_par = run_sample(0.040, 0.020, best_ang, best_ang, 0.0)
+    best_jaw = pi / 2.0 if score_sample(s_perp) >= score_sample(s_par) else 0.0
     opp_ang = best_ang + pi
-    run_sample(0.045, 0.025, opp_ang, opp_ang + best_jaw, best_jaw)
-    run_sample(0.045, 0.015, best_ang, best_ang + best_jaw, best_jaw)
+    run_sample(0.040, 0.020, opp_ang, opp_ang + best_jaw, best_jaw)
+    run_sample(0.045, 0.025, best_ang, best_ang + best_jaw, best_jaw)
     return {{
         "status": "done",
         "probe": "grasp_offset_scan",
@@ -430,10 +449,7 @@ def run_libero_active_probe(
     if not target:
         return None
     t0 = time.monotonic()
-    env.seed(int(init_idx))
-    env.reset()
-    env.set_init_state(init_states[int(init_idx) % len(init_states)])
-    obs, _, _, _ = env.step([0.0] * 7)
+    obs = _reset_and_settle_libero_env(env, init_states, int(init_idx))
     sdk = LiberoPolicySDK(env, task_lang, max_steps=horizon)
     sdk.bind_initial_obs(obs)
     ok, _err, _rep, raw = _execute_libero_source(_build_libero_grasp_probe_source(target), sdk)
@@ -510,10 +526,7 @@ def run_libero_rollout(
     owns_env = reuse_env is None
     env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=64, camera_widths=64) if owns_env else reuse_env
     try:
-        env.seed(int(init_idx))
-        env.reset()
-        env.set_init_state(init_states[int(init_idx) % len(init_states)])
-        obs, _, _, _ = env.step([0.0] * 7)
+        obs = _reset_and_settle_libero_env(env, init_states, int(init_idx))
         sdk = LiberoPolicySDK(env, task_lang, max_steps=horizon)
         sdk.bind_initial_obs(obs)
         ok_exec, err_msg, ret_str, _raw = _execute_libero_source(source, sdk)
@@ -561,10 +574,7 @@ def _probe_initial_scene_schema(
     owns_env = reuse_env is None
     env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=64, camera_widths=64) if owns_env else reuse_env
     try:
-        env.seed(int(init_idx))
-        env.reset()
-        env.set_init_state(init_states[int(init_idx) % len(init_states)])
-        obs, _, _, _ = env.step([0.0] * 7)
+        obs = _reset_and_settle_libero_env(env, init_states, int(init_idx))
         sdk = LiberoPolicySDK(env, task_lang)
         sdk.bind_initial_obs(obs)
         return sdk.get_state()
