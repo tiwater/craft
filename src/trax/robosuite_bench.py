@@ -104,7 +104,7 @@ ROBOSUITE_TASK_DESCRIPTIONS: dict[str, str] = {
 SHARED_ROBOSUITE_SDK_CONTRACT = """Robosuite 6-DoF Continuous Control Policy SDK Contract (identical for all methods):
 1. Entry point: define `def run_policy(sdk):` returning a dict `{"status": "done" | "failed", ...}`.
 2. Safe Sandbox Rules:
-   - NO `import`, `try`/`except`, `with`, `class`, `global`, `nonlocal`, `del`, or `_`-prefixed names/attributes.
+   - NO `import`, `try`/`except`, `with`, `class`, `lambda`, `global`, `nonlocal`, `del`, or `_`-prefixed names/attributes (use `def` helpers instead of `lambda`).
    - Math helpers are pre-injected directly as globals: `sin`, `cos`, `tan`, `atan2`, `sqrt`, `hypot`, `fabs`, `pi`, `min`, `max`, `abs`, `round`, `range`, `len`, `sum`, `list`, `dict`, `tuple`, `float`, `int`, `bool`, `enumerate`, `sorted`, `all`, `any`.
    - Top-level helper functions (names NOT starting with `_`) are allowed.
 3. Available `sdk` methods (real MuJoCo `OSC_POSE` Panda control, 20 Hz, max horizon 400 steps):

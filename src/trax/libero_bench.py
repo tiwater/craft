@@ -57,7 +57,7 @@ def _utc_now() -> str:
 SHARED_LIBERO_SDK_CONTRACT = """LIBERO 6-DoF Manipulation Host SDK Contract (identical for all evaluated methods):
 1. Entry point: define `def run_policy(sdk):` returning `{"status": "done" | "failed", ...}`.
 2. Safe AST Sandbox Rules:
-   - NO `import`, `try`/`except`, `with`, `class`, `global`, `nonlocal`, `del`, or `_`-prefixed names/attributes.
+   - NO `import`, `try`/`except`, `with`, `class`, `lambda`, `global`, `nonlocal`, `del`, or `_`-prefixed names/attributes (use `def` helpers instead of `lambda`).
    - Pre-injected globals: `sin`, `cos`, `tan`, `atan2`, `sqrt`, `hypot`, `fabs`, `pi`, `min`, `max`, `abs`, `round`, `range`, `len`, `sum`, `list`, `dict`, `tuple`, `float`, `int`, `bool`, `enumerate`, `sorted`, `all`, `any`.
    - Top-level helper functions (names NOT starting with `_`) are allowed.
 3. Available `sdk` methods (official LIBERO Panda OSC_POSE, 20 Hz, max horizon 450 steps):
@@ -190,8 +190,15 @@ class LiberoPolicySDK:
     def get_state(self) -> dict[str, Any]:
         return self._build_state()
 
+    def _parse_gripper_cmd(self, action: Any) -> float:
+        if isinstance(action, (int, float)) and not isinstance(action, bool):
+            return 1.0 if float(action) > 0.0 else -1.0
+        if isinstance(action, bool):
+            return 1.0 if action else -1.0
+        return 1.0 if str(action).strip().lower() in {"close", "closed", "grasp", "1", "+1", "true"} else -1.0
+
     def set_gripper(self, action: str, steps: int = 15) -> dict[str, Any]:
-        self._grip_cmd = 1.0 if str(action).lower() in {"close", "closed", "grasp"} else -1.0
+        self._grip_cmd = self._parse_gripper_cmd(action)
         n = max(1, min(40, int(steps)))
         for _ in range(n):
             if self._steps_used >= self._max_steps:
@@ -210,7 +217,7 @@ class LiberoPolicySDK:
         tol: float = 0.015,
     ) -> dict[str, Any]:
         if gripper is not None:
-            self._grip_cmd = 1.0 if str(gripper).lower() in {"close", "closed", "grasp"} else -1.0
+            self._grip_cmd = self._parse_gripper_cmd(gripper)
         tx, ty, tz = float(pos[0]), float(pos[1]), float(pos[2])
         lim = max(1, min(160, int(max_steps)))
         tol_m = max(0.003, float(tol))
@@ -355,21 +362,28 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
             best_ang = ang
 
     def score_sample(rec):
-        if rec is None:
+        if rec is None or not rec.get("retained"):
             return -9.0
         lift = rec["lift_delta_m"]
-        pen = 0.045 if (lift >= 0.03 and rec["closed_width_m"] > 0.055) else 0.0
+        width = rec["closed_width_m"]
+        if lift >= 0.03 and width < 0.007:
+            return -9.0
+        pen = 0.045 if (lift >= 0.03 and width > 0.055) else 0.0
         return lift - pen
 
-    def run_sample(r, dz, ang, yaw, jaw_rel):
+    def nearest_jaw_yaw(desired, cur_yaw):
+        return cur_yaw + 0.5 * atan2(sin(2.0 * (desired - cur_yaw)), cos(2.0 * (desired - cur_yaw)))
+
+    def run_sample(r, dz, ang, desired_yaw, jaw_rel):
         st = sdk.get_state()
-        if st["steps_used"] > st["max_steps"] - 80 or target not in st["objects"]:
+        if st["steps_used"] > st["max_steps"] - 85 or target not in st["objects"]:
             return None
         o = st["objects"][target]
         pos = o["pos"]
         z0 = pos[2]
         gx = pos[0] + r * cos(ang)
         gy = pos[1] + r * sin(ang)
+        yaw = nearest_jaw_yaw(desired_yaw, st["eef_yaw"])
         clr = 9.99
         for oname, oinfo in st["objects"].items():
             if oname != target:
@@ -377,12 +391,17 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
                 if d < clr:
                     clr = d
         sdk.set_gripper("open", steps=4)
-        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="open", max_steps=24, tol=0.015)
-        sdk.move_to([gx, gy, z0 + dz], yaw=yaw, gripper="open", max_steps=20, tol=0.012)
+        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="open", max_steps=45, tol=0.012)
+        sdk.move_to([gx, gy, z0 + dz], yaw=yaw, gripper="open", max_steps=26, tol=0.010)
         g = sdk.set_gripper("close", steps=12)
-        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="close", max_steps=20, tol=0.015)
+        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="close", max_steps=22, tol=0.015)
         st2 = sdk.get_state()
-        z1 = st2["objects"][target]["pos"][2]
+        p2 = st2["objects"][target]["pos"]
+        eef2 = st2["eef_pos"]
+        z1 = p2[2]
+        eef_obj_xy = hypot(p2[0] - eef2[0], p2[1] - eef2[1])
+        eef_obj_z = abs(p2[2] - eef2[2])
+        retained = (z1 - z0 >= 0.03) and (g["gripper_width"] >= 0.007) and (eef_obj_xy <= 0.085) and (eef_obj_z <= 0.085)
         rec = {{
             "target": target,
             "local_offset_m": r,
@@ -393,6 +412,8 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
             "clearance_m": round(clr, 4),
             "closed_width_m": round(g["gripper_width"], 4),
             "lift_delta_m": round(z1 - z0, 4),
+            "eef_obj_xy_m": round(eef_obj_xy, 4),
+            "retained": retained,
         }}
         samples.append(rec)
         # Gently set object back down before releasing so next sample starts cleanly
@@ -401,13 +422,14 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
         sdk.set_gripper("open", steps=5)
         return rec
 
-    run_sample(0.0, 0.0, 0.0, eef0_yaw, 0.0)
+    # Probe non-destructive free-space radial grasps FIRST; test center plunge LAST
     s_perp = run_sample(0.040, 0.020, best_ang, best_ang + pi / 2.0, pi / 2.0)
     s_par = run_sample(0.040, 0.020, best_ang, best_ang, 0.0)
     best_jaw = pi / 2.0 if score_sample(s_perp) >= score_sample(s_par) else 0.0
     opp_ang = best_ang + pi
     run_sample(0.040, 0.020, opp_ang, opp_ang + best_jaw, best_jaw)
     run_sample(0.045, 0.025, best_ang, best_ang + best_jaw, best_jaw)
+    run_sample(0.0, 0.0, 0.0, eef0_yaw, 0.0)
     return {{
         "status": "done",
         "probe": "grasp_offset_scan",
@@ -494,7 +516,7 @@ def attribute_libero_failure(rollout: Mapping[str, Any]) -> dict[str, str]:
             "summary": f"Approached object (min_dist={min_d:.3f}m) but never closed gripper (steps={steps}).",
             "prescription": "Relax strict pre-grasp convergence guards so gripper closing/actuation runs once positioned.",
         }
-    if max_lift < 0.03:
+    if max_lift < 0.05:
         return {
             "layer": "control",
             "code": "grasp_missed_or_slip",
@@ -728,6 +750,7 @@ def _libero_craft_prompt(
     hypothesis_strategy: str = "",
 ) -> str:
     failed = [r for r in dev_runs if not r["success"]]
+    passed_cnt = sum(1 for r in dev_runs if r.get("success"))
     fail_codes = [str(r["attribution"]["code"]) for r in failed]
     sub = analyze_policy_subroutines(prev_src, fail_codes)
 
@@ -736,10 +759,17 @@ def _libero_craft_prompt(
         if hypothesis_title
         else []
     )
-    sub_block = [
-        f"Selective Subroutine Scope ({sub['repair_scope']}): {sub['freeze_hint']}",
-        "",
-    ]
+    if passed_cnt > 0:
+        sub_block = [
+            f"Selective Subroutine Scope ({sub['repair_scope']}): {sub['freeze_hint']}",
+            "",
+        ]
+    else:
+        sub_block = [
+            f"Full Stage Redesign Scope (0 dev passes so far; do NOT freeze failing grasp/approach logic): "
+            "Rewrite approach, grasp, and transport cleanly from empirical ActiveProbe measurements and verified skills.",
+            "",
+        ]
 
     diag = []
     seen_rx: dict[str, str] = {}

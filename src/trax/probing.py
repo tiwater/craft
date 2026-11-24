@@ -229,12 +229,21 @@ def parse_probe_telemetry(
                 def _grasp_quality(s: Mapping[str, Any]) -> float:
                     lift = float(s.get("lift_delta_m", 0.0))
                     width = float(s.get("closed_width_m", 0.0))
+                    retained = s.get("retained")
+                    # Reject empty-gripper collision bounces (width < 0.007m or object detached from EEF)
+                    if retained is False or (lift >= 0.03 and width < 0.007):
+                        return -1.0
                     # Penalize fragile near-open outer-chord grasps (>0.055m) when secure inner pinches exist
                     chord_pen = 0.045 if (lift >= 0.03 and width > 0.055) else 0.0
                     return lift - chord_pen
 
                 best = max(samples, key=_grasp_quality)
-                lifted = [s for s in samples if float(s.get("lift_delta_m", 0.0)) >= 0.03]
+                lifted = [
+                    s for s in samples
+                    if float(s.get("lift_delta_m", 0.0)) >= 0.03
+                    and float(s.get("closed_width_m", 0.0)) >= 0.007
+                    and s.get("retained") is not False
+                ]
                 frame = str(out.get("frame") or ("world_free_space_radial" if "approach_angle_rad" in best else "object_local_x"))
                 is_world_radial = frame == "world_free_space_radial" or ("approach_angle_rad" in best)
                 if is_world_radial:
