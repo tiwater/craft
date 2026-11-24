@@ -26,6 +26,7 @@ from craft.config import SceneConfig
 from craft.host_driver import create_host_driver
 from craft.journal import Journal
 from craft.probing import (
+    analyze_policy_subroutines,
     build_articulated_sweep_probe_source,
     build_grasp_offset_scan_probe_source,
     parse_llm_hypotheses_json,
@@ -355,3 +356,70 @@ def test_combo_multi_appliance_interlocks_crash_recovery_and_throughput(tmp_path
     assert pipe_no_j["duplicate_non_idempotent_orders"] >= 2
     assert craft["mean_completed_cycle_s"] < seq["mean_completed_cycle_s"] * 0.75
     assert craft["throughput_orders_per_hour"] > seq["throughput_orders_per_hour"] * 1.35
+
+
+def test_selective_subroutine_analysis_and_adaptive_polish_escape() -> None:
+    from craft.robosuite_bench import _robo_craft_hypotheses, _robo_craft_prompt
+
+    sample_policy = """def grasp_obj(sdk, pos):
+    sdk.move_to(pos, gripper="open")
+    sdk.set_gripper("close")
+
+def seat_obj(sdk, goal):
+    sdk.move_to(goal, gripper="close")
+    sdk.set_gripper("open")
+
+def run_policy(sdk):
+    st = sdk.get_state()
+    grasp_obj(sdk, st["objects"]["nut"]["pos"])
+    seat_obj(sdk, st["goal_pos"])
+    return {"status": "done"}
+"""
+    sub = analyze_policy_subroutines(sample_policy, ["insertion_too_high_or_step_exhausted"])
+    assert sub["repair_scope"] == "downstream_alignment_and_seating"
+    names = [s["name"] for s in sub["subroutines"]]
+    assert names == ["grasp_obj", "seat_obj", "run_policy"]
+
+    partial_runs = [
+        {"seed": 101, "success": True, "steps_used": 250, "max_handle_qpos": 0.0, "max_hinge_qpos": 0.0},
+        {
+            "seed": 102,
+            "success": False,
+            "steps_used": 380,
+            "min_eef_to_obj_m": 0.01,
+            "ever_closed_gripper": True,
+            "closed_gripper_width_max": 0.02,
+            "obj_lift_delta_m": 0.12,
+            "min_obj_to_goal_m": 0.005,
+            "max_handle_qpos": 0.0,
+            "max_hinge_qpos": 0.0,
+            "final_state": {"eef_pos": [0.2, 0.1, 0.95], "objects": {"nut": {"pos": [0.2, 0.1, 0.93]}}, "goal_pos": [0.2, 0.1, 0.85]},
+            "attribution": {"layer": "control", "code": "insertion_too_high_or_step_exhausted", "prescription": "Descend cleanly"},
+        },
+    ]
+    h_fresh = _robo_craft_hypotheses("NutAssemblySquare", partial_runs, stagnant_iters=0)
+    assert h_fresh[0][0].startswith("H-Subroutine1")
+
+    # After 1 stagnant iteration, must escape narrow polish and unlock H-Place* mechanistic hypotheses (with 0 hardcoded leaks)
+    h_escaped = _robo_craft_hypotheses("NutAssemblySquare", partial_runs, stagnant_iters=1)
+    assert h_escaped[0][0].startswith("H-Place1")
+    joined = " ".join(f"{t} {s}" for t, s in h_escaped)
+    for forbidden in ("0.055", "1.45", "goal_pos[2] + 0.015"):
+        assert forbidden not in joined
+
+    prompt = _robo_craft_prompt(
+        "NutAssemblySquare",
+        sample_policy,
+        partial_runs,
+        [],
+        [102],
+        4,
+        hypothesis_title=h_escaped[0][0],
+        hypothesis_strategy=h_escaped[0][1],
+        failed_attempts=[
+            {"iter": 3, "hypothesis": "H-Subroutine1", "dev_passed": 1, "dev_total": 2, "progress_score": 0.05, "attributions": ["insertion_too_high_or_step_exhausted"]}
+        ],
+    )
+    assert "Selective Subroutine Scope (downstream_alignment_and_seating)" in prompt
+    assert "Recent Non-Improving Attempts" in prompt
+

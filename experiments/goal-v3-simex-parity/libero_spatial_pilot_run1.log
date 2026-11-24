@@ -1,0 +1,48 @@
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_spatial_t0] Task: 'pick up the black bowl between the plate and the ramekin and place it on the plate' (dev=[0, 1, 2], eval=3..12)
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+  [libero_spatial_t0][Shared it=1] dev=0/3
+  [libero_spatial_t0][ASPIRE it=2] dev=1/3
+  [libero_spatial_t0][ASPIRE it=3] dev=0/3
+  [libero_spatial_t0][ASPIRE it=4] dev=0/3
+  [libero_spatial_t0][ASPIRE it=5] dev=0/3
+  [libero_spatial_t0][SimEX-Protocol it=2] dev=0/3 regs=0
+  [libero_spatial_t0][SimEX-Protocol it=3] dev=0/3 regs=0
+  [libero_spatial_t0][SimEX-Protocol it=4] dev=0/3 regs=0
+  [libero_spatial_t0][SimEX-Protocol it=5] dev=0/3 regs=0
+  [libero_spatial_t0][CRAFT it=2] dev=0/3 regs=0 attr=['grasp_missed_or_slip', 'grasp_missed_or_slip', 'grasp_missed_or_slip']
+  [libero_spatial_t0][CRAFT it=3] dev=0/3 regs=0 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_spatial_t0][CRAFT it=4] dev=0/3 regs=0 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_spatial_t0][CRAFT it=5] dev=0/3 regs=0 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+[libero_spatial_t0][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_spatial_t0][EVAL] aspire_protocol  -> 1/10 (10.0%)
+[libero_spatial_t0][EVAL] simex_protocol   -> 0/10 (0.0%)
+[libero_spatial_t0][EVAL] craft_full       -> 0/10 (0.0%)
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_spatial_t1] Task: 'pick up the black bowl next to the ramekin and place it on the plate' (dev=[0, 1, 2], eval=3..12)
+Traceback (most recent call last):
+  File "<workspace>/.venv-libero/bin/craft", line 10, in <module>
+  File "<workspace>/src/craft/cli.py", line 713, in main
+  File "<workspace>/src/craft/libero_bench.py", line 650, in run_libero_benchmark
+  File "<workspace>/src/craft/libero_bench.py", line 650, in <listcomp>
+  File "<workspace>/src/craft/libero_bench.py", line 351, in run_libero_rollout
+  File "<workspace>/.libero-src/libero/libero/envs/env_wrapper.py", line 161, in __init__
+  File "<workspace>/.libero-src/libero/libero/envs/env_wrapper.py", line 56, in __init__
+  File "<workspace>/.libero-src/libero/libero/envs/problems/libero_tabletop_manipulation.py", line 40, in __init__
+  File "<workspace>/.libero-src/libero/libero/envs/bddl_base_domain.py", line 135, in __init__
+  File "<workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/environments/manipulation/manipulation_env.py", line 162, in __init__
+  File "<workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/environments/robot_env.py", line 214, in __init__
+  File "<workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/environments/base.py", line 137, in __init__
+  File "<workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/environments/base.py", line 230, in _initialize_sim
+  File "<workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/utils/binding_utils.py", line 1072, in from_xml_string
+ValueError: Error: resource not found via provider or OS filesystem: '<workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/models/assets/robots/panda/obj_meshes/link3_vis/link3_vis_3.obj'

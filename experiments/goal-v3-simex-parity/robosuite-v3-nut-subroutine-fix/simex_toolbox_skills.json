@@ -1,0 +1,31 @@
+{
+  "simex-nutassemblysquare-v3": {
+    "applicability_notes": "",
+    "code_sha256": "4eeea85fe220d8867af802d1007ff1b99d18f8664709f6ae5f1bf838e8c00c24",
+    "code_snippet": "def angle_difference(target, current):\n    return atan2(sin(target - current), cos(target - current))\n\ndef square_alignment(yaw):\n    return min(\n        [angle_difference(k * pi / 2.0, yaw) for k in range(-2, 3)],\n        key=abs,\n    )\n\ndef clamp(value, limit):\n    return max(-limit, min(limit, value))",
+    "entry_functions": [
+      "angle_difference",
+      "square_alignment",
+      "clamp"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Capability-bank screened policy for NutAssemblySquare (0/20 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {},
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "simex-nutassemblysquare-v3",
+    "task_name": "NutAssemblySquare",
+    "title": "SimEX NutAssemblySquare Toolbox Entry",
+    "verification_report_id": "simex-v3-NutAssemblySquare",
+    "verified": false,
+    "verified_at_utc": "2026-11-24T06:40:13.295366+00:00"
+  }
+}

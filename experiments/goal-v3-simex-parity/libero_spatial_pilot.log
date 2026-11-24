@@ -1,0 +1,55 @@
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_spatial_t0] Task: 'pick up the black bowl between the plate and the ramekin and place it on the plate' (dev=[0, 1, 2], eval=3..12)
+  [libero_spatial_t0][Shared it=1] dev=0/3
+  [libero_spatial_t0][ASPIRE it=2] dev=3/3
+  [libero_spatial_t0][SimEX-Protocol it=2] dev=0/3 regs=0
+  [libero_spatial_t0][SimEX-Protocol it=3] dev=0/3 regs=0
+  [libero_spatial_t0][SimEX-Protocol it=4] dev=0/3 regs=0
+  [libero_spatial_t0][SimEX-Protocol it=5] dev=0/3 regs=0
+  [libero_spatial_t0][CRAFT ActiveProbe] +1 sim reset -> ['Scanned 5 local X offsets on `akita_black_bowl_1`; best empirical lift=0.0664m at local_offset_m=-0.05 (closed_width=0.0081m; 3/5 offsets lifted >=0.03m).']
+  [libero_spatial_t0][CRAFT it=2] dev=0/3 regs=0 attr=['grasp_missed_or_slip', 'grasp_missed_or_slip', 'insertion_or_release_precision_error']
+  [libero_spatial_t0][CRAFT it=3] dev=1/3 regs=0 attr=['grasp_missed_or_slip', 'grasp_missed_or_slip']
+  [libero_spatial_t0][CRAFT it=4] dev=1/3 regs=0 attr=['grasp_missed_or_slip', 'grasp_missed_or_slip']
+  [libero_spatial_t0][CRAFT it=5] dev=3/3 regs=0 attr=[]
+[libero_spatial_t0][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_spatial_t0][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_spatial_t0][EVAL] simex_protocol   -> 0/10 (0.0%)
+[libero_spatial_t0][EVAL] craft_full       -> 4/10 (40.0%)
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_spatial_t1] Task: 'pick up the black bowl next to the ramekin and place it on the plate' (dev=[0, 1, 2], eval=3..12)
+  [libero_spatial_t1][Shared it=1] dev=0/3
+  [libero_spatial_t1][ASPIRE it=2] dev=0/3
+  [libero_spatial_t1][ASPIRE it=3] dev=3/3
+  [libero_spatial_t1][SimEX-Protocol it=2] dev=0/3 regs=0
+  [libero_spatial_t1][SimEX-Protocol it=3] dev=0/3 regs=0
+  [libero_spatial_t1][SimEX-Protocol it=4] dev=0/3 regs=0
+  [libero_spatial_t1][SimEX-Protocol it=5] dev=0/3 regs=0
+  [libero_spatial_t1][CRAFT ActiveProbe] +1 sim reset -> ['Scanned 5 local X offsets on `akita_black_bowl_1`; best empirical lift=0.0644m at local_offset_m=0.045 (closed_width=0.0076m; 3/5 offsets lifted >=0.03m).']
+  [libero_spatial_t1][CRAFT it=2] dev=1/3 regs=0 attr=['grasp_missed_or_slip', 'grasp_missed_or_slip']
+  [libero_spatial_t1][CRAFT it=3] dev=2/3 regs=0 attr=['never_closed_gripper_early_abort']
+  [libero_spatial_t1][CRAFT it=4] dev=0/3 regs=2 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'grasp_missed_or_slip']
+  [libero_spatial_t1][CRAFT it=5] AST blocked (0 resets wasted)
+[libero_spatial_t1][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_spatial_t1][EVAL] aspire_protocol  -> 9/10 (90.0%)
+[libero_spatial_t1][EVAL] simex_protocol   -> 0/10 (0.0%)
+[libero_spatial_t1][EVAL] craft_full       -> 3/10 (30.0%)
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_spatial_t2] Task: 'pick up the black bowl from table center and place it on the plate' (dev=[0, 1, 2], eval=3..12)
+  [libero_spatial_t2][Shared it=1] dev=0/3
+  [libero_spatial_t2][ASPIRE it=2] dev=0/3
+  [libero_spatial_t2][ASPIRE it=3] dev=0/3
+  [libero_spatial_t2][ASPIRE it=4] dev=0/3
+  [libero_spatial_t2][ASPIRE it=5] dev=0/3

@@ -193,6 +193,20 @@ def main() -> None:
     )
     cmb.add_argument("--output", required=True, help="Output directory for Combo operations report")
 
+    lb = sub.add_parser(
+        "libero-bench",
+        help="Run official LIBERO suite comparison (optional .venv-libero environment)",
+    )
+    lb.add_argument("--output", required=True, help="Output directory for LIBERO report & policies")
+    lb.add_argument("--suite", default="libero_spatial", help="LIBERO suite (libero_spatial, libero_object, libero_goal, libero_10)")
+    lb.add_argument("--tasks", default="0,1,2", help="Comma-separated task IDs (0..9)")
+    lb.add_argument("--dev-count", type=int, default=3)
+    lb.add_argument("--eval-count", type=int, default=10)
+    lb.add_argument("--provider", default="codex_cli", choices=["codex_cli", "openai_api"])
+    lb.add_argument("--model", default="gpt-6-astra")
+    lb.add_argument("--effort", default="medium", choices=["low", "medium", "high", "xhigh"])
+    lb.add_argument("--max-dev-calls", type=int, default=5)
+
     studio = sub.add_parser("studio", help="Launch standalone interactive CRAFT Studio Web Demo")
     studio.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
     studio.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or craft.drivers plugin)")
@@ -678,6 +692,36 @@ def main() -> None:
         from .combo_bench import run_combo_operations_benchmark
 
         report = run_combo_operations_benchmark(args.output)
+        print(
+            json.dumps(
+                {
+                    "benchmark_version": report["benchmark_version"],
+                    "summary_by_method": report["summary_by_method"],
+                    "paired_mcnemar_craft_vs": report["paired_mcnemar_craft_vs"],
+                },
+                indent=2,
+            )
+        )
+        return
+
+    if args.command == "libero-bench":
+        from .libero_bench import run_libero_benchmark
+        from .prior_work_bench import make_live_llm_fn
+
+        task_ids = tuple(int(x.strip()) for x in args.tasks.split(",") if x.strip())
+        llm_fn = make_live_llm_fn(provider=args.provider, model=args.model, reasoning_effort=args.effort)
+        report = run_libero_benchmark(
+            llm_fn=llm_fn,
+            output_dir=args.output,
+            suite_name=args.suite,
+            task_ids=task_ids,
+            dev_count=args.dev_count,
+            eval_count=args.eval_count,
+            model=args.model,
+            reasoning_effort=args.effort,
+            max_dev_llm_calls=args.max_dev_calls,
+            progress_cb=lambda msg: print(msg, flush=True),
+        )
         print(
             json.dumps(
                 {

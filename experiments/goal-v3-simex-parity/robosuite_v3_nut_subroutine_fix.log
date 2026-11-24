@@ -1,0 +1,769 @@
+[NutAssemblySquare] Dev 1/5: Strong Zero-Shot (shared paired it=1 draft)...
+[robosuite WARNING] No private macro file found! (macros.py:57)
+[robosuite WARNING] It is recommended to use a private macro file (macros.py:58)
+[robosuite WARNING] To setup, run: python /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (macros.py:59)
+[robosuite WARNING] Could not import robosuite_models. Some robots may not be available. If you want to use these robots, please install robosuite_models from source (https://github.com/ARISE-Initiative/robosuite_models) or through pip install. (__init__.py:30)
+[robosuite WARNING] Could not load the mink-based whole-body IK. Make sure you install related import properly, otherwise you will not be able to use the default IK controller setting for GR1 robot. (__init__.py:40)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][Shared it=1] dev=0/5
+[NutAssemblySquare] Dev 2/5: ASPIRE-Protocol (dev seeds [101, 102, 103, 104, 105])...
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][ASPIRE it=2] dev=0/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][ASPIRE it=3] dev=0/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][ASPIRE it=4] dev=0/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][ASPIRE it=5] dev=0/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][ASPIRE it=6] dev=4/5
+[NutAssemblySquare] Dev 3/5: CaP-X-Protocol (dev seeds [101, 102, 103, 104, 105])...
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CaP-X it=2] dev=1/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CaP-X it=3] dev=1/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CaP-X it=4] dev=0/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CaP-X it=5] dev=2/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CaP-X it=6] dev=3/5
+[NutAssemblySquare] Dev 4/5: SimEX-Direct-Repair (dev seeds [101, 102, 103, 104, 105])...
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Direct it=2] dev=0/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Direct it=3] dev=1/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Direct it=4] dev=0/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Direct it=5] dev=0/5
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Direct it=6] dev=0/5
+[NutAssemblySquare] Dev 5/6: SimEX-Protocol (Adapted, multi-hypothesis + capability bank)...
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Protocol it=2] dev=0/5 regs=0
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Protocol it=3] dev=0/5 regs=0
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Protocol it=4] dev=0/5 regs=0
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Protocol it=5] dev=0/5 regs=0
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][SimEX-Protocol it=6] dev=0/5 regs=0
+[NutAssemblySquare] Dev 6/6: CRAFT Full Engine (Active Probing + RepairScreener + Zero-Leakage)...
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CRAFT ActiveProbe] +1 sim reset -> ['Scanned 4 local X offsets on `nut`; best empirical lift=0.0727m at local_offset_m=0.055 (closed_width=0.0302m; 1/4 offsets lifted >=0.03m).']
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CRAFT it=2] (H-Gen1: Probe-Grounded Contact & Grasp Strategy (grasp_missed_or_slip)) dev=0/5 prog=-0.030 attr=['transport_or_goal_alignment_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CRAFT it=3] (H-Place2: Closed-Loop 6D Servoing via step_raw + Step-Budget Optimization) dev=1/5 prog=0.039 attr=['insertion_or_release_precision_error', 'insertion_too_high_or_step_exhausted', 'insertion_too_high_or_step_exhausted', 'insertion_too_high_or_step_exhausted']
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CRAFT it=4] (H-Subroutine1: Selective Subroutine Repair for 4 Failing Seed(s) (Freeze Working Stages)) dev=2/5 prog=-0.097 attr=['grasp_missed_or_slip', 'transport_or_goal_alignment_error', 'insertion_or_release_precision_error']
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CRAFT it=5] (H-Subroutine2: Preserve Working Stage + Add Closed-Loop Recovery Branch on Verification Failure) dev=2/5 prog=-0.107 attr=['insertion_too_high_or_step_exhausted', 'never_closed_gripper_early_abort', 'grasp_missed_or_slip']
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+  [NutAssemblySquare][CRAFT it=6] (H-Place2: Closed-Loop 6D Servoing via step_raw + Step-Budget Optimization) dev=3/5 prog=-0.019 attr=['insertion_or_release_precision_error', 'grasp_missed_or_slip']
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[NutAssemblySquare][EVAL] strong_zeroshot  -> 0/20 (0.0%)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[NutAssemblySquare][EVAL] aspire_protocol  -> 6/20 (30.0%)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[NutAssemblySquare][EVAL] capx_protocol    -> 16/20 (80.0%)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[NutAssemblySquare][EVAL] simex_direct_repair -> 0/20 (0.0%)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[NutAssemblySquare][EVAL] simex_protocol   -> 0/20 (0.0%)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[robosuite INFO] Loading controller configuration from: /home/hugh/tc/craft/.venv/lib/python3.10/site-packages/robosuite/controllers/config/robots/default_panda.json (composite_controller_factory.py:121)
+[NutAssemblySquare][EVAL] craft_full       -> 12/20 (60.0%)
+{
+  "benchmark_version": "CRAFT-Robosuite-Parity-v3.0",
+  "summary_by_method": {
+    "strong_zeroshot": {
+      "method_id": "strong_zeroshot",
+      "label": "Strong Zero-Shot",
+      "provenance": "baseline_control",
+      "total_trials": 20,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.1611
+      ],
+      "turn1_passed": 0,
+      "turn1_pass_rate": 0.0,
+      "by_task": {
+        "NutAssemblySquare": {
+          "passed": 0,
+          "turn1_passed": 0,
+          "total": 20,
+          "rate": 0.0,
+          "wilson_95_ci": [
+            0.0,
+            0.1611
+          ]
+        }
+      },
+      "dev_llm_calls": 1,
+      "dev_sim_resets": 0,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 1.514,
+      "p95_wall_s": 1.562
+    },
+    "aspire_protocol": {
+      "method_id": "aspire_protocol",
+      "label": "ASPIRE-Protocol (Adapted)",
+      "provenance": "protocol_adapted_from_official_repo",
+      "total_trials": 20,
+      "passed": 6,
+      "pass_rate": 0.3,
+      "wilson_95_ci": [
+        0.1455,
+        0.519
+      ],
+      "turn1_passed": 6,
+      "turn1_pass_rate": 0.3,
+      "by_task": {
+        "NutAssemblySquare": {
+          "passed": 6,
+          "turn1_passed": 6,
+          "total": 20,
+          "rate": 0.3,
+          "wilson_95_ci": [
+            0.1455,
+            0.519
+          ]
+        }
+      },
+      "dev_llm_calls": 6,
+      "dev_sim_resets": 30,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 1.778,
+      "p95_wall_s": 2.122
+    },
+    "capx_protocol": {
+      "method_id": "capx_protocol",
+      "label": "CaP-X-Protocol (Adapted)",
+      "provenance": "protocol_adapted_from_official_repo",
+      "total_trials": 20,
+      "passed": 16,
+      "pass_rate": 0.8,
+      "wilson_95_ci": [
+        0.584,
+        0.9193
+      ],
+      "turn1_passed": 12,
+      "turn1_pass_rate": 0.6,
+      "by_task": {
+        "NutAssemblySquare": {
+          "passed": 16,
+          "turn1_passed": 12,
+          "total": 20,
+          "rate": 0.8,
+          "wilson_95_ci": [
+            0.584,
+            0.9193
+          ]
+        }
+      },
+      "dev_llm_calls": 6,
+      "dev_sim_resets": 30,
+      "eval_llm_calls": 8,
+      "mean_wall_s": 18.101,
+      "p95_wall_s": 53.453
+    },
+    "simex_direct_repair": {
+      "method_id": "simex_direct_repair",
+      "label": "SimEX-Direct-Repair (Ablation)",
+      "provenance": "ablation_protocol_from_simex_2609_38982",
+      "total_trials": 20,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.1611
+      ],
+      "turn1_passed": 0,
+      "turn1_pass_rate": 0.0,
+      "by_task": {
+        "NutAssemblySquare": {
+          "passed": 0,
+          "turn1_passed": 0,
+          "total": 20,
+          "rate": 0.0,
+          "wilson_95_ci": [
+            0.0,
+            0.1611
+          ]
+        }
+      },
+      "dev_llm_calls": 6,
+      "dev_sim_resets": 30,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 1.9,
+      "p95_wall_s": 1.96
+    },
+    "simex_protocol": {
+      "method_id": "simex_protocol",
+      "label": "SimEX-Protocol (Adapted)",
+      "provenance": "protocol_adapted_from_simex_2609_38982",
+      "total_trials": 20,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.1611
+      ],
+      "turn1_passed": 0,
+      "turn1_pass_rate": 0.0,
+      "by_task": {
+        "NutAssemblySquare": {
+          "passed": 0,
+          "turn1_passed": 0,
+          "total": 20,
+          "rate": 0.0,
+          "wilson_95_ci": [
+            0.0,
+            0.1611
+          ]
+        }
+      },
+      "dev_llm_calls": 6,
+      "dev_sim_resets": 30,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 2.096,
+      "p95_wall_s": 2.129
+    },
+    "craft_full": {
+      "method_id": "craft_full",
+      "label": "CRAFT (ActiveProbe + RepairScreener + Skills)",
+      "provenance": "craft_proposed_system",
+      "total_trials": 20,
+      "passed": 12,
+      "pass_rate": 0.6,
+      "wilson_95_ci": [
+        0.3866,
+        0.7812
+      ],
+      "turn1_passed": 12,
+      "turn1_pass_rate": 0.6,
+      "by_task": {
+        "NutAssemblySquare": {
+          "passed": 12,
+          "turn1_passed": 12,
+          "total": 20,
+          "rate": 0.6,
+          "wilson_95_ci": [
+            0.3866,
+            0.7812
+          ]
+        }
+      },
+      "dev_llm_calls": 6,
+      "dev_sim_resets": 31,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 2.074,
+      "p95_wall_s": 2.229
+    }
+  },
+  "paired_mcnemar_craft_vs": {
+    "strong_zeroshot": {
+      "n_a_only": 12,
+      "n_b_only": 0,
+      "discordant": 12,
+      "p_value": 0.000488
+    },
+    "aspire_protocol": {
+      "n_a_only": 8,
+      "n_b_only": 2,
+      "discordant": 10,
+      "p_value": 0.109375
+    },
+    "capx_protocol": {
+      "n_a_only": 2,
+      "n_b_only": 6,
+      "discordant": 8,
+      "p_value": 0.289062
+    },
+    "simex_direct_repair": {
+      "n_a_only": 12,
+      "n_b_only": 0,
+      "discordant": 12,
+      "p_value": 0.000488
+    },
+    "simex_protocol": {
+      "n_a_only": 12,
+      "n_b_only": 0,
+      "discordant": 12,
+      "p_value": 0.000488
+    }
+  }
+}

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+import ast
 import json
 import math
 from pathlib import Path
@@ -395,3 +396,76 @@ def parse_llm_hypotheses_json(raw_text: str, *, max_hypotheses: int = 3) -> list
             }
         )
     return out
+
+
+# ---------------------------------------------------------------------------
+# AST-Based Selective Subroutine Repair Analysis (RAX Section 5.5.2 Pattern)
+# ---------------------------------------------------------------------------
+
+def analyze_policy_subroutines(
+    policy_source: str,
+    failure_codes: Sequence[str],
+) -> dict[str, Any]:
+    """Inspect a policy's AST to identify helper subroutines and scope selective repairs.
+
+    Task-agnostic: inspects only AST function names, line spans, and called SDK methods,
+    plus generic failure-stage attribution codes, to advise which subroutines appear healthy
+    (freeze) vs. which stage needs targeted rewriting (replace/extend).
+    """
+    try:
+        tree = ast.parse(policy_source)
+    except SyntaxError:
+        return {"subroutines": [], "freeze_hint": "", "repair_scope": "syntax_fix"}
+
+    subroutines: list[dict[str, Any]] = []
+    for node in tree.body:
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        sdk_calls: set[str] = set()
+        for child in ast.walk(node):
+            if isinstance(child, ast.Call) and isinstance(child.func, ast.Attribute):
+                if isinstance(child.func.value, ast.Name) and child.func.value.id == "sdk":
+                    sdk_calls.add(child.func.attr)
+        subroutines.append(
+            {
+                "name": node.name,
+                "lines": (int(getattr(node, "end_lineno", node.lineno) or node.lineno) - int(node.lineno) + 1),
+                "sdk_methods": sorted(sdk_calls),
+            }
+        )
+
+    codes = set(failure_codes)
+    if codes & {"insertion_too_high_or_step_exhausted", "insertion_or_release_precision_error"}:
+        repair_scope = "downstream_alignment_and_seating"
+        freeze_hint = (
+            "Upstream approach/grasp succeeded (object was lifted). Keep working grasp/helper subroutines frozen; "
+            "focus edits on goal-alignment, grasp-offset compensation, step budget margin, and final seating/release."
+        )
+    elif codes & {"transport_or_goal_alignment_error"}:
+        repair_scope = "transport_and_goal_alignment"
+        freeze_hint = (
+            "Upstream grasp succeeded. Keep working grasp subroutines frozen; "
+            "rewrite the transport/clearance and goal-centering stage."
+        )
+    elif codes & {"door_pull_arc_incomplete"}:
+        repair_scope = "post_unlatch_pull_trajectory"
+        freeze_hint = (
+            "Initial contact/unlatch started moving the hinge. Preserve the working approach/unlatch subroutine "
+            "and rewrite the sustained pull-arc tracking stage."
+        )
+    elif codes & {"never_closed_gripper_early_abort", "grasp_missed_or_slip", "approach_missed_object", "handle_approach_missed", "latch_not_unlatched"}:
+        repair_scope = "upstream_approach_and_contact"
+        freeze_hint = (
+            "Failure occurs before stable grasp/release. Preserve low-level servo helpers if clean, "
+            "and rewrite the approach/contact/actuation subroutine grounded in telemetry and probe data."
+        )
+    else:
+        repair_scope = "general_policy_stage"
+        freeze_hint = "Preserve verified helper functions and rewrite only the failing control stage."
+
+    return {
+        "subroutines": subroutines,
+        "repair_scope": repair_scope,
+        "freeze_hint": freeze_hint,
+    }
+

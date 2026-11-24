@@ -1,0 +1,38 @@
+{
+  "robosuite-nutassemblysquare-v3": {
+    "applicability_notes": "",
+    "code_sha256": "ac29b51178ef4d12b83028eaf9514485df8d7e63a703dd37abdb4b79dedf7673",
+    "code_snippet": "def angle_difference(target, current):\n    return atan2(sin(target - current), cos(target - current))\n\ndef square_alignment(yaw):\n    candidates = [angle_difference(k * pi / 2.0, yaw) for k in range(-2, 3)]\n    return min(candidates, key=abs)\n\ndef remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(400, state[\"max_steps\"]) - state[\"steps_used\"])",
+    "entry_functions": [
+      "angle_difference",
+      "square_alignment",
+      "remaining_steps"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "ActiveProbe + RepairScreener frozen policy for NutAssemblySquare (12/20 held-out).",
+    "known_failure_modes": [
+      "grasp_missed_or_slip",
+      "insertion_or_release_precision_error"
+    ],
+    "measured_limits": {
+      "dev_llm_calls": 6,
+      "dev_pass_rate": 0.6,
+      "heldout_pass_rate": 0.6
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-nutassemblysquare-v3",
+    "task_name": "NutAssemblySquare",
+    "title": "Robosuite NutAssemblySquare Verified Policy Skill",
+    "verification_report_id": "robosuite-v3-NutAssemblySquare",
+    "verified": false,
+    "verified_at_utc": "2026-11-24T06:40:55.239286+00:00"
+  }
+}

@@ -44,6 +44,7 @@ from .prior_work_bench import (
 )
 from .probing import (
     ProbeReport,
+    analyze_policy_subroutines,
     build_articulated_sweep_probe_source,
     build_grasp_offset_scan_probe_source,
     parse_probe_telemetry,
@@ -916,11 +917,20 @@ def _robo_simex_protocol_prompt(
     )
 
 
-def _robo_craft_hypotheses(task_name: str, dev_runs: Sequence[Mapping[str, Any]]) -> list[tuple[str, str]]:
+def _robo_craft_hypotheses(
+    task_name: str,
+    dev_runs: Sequence[Mapping[str, Any]],
+    *,
+    stagnant_iters: int = 0,
+) -> list[tuple[str, str]]:
     """Formulate 100% task-agnostic, zero-leakage repair hypotheses from factual telemetry.
 
-    Mode-switching RepairScreener (strictly zero task-specific hardcoded physics constants):
-    - When ``passed > 0``: localized regression-safe refinement preserving working trajectories.
+    Adaptive mode-switching RepairScreener (strictly zero task-specific hardcoded physics constants):
+    - When ``passed > 0`` and ``stagnant_iters == 0``: selective subroutine repair (RAX Section 5.5.2 style)
+      preserving verified upstream subroutines while rewriting the failing stage.
+    - When ``passed > 0`` and ``stagnant_iters >= 1`` (polish stalled): automatically escape narrow
+      micro-edits and unlock full attribution-grounded mechanistic hypotheses so the LLM can redesign
+      the failing stage cleanly without being over-constrained.
     - When ``passed == 0``: generic mechanistic hypotheses grounded strictly in telemetry codes
       and any empirically measured Active Physical Probe findings.
     """
@@ -929,18 +939,18 @@ def _robo_craft_hypotheses(task_name: str, dev_runs: Sequence[Mapping[str, Any]]
     codes = [str((r.get("attribution") or {}).get("code", "")) for r in dev_runs if not r.get("success")]
     code_set = set(codes)
 
-    if passed_cnt > 0:
+    if passed_cnt > 0 and stagnant_iters == 0:
         return [
             (
-                f"H-Polish1: Localized Fix for Remaining {len(codes)} Failing Seed(s) Only (0 Regressions)",
-                "Your baseline already passes multiple dev seeds. Keep the working architecture intact, inspect the "
-                "factual telemetry/policy_return of only the failing seeds, and apply the smallest targeted fix "
-                "(e.g., step margin, alignment tolerance, or orientation/descent precision) with zero regressions.",
+                f"H-Subroutine1: Selective Subroutine Repair for {len(codes)} Failing Seed(s) (Freeze Working Stages)",
+                "Your baseline already passes multiple dev seeds. Keep working upstream subroutines frozen, inspect "
+                "the exact telemetry and policy_return of the failing seeds, and cleanly rewrite ONLY the failing "
+                "stage (e.g., alignment/offset compensation, step-budget margin, or seating/release logic) with 0 regressions.",
             ),
             (
-                "H-Polish2: Preserve Primary Path + Add Targeted Failure Recovery Branch",
-                "Keep the primary execution path unchanged for passing seeds, and add a compact retry/recovery branch "
-                "triggered only when live state verification detects grasp, actuation, or placement failure.",
+                "H-Subroutine2: Preserve Working Stage + Add Closed-Loop Recovery Branch on Verification Failure",
+                "Keep the primary execution path intact for passing seeds, and add a compact closed-loop recovery "
+                "subroutine triggered when live state verification detects grasp, alignment, or seating failure.",
             ),
         ]
 
@@ -1026,6 +1036,7 @@ def _robo_craft_prompt(
     hypothesis_strategy: str = "",
     skill_hints: Sequence[str] = (),
     probe_report: ProbeReport | None = None,
+    failed_attempts: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     diag_lines: list[str] = []
     passed_seeds = [int(r["seed"]) for r in dev_runs if r.get("success")]
@@ -1078,13 +1089,36 @@ def _robo_craft_prompt(
         if (probe_report is not None and probe_report.findings)
         else []
     )
+    fail_codes = [str((r.get("attribution") or {}).get("code", "")) for r in failed_runs]
+    sub_analysis = analyze_policy_subroutines(prev_src, fail_codes)
+    sub_block: list[str] = []
+    if sub_analysis.get("subroutines"):
+        fn_summaries = ", ".join(
+            f"{s['name']}({s['lines']}L, sdk={s['sdk_methods']})" for s in sub_analysis["subroutines"]
+        )
+        sub_block = [
+            f"Selective Subroutine Scope ({sub_analysis['repair_scope']}): {sub_analysis['freeze_hint']}",
+            f"Current Policy Subroutines: {fn_summaries}",
+            "",
+        ]
+    attempts_block: list[str] = []
+    if failed_attempts:
+        attempts_block = ["Recent Non-Improving Attempts (do NOT repeat these dead-end edits):"]
+        for fa in failed_attempts[-3:]:
+            attempts_block.append(
+                f"- it={fa.get('iter')} [{fa.get('hypothesis')}] -> dev={fa.get('dev_passed')}/{fa.get('dev_total')} "
+                f"prog={fa.get('progress_score')} attrs={fa.get('attributions')}"
+            )
+        attempts_block.append("")
     return "\n".join(
         [
             f"CRAFT RepairScreener Evolution for `{task_name}` (iteration {it}):",
             "Fix the attributed failure below while preserving ALL passing dev seeds.",
             "",
             *hyp_block,
+            *sub_block,
             *probe_block,
+            *attempts_block,
             *skill_block,
             ROBOSUITE_TASK_DESCRIPTIONS[task_name],
             "",
@@ -1434,11 +1468,12 @@ def _develop_task_methods(
         }
     ]
     cur_src, last_static = src_zs, []
-    hyp_idx_by_parent: dict[str, int] = {}
+    stagnant_iters = 0
+    failed_attempts: list[dict[str, Any]] = []
     for it in range(2, max_dev_llm_calls + 1):
         if best_pass == len(dev_seeds):
             break
-        hyps = _robo_craft_hypotheses(task_name, best_runs)
+        hyps = _robo_craft_hypotheses(task_name, best_runs, stagnant_iters=stagnant_iters)
         h_idx = (it - 2) % len(hyps)
         ht, hs = hyps[h_idx]
         prompt = _robo_craft_prompt(
@@ -1452,6 +1487,7 @@ def _develop_task_methods(
             hypothesis_strategy=hs,
             skill_hints=skill_hints,
             probe_report=probe_report,
+            failed_attempts=failed_attempts,
         )
         gen = llm_fn(prompt)
         calls += 1
@@ -1459,7 +1495,10 @@ def _develop_task_methods(
         ast_chk = check_robosuite_ast_compliance(cur_src)
         if not ast_chk["compliant"]:
             last_static = list(ast_chk["issues"])
-            hist.append({"iter": it, "hypothesis": ht, "static_preflight_passed": False, "issues": last_static, "dev_passed": 0})
+            stagnant_iters += 1
+            rec_fail = {"iter": it, "hypothesis": ht, "static_preflight_passed": False, "issues": last_static, "dev_passed": 0, "dev_total": len(dev_seeds), "progress_score": 0.0, "attributions": ["ast_preflight_blocked"]}
+            hist.append(rec_fail)
+            failed_attempts.append(rec_fail)
             _log(f"  [{task_name}][CRAFT it={it}] AST preflight blocked (0 sim resets wasted)")
             continue
         last_static = []
@@ -1472,23 +1511,28 @@ def _develop_task_methods(
             else:
                 passed_ever.add(int(r["seed"]))
         score = _robo_candidate_score(task_name, runs, passed_ever)
-        hist.append(
-            {
-                "iter": it,
-                "hypothesis": ht,
-                "static_preflight_passed": True,
-                "dev_passed": passed,
-                "dev_total": len(dev_seeds),
-                "progress_score": score[2],
-                "attributions": [r["attribution"]["code"] for r in runs if not r["success"]],
-                "regression_seeds": sorted(reg_seeds),
-                "sha": digest(cur_src)[:12],
-            }
-        )
+        rec_it = {
+            "iter": it,
+            "hypothesis": ht,
+            "stagnant_iters_before": stagnant_iters,
+            "static_preflight_passed": True,
+            "dev_passed": passed,
+            "dev_total": len(dev_seeds),
+            "progress_score": score[2],
+            "attributions": [r["attribution"]["code"] for r in runs if not r["success"]],
+            "regression_seeds": sorted(reg_seeds),
+            "sha": digest(cur_src)[:12],
+        }
+        hist.append(rec_it)
         _log(
             f"  [{task_name}][CRAFT it={it}] ({ht}) dev={passed}/{len(dev_seeds)} "
             f"prog={score[2]:.3f} attr={[r['attribution']['code'] for r in runs if not r['success']]}"
         )
+        if passed > best_pass:
+            stagnant_iters = 0
+        else:
+            stagnant_iters += 1
+            failed_attempts.append(rec_it)
         if score >= best_score:
             best_score, best_pass, best_src, best_runs = score, passed, cur_src, runs
         if passed == len(dev_seeds):
