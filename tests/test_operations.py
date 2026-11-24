@@ -23,7 +23,7 @@ from trax.operations import (
 from trax.regression import RegressionSuite
 from trax.release import ReleaseRegistry
 from trax.skills import SkillExperienceStore
-from trax.studio import TraxStudioApp, create_studio_server
+from trax.ui import TraxUIApp, create_ui_server
 
 
 BROKEN_BASELINE = """def run_policy(sdk, params):
@@ -250,8 +250,8 @@ def test_recorded_shadow_check_and_engine_studio_operations_endpoints(tmp_path):
         server.shutdown()
         server.server_close()
 
-    # Studio exposes latest_shift_report and screening_sessions cleanly
-    studio_app = TraxStudioApp(cfg, driver, tmp_path / "eng_ws")
-    st = studio_app.get_state()
+    # TRAX UI exposes latest_shift_report and screening_sessions cleanly
+    ui_app = TraxUIApp(cfg, driver, tmp_path / "eng_ws")
+    st = ui_app.get_state()
     assert st["latest_shift_report"]["passed_orders"] == 1
     assert "screening_sessions" in st

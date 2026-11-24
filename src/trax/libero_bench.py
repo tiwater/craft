@@ -16,6 +16,7 @@ Honest observation-contract provenance:
 """
 from __future__ import annotations
 
+import argparse
 import ast
 from datetime import datetime, timezone
 import html
@@ -23,6 +24,8 @@ import json
 import math
 import os
 from pathlib import Path
+import subprocess
+import sys
 import time
 from typing import Any, Callable, Mapping, Sequence
 
@@ -307,20 +310,43 @@ def _execute_libero_source(source: str, sdk: LiberoPolicySDK, timeout_s: int = 2
 
 
 def _build_libero_grasp_probe_source(target_obj: str) -> str:
-    """Task-agnostic public-SDK radial/height grasp probe for LIBERO objects (rim vs center)."""
+    """Task-agnostic public-SDK radial/height grasp probe for LIBERO objects (center vs free-space rim)."""
     return f"""def run_policy(sdk):
     target = {target_obj!r}
     samples = []
-    for r, dz in [(0.0, 0.0), (0.0, 0.025), (0.045, 0.025), (0.060, 0.025), (-0.050, 0.025)]:
+    st0 = sdk.get_state()
+    if target not in st0["objects"]:
+        return {{"status": "done", "probe": "grasp_offset_scan", "target": target, "samples": []}}
+    tpos = st0["objects"][target]["pos"]
+    # Find direction facing AWAY from nearest neighbor object to avoid rim collisions
+    away_ang = 0.0
+    best_d = 999.0
+    for oname, oinfo in st0["objects"].items():
+        if oname == target:
+            continue
+        op = oinfo["pos"]
+        dx = tpos[0] - op[0]
+        dy = tpos[1] - op[1]
+        d = sqrt(dx * dx + dy * dy)
+        if d < best_d and d > 0.005:
+            best_d = d
+            away_ang = atan2(dy, dx)
+    cand_offsets = [
+        (0.0, 0.0, 0.0),
+        (0.045, 0.025, away_ang),
+        (0.055, 0.025, away_ang),
+        (0.045, 0.025, away_ang + 1.5708),
+        (0.045, 0.025, away_ang - 1.5708),
+    ]
+    for r, dz, ang in cand_offsets:
         st = sdk.get_state()
         if st["steps_used"] > st["max_steps"] - 75 or target not in st["objects"]:
             break
         o = st["objects"][target]
         pos = o["pos"]
-        yaw = o["yaw"]
         z0 = pos[2]
-        gx = pos[0] + r * cos(yaw)
-        gy = pos[1] + r * sin(yaw)
+        gx = pos[0] + r * cos(ang)
+        gy = pos[1] + r * sin(ang)
         sdk.set_gripper("open", steps=6)
         sdk.move_to([gx, gy, z0 + 0.12], gripper="open", max_steps=28, tol=0.015)
         sdk.move_to([gx, gy, z0 + dz], gripper="open", max_steps=25, tol=0.015)
@@ -332,6 +358,8 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
             "target": target,
             "local_offset_m": r,
             "z_offset_m": dz,
+            "approach_angle_rad": round(ang, 3),
+            "nearest_neighbor_dist_m": round(best_d, 4),
             "closed_width_m": round(g["gripper_width"], 4),
             "lift_delta_m": round(z1 - z0, 4),
         }})
@@ -647,8 +675,12 @@ def _libero_craft_prompt(
                 f"    sites={r['final_state']['sites']}"
             )
     att_block = (
-        ["Recent Non-Improving Attempts (avoid repeating):"]
-        + [f"- it={fa['iter']}: dev={fa['dev_passed']}/{fa['dev_total']} attrs={fa['attributions']}" for fa in failed_attempts[-3:]]
+        ["Recent Non-Improving Attempts (avoid repeating; obey AST rules strictly — NO leading-underscore names like `for _ in range`, NO imports):"]
+        + [
+            f"- it={fa['iter']}: dev={fa['dev_passed']}/{fa['dev_total']} attrs={fa['attributions']}"
+            + (f" ast_issues={fa['ast_issues']}" if fa.get("ast_issues") else "")
+            for fa in failed_attempts[-3:]
+        ]
         + [""]
         if failed_attempts
         else []
@@ -731,18 +763,22 @@ def run_libero_benchmark(
     output_dir: str | Path,
     suite_name: str = "libero_spatial",
     task_ids: Sequence[int] = (0, 1, 2),
-    dev_count: int = 3,
+    dev_count: int = 5,
     eval_count: int = 10,
+    provider: str = "codex_cli",
     model: str = "gpt-6-astra",
     reasoning_effort: str = "medium",
     max_dev_llm_calls: int = 5,
     horizon: int = 450,
+    isolate_tasks: bool = True,
     progress_cb: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     pol_dir = out / "policies"
     pol_dir.mkdir(parents=True, exist_ok=True)
+    task_ckpt_dir = out / "tasks"
+    task_ckpt_dir.mkdir(parents=True, exist_ok=True)
     dev_indices = list(range(int(dev_count)))
     eval_indices = list(range(int(dev_count), int(dev_count) + int(eval_count)))
     method_ids = ("strong_zeroshot", "aspire_protocol", "simex_protocol", "craft_full")
@@ -756,166 +792,220 @@ def run_libero_benchmark(
     trials: list[dict[str, Any]] = []
     meta_by_task: dict[str, dict[str, Any]] = {}
 
-    for tid in task_ids:
-        from libero.libero.envs import OffScreenRenderEnv
+    # Per-task subprocess isolation prevents upstream robosuite 1.4.0 XML FD exhaustion across tasks
+    if isolate_tasks and len(task_ids) > 1:
+        for tid in task_ids:
+            tkey = f"{suite_name}_t{int(tid)}"
+            ckpt = task_ckpt_dir / f"{tkey}.json"
+            if ckpt.is_file():
+                _log(f"[{tkey}] Resuming cached task checkpoint: {ckpt.name}")
+                cached_res = json.loads(ckpt.read_text(encoding="utf-8"))
+                meta_by_task.update(cached_res["meta_by_task"])
+                trials.extend(cached_res["trials"])
+                continue
+            cmd = [
+                sys.executable,
+                "-m",
+                "trax.libero_bench",
+                "--suite",
+                suite_name,
+                "--task-id",
+                str(int(tid)),
+                "--dev-count",
+                str(int(dev_count)),
+                "--eval-count",
+                str(int(eval_count)),
+                "--provider",
+                provider,
+                "--model",
+                model,
+                "--effort",
+                reasoning_effort,
+                "--max-dev-calls",
+                str(int(max_dev_llm_calls)),
+                "--horizon",
+                str(int(horizon)),
+                "--output",
+                str(out),
+                "--checkpoint-out",
+                str(ckpt),
+            ]
+            _log(f"[{tkey}] Launching isolated worker subprocess (FD-leak safe)...")
+            proc = subprocess.run(cmd, check=False)
+            if proc.returncode != 0 or not ckpt.is_file():
+                raise RuntimeError(f"LIBERO isolated worker failed on {tkey} (exit={proc.returncode})")
+            cached_res = json.loads(ckpt.read_text(encoding="utf-8"))
+            meta_by_task.update(cached_res["meta_by_task"])
+            trials.extend(cached_res["trials"])
+    else:
+        for tid in task_ids:
+            from libero.libero.envs import OffScreenRenderEnv
 
-        cached = _load_libero_task(suite_name, int(tid))
-        task_lang, bddl, init_states = cached
-        tkey = f"{suite_name}_t{tid}"
-        _log(f"[{tkey}] Task: {task_lang!r} (dev={dev_indices}, eval={eval_indices[0]}..{eval_indices[-1]})")
-        task_env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=64, camera_widths=64)
-        try:
-            sample_state = _probe_initial_scene_schema(suite_name, int(tid), dev_indices[0], cached, reuse_env=task_env)
+            cached = _load_libero_task(suite_name, int(tid))
+            task_lang, bddl, init_states = cached
+            tkey = f"{suite_name}_t{tid}"
+            _log(f"[{tkey}] Task: {task_lang!r} (dev={dev_indices}, eval={eval_indices[0]}..{eval_indices[-1]})")
+            task_env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=64, camera_widths=64)
+            try:
+                sample_state = _probe_initial_scene_schema(suite_name, int(tid), dev_indices[0], cached, reuse_env=task_env)
 
-            # Shared paired it=1 draft (Strong Zero-Shot)
-            g0 = llm_fn(_libero_initial_prompt(task_lang, sample_state))
-            src0 = str(g0["source"])
-            init_runs = [run_libero_rollout(suite_name, int(tid), i, src0, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
-            init_pass = sum(1 for r in init_runs if r["success"])
-            _log(f"  [{tkey}][Shared it=1] dev={init_pass}/{len(dev_indices)}")
+                # Shared paired it=1 draft (Strong Zero-Shot)
+                g0 = llm_fn(_libero_initial_prompt(task_lang, sample_state))
+                src0 = str(g0["source"])
+                init_runs = [run_libero_rollout(suite_name, int(tid), i, src0, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
+                init_pass = sum(1 for r in init_runs if r["success"])
+                _log(f"  [{tkey}][Shared it=1] dev={init_pass}/{len(dev_indices)}")
 
-            arts: dict[str, dict[str, Any]] = {
-                "strong_zeroshot": {
-                    "method_id": "strong_zeroshot",
-                    "label": "Strong Zero-Shot",
-                    "source": src0,
-                    "dev_llm_calls": 1,
-                    "dev_sim_resets": 0,
-                    "dev_passed": init_pass,
+                arts: dict[str, dict[str, Any]] = {
+                    "strong_zeroshot": {
+                        "method_id": "strong_zeroshot",
+                        "label": "Strong Zero-Shot",
+                        "source": src0,
+                        "dev_llm_calls": 1,
+                        "dev_sim_resets": 0,
+                        "dev_passed": init_pass,
+                    }
                 }
-            }
 
-            # ASPIRE-Protocol (Adapted)
-            best_src, best_pass, resets, calls = src0, init_pass, len(dev_indices), 1
-            cur_src, last_runs = src0, list(init_runs)
-            for it in range(2, max_dev_llm_calls + 1):
-                if best_pass == len(dev_indices):
-                    break
-                cur_src = str(llm_fn(_libero_aspire_prompt(task_lang, cur_src, last_runs, it))["source"])
-                calls += 1
-                runs = [run_libero_rollout(suite_name, int(tid), i, cur_src, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
-                resets += len(dev_indices)
-                last_runs = runs
-                p = sum(1 for r in runs if r["success"])
-                _log(f"  [{tkey}][ASPIRE it={it}] dev={p}/{len(dev_indices)}")
-                if p >= best_pass:
-                    best_pass, best_src = p, cur_src
-            arts["aspire_protocol"] = {
-                "method_id": "aspire_protocol",
-                "label": "ASPIRE-Protocol (Adapted)",
-                "source": best_src,
-                "dev_llm_calls": calls,
-                "dev_sim_resets": resets,
-                "dev_passed": best_pass,
-            }
+                # ASPIRE-Protocol (Adapted)
+                best_src, best_pass, resets, calls = src0, init_pass, len(dev_indices), 1
+                cur_src, last_runs = src0, list(init_runs)
+                for it in range(2, max_dev_llm_calls + 1):
+                    if best_pass == len(dev_indices):
+                        break
+                    cur_src = str(llm_fn(_libero_aspire_prompt(task_lang, cur_src, last_runs, it))["source"])
+                    calls += 1
+                    runs = [run_libero_rollout(suite_name, int(tid), i, cur_src, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
+                    resets += len(dev_indices)
+                    last_runs = runs
+                    p = sum(1 for r in runs if r["success"])
+                    _log(f"  [{tkey}][ASPIRE it={it}] dev={p}/{len(dev_indices)}")
+                    if p >= best_pass:
+                        best_pass, best_src = p, cur_src
+                arts["aspire_protocol"] = {
+                    "method_id": "aspire_protocol",
+                    "label": "ASPIRE-Protocol (Adapted)",
+                    "source": best_src,
+                    "dev_llm_calls": calls,
+                    "dev_sim_resets": resets,
+                    "dev_passed": best_pass,
+                }
 
-            # SimEX-Protocol (Adapted)
-            sx_ever = {r["init_idx"] for r in init_runs if r["success"]}
-            sx_src, sx_pass, sx_regs, sx_runs = src0, init_pass, 0, list(init_runs)
-            resets, calls = len(dev_indices), 1
-            for it in range(2, max_dev_llm_calls + 1):
-                if sx_pass == len(dev_indices):
-                    break
-                cand = str(llm_fn(_libero_simex_prompt(task_lang, sx_src, sx_runs, sx_ever, it - 2, it))["source"])
-                calls += 1
-                runs = [run_libero_rollout(suite_name, int(tid), i, cand, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
-                resets += len(dev_indices)
-                p = sum(1 for r in runs if r["success"])
-                ok_set = {r["init_idx"] for r in runs if r["success"]}
-                regs = len(sx_ever - ok_set)
-                sx_ever.update(ok_set)
-                _log(f"  [{tkey}][SimEX-Protocol it={it}] dev={p}/{len(dev_indices)} regs={regs}")
-                if (p, -regs) >= (sx_pass, -sx_regs):
-                    sx_pass, sx_regs, sx_src, sx_runs = p, regs, cand, runs
-            arts["simex_protocol"] = {
-                "method_id": "simex_protocol",
-                "label": "SimEX-Protocol (Adapted)",
-                "source": sx_src,
-                "dev_llm_calls": calls,
-                "dev_sim_resets": resets,
-                "dev_passed": sx_pass,
-            }
+                # SimEX-Protocol (Adapted)
+                sx_ever = {r["init_idx"] for r in init_runs if r["success"]}
+                sx_src, sx_pass, sx_regs, sx_runs = src0, init_pass, 0, list(init_runs)
+                resets, calls = len(dev_indices), 1
+                for it in range(2, max_dev_llm_calls + 1):
+                    if sx_pass == len(dev_indices):
+                        break
+                    cand = str(llm_fn(_libero_simex_prompt(task_lang, sx_src, sx_runs, sx_ever, it - 2, it))["source"])
+                    calls += 1
+                    runs = [run_libero_rollout(suite_name, int(tid), i, cand, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
+                    resets += len(dev_indices)
+                    p = sum(1 for r in runs if r["success"])
+                    ok_set = {r["init_idx"] for r in runs if r["success"]}
+                    regs = len(sx_ever - ok_set)
+                    sx_ever.update(ok_set)
+                    _log(f"  [{tkey}][SimEX-Protocol it={it}] dev={p}/{len(dev_indices)} regs={regs}")
+                    if (p, -regs) >= (sx_pass, -sx_regs):
+                        sx_pass, sx_regs, sx_src, sx_runs = p, regs, cand, runs
+                arts["simex_protocol"] = {
+                    "method_id": "simex_protocol",
+                    "label": "SimEX-Protocol (Adapted)",
+                    "source": sx_src,
+                    "dev_llm_calls": calls,
+                    "dev_sim_resets": resets,
+                    "dev_passed": sx_pass,
+                }
 
-            # TRAX Full Engine (ActiveProbe + AST preflight + 4-layer attribution + Selective Subroutine Repair + Adaptive Escape + Skills)
-            cr_ever = {r["init_idx"] for r in init_runs if r["success"]}
-            cr_src, cr_pass, cr_regs, cr_runs = src0, init_pass, 0, list(init_runs)
-            cr_lift = sum(float(r["max_any_obj_lift_m"]) for r in init_runs) / max(1, len(init_runs))
-            resets, calls = len(dev_indices), 1
-            probe_rep: ProbeReport | None = None
-            if init_pass == 0:
-                probe_rep = run_libero_active_probe(task_env, task_lang, init_states, dev_indices[0], sample_state, horizon=horizon)
-                if probe_rep is not None:
-                    resets += probe_rep.sim_resets_used
-                    _log(f"  [{tkey}][TRAX ActiveProbe] +1 sim reset -> {[f.summary for f in probe_rep.findings]}")
-            stagnant = 0
-            failed_atts: list[dict[str, Any]] = []
-            hints = [f"{sk.title}: {sk.guidance}" for sk in skill_store.list_verified(sdk_contract_sha256=contract_sha)]
-            for it in range(2, max_dev_llm_calls + 1):
-                if cr_pass == len(dev_indices):
-                    break
-                prompt = _libero_craft_prompt(task_lang, cr_src, cr_runs, cr_ever, stagnant, failed_atts, hints, it, probe_report=probe_rep)
-                cand = str(llm_fn(prompt)["source"])
-                calls += 1
-                if not check_robosuite_ast_compliance(cand)["compliant"]:
-                    stagnant += 1
-                    failed_atts.append({"iter": it, "dev_passed": 0, "dev_total": len(dev_indices), "attributions": ["ast_blocked"]})
-                    _log(f"  [{tkey}][TRAX it={it}] AST blocked (0 resets wasted)")
-                    continue
-                runs = [run_libero_rollout(suite_name, int(tid), i, cand, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
-                resets += len(dev_indices)
-                p = sum(1 for r in runs if r["success"])
-                ok_set = {r["init_idx"] for r in runs if r["success"]}
-                regs = len(cr_ever - ok_set)
-                cr_ever.update(ok_set)
-                lift_avg = sum(float(r["max_any_obj_lift_m"]) for r in runs) / max(1, len(runs))
-                _log(f"  [{tkey}][TRAX it={it}] dev={p}/{len(dev_indices)} regs={regs} attr={[r['attribution']['code'] for r in runs if not r['success']]}")
-                if p > cr_pass:
-                    stagnant = 0
-                else:
-                    stagnant += 1
-                    failed_atts.append({"iter": it, "dev_passed": p, "dev_total": len(dev_indices), "attributions": [r["attribution"]["code"] for r in runs if not r["success"]]})
-                if (p, -regs, lift_avg) >= (cr_pass, -cr_regs, cr_lift):
-                    cr_pass, cr_regs, cr_lift, cr_src, cr_runs = p, regs, lift_avg, cand, runs
-            arts["craft_full"] = {
-                "method_id": "craft_full",
-                "label": "TRAX (ActiveProbe + SubroutineRepair + Skills)",
-                "source": cr_src,
-                "dev_llm_calls": calls,
-                "dev_sim_resets": resets,
-                "dev_passed": cr_pass,
-            }
+                # TRAX Full Engine (ActiveProbe + AST preflight + 4-layer attribution + Selective Subroutine Repair + Adaptive Escape + Skills)
+                cr_ever = {r["init_idx"] for r in init_runs if r["success"]}
+                cr_src, cr_pass, cr_regs, cr_runs = src0, init_pass, 0, list(init_runs)
+                cr_lift = sum(float(r["max_any_obj_lift_m"]) for r in init_runs) / max(1, len(init_runs))
+                resets, calls = len(dev_indices), 1
+                probe_rep: ProbeReport | None = None
+                if init_pass == 0:
+                    probe_rep = run_libero_active_probe(task_env, task_lang, init_states, dev_indices[0], sample_state, horizon=horizon)
+                    if probe_rep is not None:
+                        resets += probe_rep.sim_resets_used
+                        _log(f"  [{tkey}][TRAX ActiveProbe] +1 sim reset -> {[f.summary for f in probe_rep.findings]}")
+                stagnant = 0
+                failed_atts: list[dict[str, Any]] = []
+                hints = [f"{sk.title}: {sk.guidance}" for sk in skill_store.list_verified(sdk_contract_sha256=contract_sha)]
+                for it in range(2, max_dev_llm_calls + 1):
+                    if cr_pass == len(dev_indices):
+                        break
+                    prompt = _libero_craft_prompt(task_lang, cr_src, cr_runs, cr_ever, stagnant, failed_atts, hints, it, probe_report=probe_rep)
+                    cand = str(llm_fn(prompt)["source"])
+                    calls += 1
+                    ast_chk = check_robosuite_ast_compliance(cand)
+                    if not ast_chk["compliant"]:
+                        stagnant += 1
+                        issues = list(ast_chk.get("issues") or [])[:3]
+                        failed_atts.append({
+                            "iter": it,
+                            "dev_passed": 0,
+                            "dev_total": len(dev_indices),
+                            "attributions": ["ast_blocked"],
+                            "ast_issues": issues,
+                        })
+                        _log(f"  [{tkey}][TRAX it={it}] AST blocked (0 resets wasted): {issues}")
+                        continue
+                    runs = [run_libero_rollout(suite_name, int(tid), i, cand, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
+                    resets += len(dev_indices)
+                    p = sum(1 for r in runs if r["success"])
+                    ok_set = {r["init_idx"] for r in runs if r["success"]}
+                    regs = len(cr_ever - ok_set)
+                    cr_ever.update(ok_set)
+                    lift_avg = sum(float(r["max_any_obj_lift_m"]) for r in runs) / max(1, len(runs))
+                    _log(f"  [{tkey}][TRAX it={it}] dev={p}/{len(dev_indices)} regs={regs} attr={[r['attribution']['code'] for r in runs if not r['success']]}")
+                    if p > cr_pass:
+                        stagnant = 0
+                    else:
+                        stagnant += 1
+                        failed_atts.append({"iter": it, "dev_passed": p, "dev_total": len(dev_indices), "attributions": [r["attribution"]["code"] for r in runs if not r["success"]]})
+                    if (p, -regs, lift_avg) >= (cr_pass, -cr_regs, cr_lift):
+                        cr_pass, cr_regs, cr_lift, cr_src, cr_runs = p, regs, lift_avg, cand, runs
+                arts["craft_full"] = {
+                    "method_id": "craft_full",
+                    "label": "TRAX (ActiveProbe + SubroutineRepair + Skills)",
+                    "source": cr_src,
+                    "dev_llm_calls": calls,
+                    "dev_sim_resets": resets,
+                    "dev_passed": cr_pass,
+                }
 
-            meta_by_task[tkey] = {"task_language": task_lang, "methods": {k: {mk: mv for mk, mv in v.items() if mk != "source"} for k, v in arts.items()}}
-            for mid in method_ids:
-                src = str(arts[mid]["source"])
-                (pol_dir / f"{tkey}_{mid}.py").write_text(src + "\n", encoding="utf-8")
-                ok_cnt = 0
-                for ei in eval_indices:
-                    rec = run_libero_rollout(suite_name, int(tid), ei, src, horizon=horizon, cached_task=cached, reuse_env=task_env)
-                    rec["method_id"] = mid
-                    rec["task_key"] = tkey
-                    trials.append(rec)
-                    if rec["success"]:
-                        ok_cnt += 1
-                _log(f"[{tkey}][EVAL] {mid:16s} -> {ok_cnt}/{len(eval_indices)} ({ok_cnt/len(eval_indices)*100:.1f}%)")
-                if mid == "craft_full" and ok_cnt >= max(1, int(0.7 * len(eval_indices))):
-                    skill_store.add(
-                        SkillExperience(
-                            skill_id=f"libero-{tkey}",
-                            title=f"LIBERO {tkey} Verified Policy",
-                            guidance=f"Verified frozen policy for '{task_lang}' ({ok_cnt}/{len(eval_indices)} held-out).",
-                            task_name=tkey,
-                            required_methods=("get_state", "move_to", "move_delta", "set_gripper"),
-                            sdk_contract_sha256=contract_sha,
-                            evidence_source="simulator",
-                            verification_report_id=f"libero-{tkey}",
-                            verified=True,
-                            verified_at_utc=_utc_now(),
-                            measured_limits={"heldout_pass_rate": round(ok_cnt / len(eval_indices), 4)},
+                meta_by_task[tkey] = {"task_language": task_lang, "methods": {k: {mk: mv for mk, mv in v.items() if mk != "source"} for k, v in arts.items()}}
+                for mid in method_ids:
+                    src = str(arts[mid]["source"])
+                    (pol_dir / f"{tkey}_{mid}.py").write_text(src + "\n", encoding="utf-8")
+                    ok_cnt = 0
+                    for ei in eval_indices:
+                        rec = run_libero_rollout(suite_name, int(tid), ei, src, horizon=horizon, cached_task=cached, reuse_env=task_env)
+                        rec["method_id"] = mid
+                        rec["task_key"] = tkey
+                        trials.append(rec)
+                        if rec["success"]:
+                            ok_cnt += 1
+                    _log(f"[{tkey}][EVAL] {mid:16s} -> {ok_cnt}/{len(eval_indices)} ({ok_cnt/len(eval_indices)*100:.1f}%)")
+                    if mid == "craft_full" and ok_cnt >= max(1, int(0.7 * len(eval_indices))):
+                        skill_store.add(
+                            SkillExperience(
+                                skill_id=f"libero-{tkey}",
+                                title=f"LIBERO {tkey} Verified Policy",
+                                guidance=f"Verified frozen policy for '{task_lang}' ({ok_cnt}/{len(eval_indices)} held-out).",
+                                task_name=tkey,
+                                required_methods=("get_state", "move_to", "move_delta", "set_gripper"),
+                                sdk_contract_sha256=contract_sha,
+                                evidence_source="simulator",
+                                verification_report_id=f"libero-{tkey}",
+                                verified=True,
+                                verified_at_utc=_utc_now(),
+                                measured_limits={"heldout_pass_rate": round(ok_cnt / len(eval_indices), 4)},
+                            )
                         )
-                    )
-        finally:
-            task_env.close()
+            finally:
+                task_env.close()
 
     summary: dict[str, dict[str, Any]] = {}
     for mid in method_ids:
@@ -925,6 +1015,16 @@ def run_libero_benchmark(
         walls = [float(t["wall_s"]) for t in mt]
         dev_llm = sum(int(meta_by_task[tk]["methods"][mid]["dev_llm_calls"]) for tk in meta_by_task)
         dev_rst = sum(int(meta_by_task[tk]["methods"][mid]["dev_sim_resets"]) for tk in meta_by_task)
+        by_task: dict[str, dict[str, Any]] = {}
+        for tid in task_ids:
+            tk = f"{suite_name}_t{int(tid)}"
+            tt = [t for t in mt if t["task_key"] == tk]
+            tok = sum(1 for t in tt if t["success"])
+            by_task[tk] = {
+                "passed": tok,
+                "total": len(tt),
+                "rate": round(tok / len(tt), 4) if tt else 0.0,
+            }
         summary[mid] = {
             "method_id": mid,
             "label": next((meta_by_task[tk]["methods"][mid]["label"] for tk in meta_by_task), mid),
@@ -932,6 +1032,7 @@ def run_libero_benchmark(
             "total_trials": tot,
             "pass_rate": round(ok / tot, 4) if tot else 0.0,
             "wilson_95_ci": list(wilson_ci_95(ok, tot)),
+            "by_task": by_task,
             "dev_llm_calls": dev_llm,
             "dev_sim_resets": dev_rst,
             "eval_llm_calls": 0,
@@ -969,3 +1070,46 @@ def run_libero_benchmark(
     _write_json_atomic(out / "libero_report.json", report)
     (out / "libero_report.html").write_text(render_libero_html(report), encoding="utf-8")
     return report
+
+
+def _worker_main() -> None:
+    from .prior_work_bench import make_live_llm_fn
+
+    parser = argparse.ArgumentParser(description="Isolated single-task LIBERO benchmark worker")
+    parser.add_argument("--suite", default="libero_spatial")
+    parser.add_argument("--task-id", type=int, required=True)
+    parser.add_argument("--dev-count", type=int, default=5)
+    parser.add_argument("--eval-count", type=int, default=10)
+    parser.add_argument("--provider", default="codex_cli")
+    parser.add_argument("--model", default="gpt-6-astra")
+    parser.add_argument("--effort", default="medium")
+    parser.add_argument("--max-dev-calls", type=int, default=5)
+    parser.add_argument("--horizon", type=int, default=450)
+    parser.add_argument("--output", required=True)
+    parser.add_argument("--checkpoint-out", required=True)
+    args = parser.parse_args()
+
+    llm_fn = make_live_llm_fn(provider=args.provider, model=args.model, reasoning_effort=args.effort)
+    rep = run_libero_benchmark(
+        llm_fn=llm_fn,
+        output_dir=args.output,
+        suite_name=args.suite,
+        task_ids=(args.task_id,),
+        dev_count=args.dev_count,
+        eval_count=args.eval_count,
+        provider=args.provider,
+        model=args.model,
+        reasoning_effort=args.effort,
+        max_dev_llm_calls=args.max_dev_calls,
+        horizon=args.horizon,
+        isolate_tasks=False,
+        progress_cb=lambda msg: print(msg, flush=True),
+    )
+    _write_json_atomic(
+        Path(args.checkpoint_out),
+        {"meta_by_task": rep["meta_by_task"], "trials": rep["trials"]},
+    )
+
+
+if __name__ == "__main__":
+    _worker_main()

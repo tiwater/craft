@@ -1,4 +1,4 @@
-"""Standalone, host-independent interactive Web Demo (TRAX Studio).
+"""Standalone, host-independent web observer and operations interface (TRAX UI).
 
 Built purely on Python's stdlib ``http.server`` with zero external web dependencies.
 Consumes any ``SceneHostDriver`` (``fixture`` standalone or ``http`` live sim)
@@ -203,7 +203,7 @@ STUDIO_HTML = r"""<!DOCTYPE html>
   <div class="topbar-inner">
     <div class="brand-block">
       <div class="brand-row">
-        <span class="brand-title">TRAX Studio</span>
+        <span class="brand-title">TRAX UI</span>
         <span id="pill-live" class="badge ok"><span class="pulse"></span>连接中...</span>
         <span id="pill-driver" class="badge">driver=...</span>
         <span id="pill-release" class="badge">冻结版本: -</span>

@@ -13,7 +13,7 @@ from trax.benchmark import (
 )
 from trax.config import SceneConfig
 from trax.host_driver import FixtureHostDriver, create_host_driver, list_host_drivers, register_host_driver
-from trax.studio import TraxStudioApp, create_studio_server
+from trax.ui import TraxUIApp, create_ui_server
 
 
 BROKEN_NO_RECENTER_POLICY = """def run_policy(sdk, params):
@@ -75,11 +75,11 @@ def test_paired_benchmark_standalone_fixture_and_html_report(tmp_path):
     assert "NOT physical-robot / food-quality certification" in html_text
 
 
-def test_craft_studio_http_endpoints_standalone(tmp_path):
+def test_trax_ui_http_endpoints_standalone(tmp_path):
     cfg = _fixture_config()
     driver = create_host_driver("fixture", cfg)
-    app = TraxStudioApp(cfg, driver, tmp_path / "studio_ws")
-    server = create_studio_server(app, host="127.0.0.1", port=0)
+    app = TraxUIApp(cfg, driver, tmp_path / "ui_ws")
+    server = create_ui_server(app, host="127.0.0.1", port=0)
     port = server.server_address[1]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -90,7 +90,7 @@ def test_craft_studio_http_endpoints_standalone(tmp_path):
         with opener.open(base + "/", timeout=5) as r:
             body = r.read().decode("utf-8")
             assert r.status == 200
-            assert "TRAX Studio" in body
+            assert "TRAX UI" in body
 
         # State endpoint
         with opener.open(base + "/api/state", timeout=5) as r:
