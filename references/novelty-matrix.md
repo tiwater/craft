@@ -11,7 +11,7 @@ These are research hypotheses and reading questions, not claims of novelty.
 | Symbolic/observational checks | RoboEval, Reliable CaP | Not novel; compare evidence-conditioned task progress under uncertainty |
 | Automatic physical trial loop | ENPIRE, RoboClaw | Not novel; quantify reset/verification assumptions and human work |
 | Low-cost model execution | CaPtain, CaP-RL | Compare training cost, runtime cost and frozen-program alternatives fairly |
-| Fast-food domain | A useful scoped application | Domain branding alone is not a methodological contribution |
+| Commercial workstation domain | A useful scoped application | Domain branding alone is not a methodological contribution |
 
 ## Candidate focal question
 

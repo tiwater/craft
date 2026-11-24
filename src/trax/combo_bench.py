@@ -1,6 +1,6 @@
 """Multi-Appliance Commercial Operations Benchmark (CafeBench v3: Coffee + Bagel/Oven).
 
-Models a shared single-arm fast-food workstation with TWO independent non-idempotent
+Models a shared single-arm commercial workstation with TWO independent non-idempotent
 appliances (espresso brewer + convection oven) under strict host-owned physical
 interlocks and realistic simulated cycle times:
 - Coffee brew cycle: 22.0 s asynchronous appliance duration (non-idempotent ``start_coffee_machine``)

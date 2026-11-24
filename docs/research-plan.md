@@ -1,6 +1,6 @@
 # Research plan — not reported findings
 
-TRAX: Code-based Robotic Automation for Fast-Food Tasks.
+TRAX: Transactional Robot Action Execution for Verifiable, Crash-Recoverable Code Policies.
 
 Question: can applicability-aware reusable programs and explicit execution
 evidence improve recovery under changed task conditions and uncertain physical

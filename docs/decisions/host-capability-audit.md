@@ -49,5 +49,5 @@ as measured heating or food quality. All methods must then receive identical
 observation privileges, actions and task definitions.
 
 For now, prioritize the coffee policy-development experiment, which is feasible
-with the current host. Treat broader fast-food research as a hypothesis pending
+with the current host. Treat broader multi-appliance workstation research as a hypothesis pending
 this common infrastructure, not justification for a new general CaP runtime.

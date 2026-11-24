@@ -41,4 +41,4 @@ JSON values corrected the probe, not the upstream implementation.
 
 Reproduction scripts and outputs: experiments/reuse-audit/. This establishes a
 usable public-tool extension seam. It does not establish full robot integration,
-provider compatibility, durable recovery or superiority on fast-food tasks.
+provider compatibility, durable recovery or superiority on non-idempotent multi-appliance tasks.
