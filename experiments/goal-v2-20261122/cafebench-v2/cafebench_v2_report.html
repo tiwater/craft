@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>CRAFT-CafeBench-v2.0 Report</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#070b14;color:#f1f5f9;margin:0;padding:24px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto}
+.card{background:#0e1628;border:1px solid #1e2f4f;border-radius:12px;padding:18px;margin-bottom:18px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #1e2f4f;padding:10px 8px;text-align:left;vertical-align:top}
+th{color:#94a3b8;font-weight:600}
+code{color:#38bdf8}
+.meta{color:#94a3b8;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>CRAFT-CafeBench-v2.0 — Commercial Operations Resilience Benchmark</h1>
+    <p class="meta">Driver: <code>mujoco_cafe</code> · Model: <code>gpt-6-astra</code> (effort=medium) · Max Dev LLM Calls: 6 · Evidence Sources: <code>simulator</code> (26 MuJoCo) + <code>recorded_data</code> (4 shadow, 0 actuation) · Finished: 2026-11-22T10:28:30.229976+00:00</p>
+  </div>
+  <div class="card">
+    <h2>Overall Held-Out Scoreboard (30 Scenarios)</h2>
+    <table>
+      <thead><tr><th>Method</th><th>Total Pass (Wilson 95% CI)</th><th>Simulator (26)</th><th>Recorded Shadow (4)</th><th>Dup Brews</th><th>False Actuations</th><th>Dev Calls / Resets</th><th>CRAFT vs Baseline (McNemar)</th></tr></thead>
+      <tbody><tr><td><strong>Strong Zero-Shot (Full Contract)</strong><br><small>frozen_stateless</small></td><td><strong>7/30 (23.3%)</strong><br><small>95% CI [11.8%, 40.9%]</small></td><td>3/26</td><td>4/4</td><td>0</td><td>0 (0.0%)</td><td>1 / 0</td><td>+76.67 pp (p=0.0)</td></tr><tr><td><strong>ASPIRE-Protocol (Adapted)</strong><br><small>frozen_stateless</small></td><td><strong>23/30 (76.7%)</strong><br><small>95% CI [59.1%, 88.2%]</small></td><td>19/26</td><td>4/4</td><td>0</td><td>0 (0.0%)</td><td>6 / 36</td><td>+23.33 pp (p=0.015625)</td></tr><tr><td><strong>CaP-X-Protocol (Adapted)</strong><br><small>frozen_stateless</small></td><td><strong>23/30 (76.7%)</strong><br><small>95% CI [59.1%, 88.2%]</small></td><td>19/26</td><td>4/4</td><td>0</td><td>0 (0.0%)</td><td>6 / 36</td><td>+23.33 pp (p=0.015625)</td></tr><tr><td><strong>SimEX-Direct-Repair (No Screening/Journal)</strong><br><small>frozen_stateless</small></td><td><strong>21/30 (70.0%)</strong><br><small>95% CI [52.1%, 83.3%]</small></td><td>19/26</td><td>2/4</td><td>0</td><td>0 (0.0%)</td><td>6 / 36</td><td>+30.0 pp (p=0.003906)</td></tr><tr><td><strong>CRAFT (RepairScreener + RegressionSuite + Journal)</strong><br><small>frozen_journaled</small></td><td><strong>30/30 (100.0%)</strong><br><small>95% CI [88.6%, 100.0%]</small></td><td>26/26</td><td>4/4</td><td>0</td><td>0 (0.0%)</td><td>2 / 12</td><td>—</td></tr></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Per-Tier Breakdown</h2>
+    <table>
+      <thead><tr><th>Tier</th><th>strong_zeroshot</th><th>aspire_protocol</th><th>capx_protocol</th><th>simex_direct_repair</th><th>craft_full</th></tr></thead>
+      <tbody><tr><td><code>tier1_layout_and_cup</code></td><td>0/5</td><td>5/5</td><td>5/5</td><td>5/5</td><td>5/5</td></tr><tr><td><code>tier2_crash_and_reconciliation</code></td><td>0/10</td><td>3/10</td><td>3/10</td><td>3/10</td><td>10/10</td></tr><tr><td><code>tier3_appliance_and_redlines</code></td><td>3/6</td><td>6/6</td><td>6/6</td><td>6/6</td><td>6/6</td></tr><tr><td><code>tier4_compound_faults</code></td><td>0/5</td><td>5/5</td><td>5/5</td><td>5/5</td><td>5/5</td></tr><tr><td><code>tier5_recorded_shadow</code></td><td>4/4</td><td>4/4</td><td>4/4</td><td>2/4</td><td>4/4</td></tr></tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>

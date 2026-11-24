@@ -1,0 +1,112 @@
+{
+  "robosuite-door-v2": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Multi-hypothesis screened frozen policy for Door (17/20 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "dev_llm_calls": 2,
+      "dev_pass_rate": 1.0,
+      "heldout_pass_rate": 0.85
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-door-v2",
+    "task_name": "Door",
+    "title": "Robosuite Door Verified Policy Skill",
+    "verification_report_id": "robosuite-v2-Door",
+    "verified": true,
+    "verified_at_utc": "2026-11-22T17:01:34.810837+00:00"
+  },
+  "robosuite-lift-v2": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Multi-hypothesis screened frozen policy for Lift (20/20 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "dev_llm_calls": 2,
+      "dev_pass_rate": 1.0,
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-lift-v2",
+    "task_name": "Lift",
+    "title": "Robosuite Lift Verified Policy Skill",
+    "verification_report_id": "robosuite-v2-Lift",
+    "verified": true,
+    "verified_at_utc": "2026-11-22T16:05:31.337173+00:00"
+  },
+  "robosuite-nutassemblysquare-v2": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Multi-hypothesis screened frozen policy for NutAssemblySquare (5/20 held-out).",
+    "known_failure_modes": [
+      "grasp_missed_or_slip",
+      "insertion_too_high_or_step_exhausted"
+    ],
+    "measured_limits": {
+      "dev_llm_calls": 5,
+      "dev_pass_rate": 0.6,
+      "heldout_pass_rate": 0.25
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-nutassemblysquare-v2",
+    "task_name": "NutAssemblySquare",
+    "title": "Robosuite NutAssemblySquare Verified Policy Skill",
+    "verification_report_id": "robosuite-v2-NutAssemblySquare",
+    "verified": false,
+    "verified_at_utc": "2026-11-22T16:44:19.331411+00:00"
+  },
+  "robosuite-pickplacecan-v2": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Multi-hypothesis screened frozen policy for PickPlaceCan (0/20 held-out).",
+    "known_failure_modes": [
+      "grasp_missed_or_slip",
+      "insertion_or_release_precision_error"
+    ],
+    "measured_limits": {
+      "dev_llm_calls": 5,
+      "dev_pass_rate": 0.0,
+      "heldout_pass_rate": 0.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-pickplacecan-v2",
+    "task_name": "PickPlaceCan",
+    "title": "Robosuite PickPlaceCan Verified Policy Skill",
+    "verification_report_id": "robosuite-v2-PickPlaceCan",
+    "verified": false,
+    "verified_at_utc": "2026-11-22T16:17:50.923391+00:00"
+  }
+}

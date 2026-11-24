@@ -1,0 +1,64 @@
+{
+  "active_version": "v2.0",
+  "history": [
+    {
+      "at_utc": "2026-11-22T12:48:00.447605+00:00",
+      "deployment_scope": "simulator",
+      "event": "publish",
+      "policy_sha256": "f5ebdd4b834cde849e3d3f52bcc4b7cb02533ddd8471e299ea43e68058ad8528",
+      "report_id": "acc-f5ebdd4b83-00fcd26e",
+      "version": "v1.0"
+    },
+    {
+      "at_utc": "2026-11-22T12:48:00.627734+00:00",
+      "deployment_scope": "simulator",
+      "event": "publish",
+      "policy_sha256": "d32c867c1846dd28f296d6d79c5d4850df9bc679fe84df0a8c45a767f0d544dc",
+      "report_id": "acc-d32c867c18-986d7dd9",
+      "version": "v2.0"
+    },
+    {
+      "at_utc": "2026-11-22T12:48:00.628285+00:00",
+      "event": "rollback",
+      "from_version": "v2.0",
+      "reason": "drilled_rollback_check",
+      "version": "v1.0"
+    },
+    {
+      "at_utc": "2026-11-22T12:48:00.628366+00:00",
+      "event": "rollback",
+      "from_version": "v1.0",
+      "reason": "re_activate_verified_v2_0",
+      "version": "v2.0"
+    }
+  ],
+  "optimization_queue": [],
+  "releases": {
+    "v1.0": {
+      "config_sha256": "e808382ac15a2e1084332206a47f9e92fd4282fa6a6adfefcfed85d8eeaf0d4f",
+      "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+      "deployment_scope": "simulator",
+      "notes": "",
+      "policy_path": "releases/v1.0/policy.py",
+      "policy_sha256": "f5ebdd4b834cde849e3d3f52bcc4b7cb02533ddd8471e299ea43e68058ad8528",
+      "published_at_utc": "2026-11-22T12:48:00.447594+00:00",
+      "report_id": "acc-f5ebdd4b83-00fcd26e",
+      "report_path": "releases/v1.0/acceptance_report.json",
+      "sdk_contract_sha256": "e7fce851f2b10c038eafb1a2039ed567c785edf1ac422068a55dd81be80377cc",
+      "version": "v1.0"
+    },
+    "v2.0": {
+      "config_sha256": "e808382ac15a2e1084332206a47f9e92fd4282fa6a6adfefcfed85d8eeaf0d4f",
+      "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+      "deployment_scope": "simulator",
+      "notes": "",
+      "policy_path": "releases/v2.0/policy.py",
+      "policy_sha256": "d32c867c1846dd28f296d6d79c5d4850df9bc679fe84df0a8c45a767f0d544dc",
+      "published_at_utc": "2026-11-22T12:48:00.627726+00:00",
+      "report_id": "acc-d32c867c18-986d7dd9",
+      "report_path": "releases/v2.0/acceptance_report.json",
+      "sdk_contract_sha256": "e7fce851f2b10c038eafb1a2039ed567c785edf1ac422068a55dd81be80377cc",
+      "version": "v2.0"
+    }
+  }
+}

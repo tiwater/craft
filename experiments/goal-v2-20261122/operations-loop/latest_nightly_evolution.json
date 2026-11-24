@@ -1,0 +1,519 @@
+{
+  "acceptance_report": {
+    "artifact": {
+      "config_sha256": "e808382ac15a2e1084332206a47f9e92fd4282fa6a6adfefcfed85d8eeaf0d4f",
+      "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+      "deployment_scope": "simulator",
+      "policy_sha256": "d32c867c1846dd28f296d6d79c5d4850df9bc679fe84df0a8c45a767f0d544dc",
+      "policy_source": "def run_policy(sdk, params):\n    order_id = params.get(\"order_id\")\n    prefix = params.get(\"command_prefix\")\n\n    def escalate(reason):\n        command_root = prefix or \"coffee-policy-invalid-request\"\n        retract = sdk.retract_safe_pose(\n            command_id=command_root + \":retract\"\n        )\n        escalation = sdk.escalate_to_human_operator(\n            order_id,\n            reason,\n            command_id=command_root + \":escalate\"\n        )\n        return {\n            \"status\": \"escalated_to_human\",\n            \"reason\": reason,\n            \"retract_result\": retract,\n            \"escalation_result\": escalation\n        }\n\n    def observation_ready(scene):\n        return bool(scene) and scene.get(\"control_ready\") is True\n\n    def reject_observation():\n        return {\"status\": \"rejected_observation_not_ready\"}\n\n    def pause(reason, candidates):\n        sdk.request_operator_confirmation(reason, candidates)\n        return {\"status\": \"paused_for_operator\", \"reason\": reason}\n\n    def valid_cups(scene):\n        threshold = scene.get(\"confidence_threshold\")\n        if threshold is None:\n            return []\n        return [\n            obj for obj in scene.get(\"objects\", [])\n            if obj.get(\"id\")\n            and obj.get(\"cup_type\")\n            and obj.get(\"cup_type\") != \"flexible_bag\"\n            and obj.get(\"confidence\", -1.0) >= threshold\n        ]\n\n    def cup_still_identified(scene, cup_id):\n        matches = [\n            obj for obj in valid_cups(scene)\n            if obj[\"id\"] == cup_id\n        ]\n        confirmed = scene.get(\"operator_confirmed_cup_id\")\n        return (\n            len(matches) == 1\n            and (not confirmed or confirmed == cup_id)\n        )\n\n    if not order_id or not prefix:\n        return escalate(\"Missing order_id or command_prefix.\")\n\n    order = sdk.get_order(order_id)\n    if not order or order.get(\"order_id\") != order_id:\n        return escalate(\"Order is missing or its identity does not match.\")\n\n    target_slot = params.get(\"target_slot\") or order.get(\"destination_slot\")\n    if not target_slot:\n        return escalate(\"No pickup destination was supplied.\")\n\n    normalized_slot = target_slot.upper()\n    if \"NOGO\" in normalized_slot or \"STEAM\" in normalized_slot:\n        return escalate(\"The requested destination is a forbidden zone.\")\n\n    slot_prefix = \"$SLOT_PICKUP_\"\n    if not target_slot.startswith(slot_prefix):\n        return escalate(\"The destination is not a pickup slot.\")\n\n    slot_number = target_slot[len(slot_prefix):]\n    if (\n        not slot_number\n        or any(character not in \"0123456789\" for character in slot_number)\n        or not any(character != \"0\" for character in slot_number)\n    ):\n        return escalate(\"The pickup slot identifier is invalid.\")\n\n    if order.get(\"special_request\"):\n        return escalate(\"The order requires unsupported manual operations.\")\n\n    if not order.get(\"drink\"):\n        return escalate(\"The order has no drink specification.\")\n\n    if order.get(\"status\") in (\n        \"completed\", \"delivered\", \"cancelled\", \"canceled\", \"rejected\"\n    ):\n        return escalate(\"The order is already terminal; do not brew again.\")\n\n    brew_command_id = prefix + \":brew\"\n    scene = sdk.observe_scene()\n    if not observation_ready(scene):\n        return reject_observation()\n\n    machine = scene.get(\"coffee_machine\", {})\n\n    for attempt in range(5):\n        if machine.get(\"status\") not in (\"busy\", \"cleaning\"):\n            break\n        scene = sdk.observe_scene()\n        if not observation_ready(scene):\n            return reject_observation()\n        machine = scene.get(\"coffee_machine\", {})\n\n    if machine.get(\"status\") == \"fault\":\n        return escalate(\"The coffee machine reports a fault.\")\n\n    resume_brew = machine.get(\"status\") in (\"running\", \"completed\")\n    if resume_brew:\n        brew = sdk.query_command_status(brew_command_id)\n        if brew.get(\"receipt\") not in (\"running\", \"done\", \"completed\"):\n            return escalate(\n                \"The existing brew cannot be reconciled with this command.\"\n            )\n    elif machine.get(\"status\") != \"idle\" or machine.get(\"cup_filled\"):\n        return escalate(\"The machine is not empty and idle.\")\n\n    candidates = valid_cups(scene)\n    confirmed_id = scene.get(\"operator_confirmed_cup_id\")\n\n    if confirmed_id:\n        selected = [\n            obj for obj in candidates if obj[\"id\"] == confirmed_id\n        ]\n        if len(selected) != 1:\n            return pause(\n                \"The confirmed cup is not uniquely visible at sufficient confidence.\",\n                candidates\n            )\n        cup_id = selected[0][\"id\"]\n    elif len(candidates) == 1:\n        cup_id = candidates[0][\"id\"]\n    else:\n        return pause(\"Cup identity is missing or ambiguous.\", candidates)\n\n    if not resume_brew:\n        placement = sdk.place_cup_under_machine(\n            cup_id, command_id=prefix + \":place\"\n        )\n        if placement.get(\"receipt\") != \"done\":\n            return escalate(\"Cup placement was not confirmed.\")\n\n        scene = sdk.observe_scene()\n        if not observation_ready(scene):\n            sdk.retract_safe_pose(command_id=prefix + \":retract\")\n            return reject_observation()\n\n        if not cup_still_identified(scene, cup_id):\n            sdk.retract_safe_pose(command_id=prefix + \":retract\")\n            return pause(\n                \"The selected cup cannot be confidently identified after placement.\",\n                valid_cups(scene)\n            )\n\n        machine = scene.get(\"coffee_machine\", {})\n        if machine.get(\"status\") != \"idle\" or machine.get(\"cup_filled\"):\n            return escalate(\"The machine changed state before brewing.\")\n\n        if scene.get(\"l2_pouring_safety\", {}).get(\"safe_to_pour\") is not True:\n            recenter = sdk.recenter_cup_under_spout(\n                cup_id, command_id=prefix + \":recenter\"\n            )\n            if recenter.get(\"receipt\") != \"done\":\n                return escalate(\"Unsafe pouring alignment could not be corrected.\")\n\n            scene = sdk.observe_scene()\n            if not observation_ready(scene):\n                sdk.retract_safe_pose(command_id=prefix + \":retract\")\n                return reject_observation()\n\n            if not cup_still_identified(scene, cup_id):\n                sdk.retract_safe_pose(command_id=prefix + \":retract\")\n                return pause(\n                    \"Cup identity is uncertain after recentering.\",\n                    valid_cups(scene)\n                )\n\n        machine = scene.get(\"coffee_machine\", {})\n        if machine.get(\"status\") != \"idle\" or machine.get(\"cup_filled\"):\n            return escalate(\"The machine is not ready for a new brew.\")\n\n        if scene.get(\"l2_pouring_safety\", {}).get(\"safe_to_pour\") is not True:\n            return escalate(\"Pouring safety is not affirmatively established.\")\n\n        brew = sdk.start_coffee_machine(command_id=brew_command_id)\n        receipt = brew.get(\"receipt\")\n        if receipt not in (\"running\", \"done\", \"completed\", \"rejected\"):\n            brew = sdk.query_command_status(brew_command_id)\n            receipt = brew.get(\"receipt\")\n\n        if receipt not in (\"running\", \"done\", \"completed\"):\n            return escalate(\"The brew command was rejected or remains unresolved.\")\n\n    ready = sdk.wait_for_coffee_ready(\n        command_id=prefix + \":wait-ready\"\n    )\n    if ready.get(\"receipt\") != \"done\":\n        return escalate(\"Coffee readiness was not confirmed.\")\n\n    scene = sdk.observe_scene()\n    if not observation_ready(scene):\n        return escalate(\"Perception became unavailable after brewing.\")\n\n    machine = scene.get(\"coffee_machine\", {})\n    if (\n        machine.get(\"status\") not in (\"idle\", \"completed\")\n        or machine.get(\"cup_filled\") is not True\n    ):\n        return escalate(\"The machine did not confirm a safely finished brew.\")\n\n    if not cup_still_identified(scene, cup_id):\n        sdk.retract_safe_pose(command_id=prefix + \":retract\")\n        return pause(\n            \"The filled cup cannot be confidently identified for delivery.\",\n            valid_cups(scene)\n        )\n\n    delivery = sdk.retrieve_and_deliver_cup(\n        cup_id,\n        target_slot,\n        command_id=prefix + \":deliver\"\n    )\n    if delivery.get(\"receipt\") != \"done\":\n        return escalate(\"Physical delivery was not confirmed.\")\n\n    completion = sdk.complete_order_delivery(\n        order_id,\n        cup_id,\n        target_slot,\n        command_id=prefix + \":complete\"\n    )\n    if completion.get(\"receipt\") != \"done\":\n        return escalate(\n            \"The cup was delivered, but order completion was not confirmed. \"\n            \"Do not brew a replacement.\"\n        )\n\n    return {\n        \"status\": \"completed\",\n        \"order_id\": order_id,\n        \"cup_id\": cup_id,\n        \"destination_slot\": target_slot\n    }\n",
+      "sdk_contract_sha256": "e7fce851f2b10c038eafb1a2039ed567c785edf1ac422068a55dd81be80377cc"
+    },
+    "certification_disclaimer": "Scope=simulator: NOT physical-robot approval and NOT food-quality certification. Motion smoothness depends on the host robot controller, not upper-layer CaP.",
+    "completed_trials": 5,
+    "completion_rate": 1.0,
+    "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+    "duplicate_non_idempotent_count": 0,
+    "evaluated_at_utc": "2026-11-22T12:48:00.627514+00:00",
+    "evidence_source": "simulator",
+    "failure_reasons": [],
+    "human_interventions": 0,
+    "max_delivery_error_mm": 0.067,
+    "mean_wall_s": 0.013,
+    "optimization_reason": "",
+    "passed": true,
+    "queue_for_optimization": false,
+    "report_id": "acc-d32c867c18-986d7dd9",
+    "slow_steps": [],
+    "total_trials": 5,
+    "unknown_outcomes": 0
+  },
+  "finished_at_utc": "2026-11-22T12:48:00.627933+00:00",
+  "published_release": {
+    "config_sha256": "e808382ac15a2e1084332206a47f9e92fd4282fa6a6adfefcfed85d8eeaf0d4f",
+    "criteria_sha256": "4ef3c46f0672d93feef847db7dde631c36ed878c6927f3ca4ddd277d7c77e036",
+    "deployment_scope": "simulator",
+    "notes": "",
+    "policy_path": "releases/v2.0/policy.py",
+    "policy_sha256": "d32c867c1846dd28f296d6d79c5d4850df9bc679fe84df0a8c45a767f0d544dc",
+    "published_at_utc": "2026-11-22T12:48:00.627726+00:00",
+    "report_id": "acc-d32c867c18-986d7dd9",
+    "report_path": "releases/v2.0/acceptance_report.json",
+    "sdk_contract_sha256": "e7fce851f2b10c038eafb1a2039ed567c785edf1ac422068a55dd81be80377cc",
+    "version": "v2.0"
+  },
+  "screening": {
+    "alignment": {
+      "attribution_matched": true,
+      "baseline_attribution": {
+        "auto_repair_eligible": true,
+        "code": "escalated_to_human",
+        "layer": "policy",
+        "recommended_owner": "craft_policy",
+        "summary": "Trial did not meet acceptance criteria (escalated_to_human)"
+      },
+      "baseline_sha256": "f5ebdd4b834cde849e3d3f52bcc4b7cb02533ddd8471e299ea43e68058ad8528",
+      "baseline_trial": {
+        "command_id": "align-reg_001_047faa-1795351680511862053-att2",
+        "crashed_mid_brew": false,
+        "detail": "MuJoCo host runtime finished with status=escalated_to_human",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "expect_status": "completed",
+        "fault_injection": false,
+        "host_runtime_status": "escalated_to_human",
+        "human_interventions": 1,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "query_command_status",
+          "retract_safe_pose",
+          "escalate_to_human_operator"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "oracle_post_run": {
+          "cup_filled": false,
+          "cup_tilt_deg": 0.114,
+          "delivery_error_mm": 183.923
+        },
+        "queried_after_unknown": true,
+        "reconciled_after_unknown": false,
+        "sandbox_mode": "mujoco_ast_sandbox",
+        "simulator_engine": "mujoco",
+        "status": "failed",
+        "step_records": [
+          {
+            "details": {
+              "order": {
+                "cup_preference": "dine_in_red",
+                "destination_slot": "$SLOT_PICKUP_1",
+                "drink": "hot_americano",
+                "order_id": "A042",
+                "special_request": null,
+                "status": "pending"
+              },
+              "orderId": "A042"
+            },
+            "method": "get_order",
+            "receipt": "done",
+            "stepIndex": 0,
+            "timestampMs": 1795351680518
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "running",
+              "objectCount": 2,
+              "radialOffsetM": 0.0001,
+              "safeToPour": true
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 1,
+            "timestampMs": 1795351680518
+          },
+          {
+            "details": {
+              "commandId": "align-reg_001_047faa-1795351680511862053-att2:start"
+            },
+            "method": "query_command_status",
+            "receipt": "unknown",
+            "stepIndex": 2,
+            "timestampMs": 1795351680518
+          },
+          {
+            "details": {
+              "commandId": "align-reg_001_047faa-1795351680511862053-att2:retract"
+            },
+            "method": "retract_safe_pose",
+            "receipt": "done",
+            "stepIndex": 3,
+            "timestampMs": 1795351680519
+          },
+          {
+            "details": {
+              "commandId": "align-reg_001_047faa-1795351680511862053-att2:escalate",
+              "orderId": "A042",
+              "reason": "The machine is not empty and idle; brew ownership is unresolved."
+            },
+            "method": "escalate_to_human_operator",
+            "receipt": "escalated_to_human",
+            "stepIndex": 4,
+            "timestampMs": 1795351680519
+          }
+        ],
+        "task_passed": false,
+        "unknown_events_observed": 1,
+        "wall_s": 0.003
+      },
+      "case_id": "reg_001_047faa",
+      "checked_at_utc": "2026-11-22T12:48:00.519149+00:00",
+      "driver_name": "mujoco_cafe",
+      "evidence_source": "simulator",
+      "original_attribution_code": "escalated_to_human",
+      "original_attribution_layer": "policy",
+      "reproduced": true,
+      "reproduction_status": "reproduced_exact",
+      "sim_trust_notes": "Reproduced exact attribution 'escalated_to_human' (policy) on mujoco_cafe (simulator). Screening evidence is informative for pre-filtering, but still requires independent acceptance."
+    },
+    "approved": false,
+    "baseline_sha256": "f5ebdd4b834cde849e3d3f52bcc4b7cb02533ddd8471e299ea43e68058ad8528",
+    "budget_used": {
+      "model_calls": 0,
+      "trials": 3
+    },
+    "candidates": [
+      {
+        "approved": false,
+        "candidate_id": "scr_01_h1_zeroshot_rewrite",
+        "duplicate_non_idempotent": false,
+        "eligible_for_acceptance": false,
+        "evidence_source": "simulator",
+        "hypothesis_id": "h1_zeroshot_rewrite",
+        "hypothesis_title": "H1: Full Zero-Shot Rewrite (Regressing Candidate)",
+        "mean_wall_s": 0.002,
+        "regression_failed_ids": [],
+        "regression_passed": 0,
+        "regression_total": 0,
+        "rejection_reasons": [
+          "target_failure_not_fixed"
+        ],
+        "screened_at_utc": "2026-11-22T12:48:00.526077+00:00",
+        "source_path": "candidates/scr_01_h1_zeroshot_rewrite.py",
+        "source_sha256": "bfce812dcf80ead8332c4608b06d01565140d4524031fd1a415bb7b5d54ccefd",
+        "syntax_valid": true,
+        "target_fixed": false,
+        "target_trial": {
+          "command_id": "scr-target-scr_01_h1_zeroshot_rewrite-1795351680523017683-att1",
+          "crashed_mid_brew": false,
+          "detail": "MuJoCo host runtime finished with status=rejected_observation_not_ready",
+          "duplicate_non_idempotent": false,
+          "evidence_source": "simulator",
+          "expect_status": "completed",
+          "fault_injection": true,
+          "host_runtime_status": "rejected_observation_not_ready",
+          "human_interventions": 0,
+          "methods": [
+            "get_order",
+            "observe_scene"
+          ],
+          "non_idempotent_counts": {
+            "start_coffee_machine": 0
+          },
+          "oracle_post_run": {
+            "cup_filled": false,
+            "cup_tilt_deg": 0.089,
+            "delivery_error_mm": 158.137
+          },
+          "queried_after_unknown": true,
+          "reconciled_after_unknown": true,
+          "sandbox_mode": "mujoco_ast_sandbox",
+          "simulator_engine": "mujoco",
+          "status": "failed",
+          "step_records": [
+            {
+              "details": {
+                "order": {
+                  "cup_preference": "dine_in_red",
+                  "destination_slot": "$SLOT_PICKUP_1",
+                  "drink": "hot_americano",
+                  "order_id": "A042",
+                  "special_request": null,
+                  "status": "pending"
+                },
+                "orderId": "A042"
+              },
+              "method": "get_order",
+              "receipt": "done",
+              "stepIndex": 0,
+              "timestampMs": 1795351680525
+            },
+            {
+              "details": {
+                "controlReady": true,
+                "machineStatus": "idle",
+                "objectCount": 2,
+                "radialOffsetM": 0.12173,
+                "safeToPour": false
+              },
+              "method": "observe_scene",
+              "receipt": "done",
+              "stepIndex": 1,
+              "timestampMs": 1795351680525
+            }
+          ],
+          "task_passed": false,
+          "unknown_events_observed": 0,
+          "wall_s": 0.002
+        },
+        "unreconciled_unknown_ack": false,
+        "validation_error": ""
+      },
+      {
+        "approved": false,
+        "candidate_id": "scr_02_h2_craft_journal_reconcile",
+        "duplicate_non_idempotent": false,
+        "eligible_for_acceptance": true,
+        "evidence_source": "simulator",
+        "hypothesis_id": "h2_craft_journal_reconcile",
+        "hypothesis_title": "H2: CRAFT Journal-Backed Reconciliation + Slip Recentering",
+        "mean_wall_s": 0.009,
+        "regression_failed_ids": [],
+        "regression_passed": 0,
+        "regression_total": 0,
+        "rejection_reasons": [],
+        "screened_at_utc": "2026-11-22T12:48:00.547079+00:00",
+        "source_path": "candidates/scr_02_h2_craft_journal_reconcile.py",
+        "source_sha256": "7322506b7cb7ecbc277e1c5f07c79000412c2e138738f4ba9b6b3daa98933fa7",
+        "syntax_valid": true,
+        "target_fixed": true,
+        "target_trial": {
+          "command_id": "scr-target-scr_02_h2_craft_journal_reconcile-1795351680529967665-att2",
+          "crashed_mid_brew": false,
+          "detail": "MuJoCo host runtime finished with status=completed",
+          "duplicate_non_idempotent": false,
+          "evidence_source": "simulator",
+          "expect_status": "completed",
+          "fault_injection": false,
+          "host_runtime_status": "completed",
+          "human_interventions": 0,
+          "methods": [
+            "get_order",
+            "observe_scene",
+            "query_command_status",
+            "query_command_status",
+            "wait_for_coffee_ready",
+            "observe_scene",
+            "retrieve_and_deliver_cup",
+            "complete_order_delivery"
+          ],
+          "non_idempotent_counts": {
+            "start_coffee_machine": 1
+          },
+          "oracle_post_run": {
+            "cup_filled": true,
+            "cup_tilt_deg": 0.054,
+            "delivery_error_mm": 0.067
+          },
+          "queried_after_unknown": true,
+          "reconciled_after_unknown": true,
+          "sandbox_mode": "mujoco_ast_sandbox",
+          "simulator_engine": "mujoco",
+          "status": "completed",
+          "step_records": [
+            {
+              "details": {
+                "order": {
+                  "cup_preference": "dine_in_red",
+                  "destination_slot": "$SLOT_PICKUP_1",
+                  "drink": "hot_americano",
+                  "order_id": "A042",
+                  "special_request": null,
+                  "status": "pending"
+                },
+                "orderId": "A042"
+              },
+              "method": "get_order",
+              "receipt": "done",
+              "stepIndex": 0,
+              "timestampMs": 1795351680539
+            },
+            {
+              "details": {
+                "controlReady": true,
+                "machineStatus": "running",
+                "objectCount": 2,
+                "radialOffsetM": 0.0001,
+                "safeToPour": true
+              },
+              "method": "observe_scene",
+              "receipt": "done",
+              "stepIndex": 1,
+              "timestampMs": 1795351680539
+            },
+            {
+              "details": {
+                "commandId": "scr-target-scr_02_h2_craft_journal_reconcile-1795351680529967665-att2:brew"
+              },
+              "method": "query_command_status",
+              "receipt": "unknown",
+              "stepIndex": 2,
+              "timestampMs": 1795351680539
+            },
+            {
+              "details": {
+                "commandId": "scr-target-scr_02_h2_craft_journal_reconcile-1795351680529967665-att1:brew"
+              },
+              "method": "query_command_status",
+              "receipt": "running",
+              "stepIndex": 3,
+              "timestampMs": 1795351680539
+            },
+            {
+              "details": {
+                "commandId": "scr-target-scr_02_h2_craft_journal_reconcile-1795351680529967665-att2:wait-ready",
+                "cupFilled": true
+              },
+              "method": "wait_for_coffee_ready",
+              "receipt": "done",
+              "stepIndex": 4,
+              "timestampMs": 1795351680541
+            },
+            {
+              "details": {
+                "controlReady": true,
+                "machineStatus": "completed",
+                "objectCount": 2,
+                "radialOffsetM": 8e-05,
+                "safeToPour": true
+              },
+              "method": "observe_scene",
+              "receipt": "done",
+              "stepIndex": 5,
+              "timestampMs": 1795351680541
+            },
+            {
+              "details": {
+                "commandId": "scr-target-scr_02_h2_craft_journal_reconcile-1795351680529967665-att2:deliver",
+                "targetSlot": "$SLOT_PICKUP_1"
+              },
+              "method": "retrieve_and_deliver_cup",
+              "receipt": "done",
+              "stepIndex": 6,
+              "timestampMs": 1795351680544
+            },
+            {
+              "details": {
+                "commandId": "scr-target-scr_02_h2_craft_journal_reconcile-1795351680529967665-att2:complete",
+                "orderId": "A042"
+              },
+              "method": "complete_order_delivery",
+              "receipt": "done",
+              "stepIndex": 7,
+              "timestampMs": 1795351680545
+            }
+          ],
+          "task_passed": true,
+          "unknown_events_observed": 1,
+          "wall_s": 0.009
+        },
+        "unreconciled_unknown_ack": false,
+        "validation_error": ""
+      }
+    ],
+    "case_id": "reg_001_047faa",
+    "config_sha256": "e808382ac15a2e1084332206a47f9e92fd4282fa6a6adfefcfed85d8eeaf0d4f",
+    "created_at_utc": "2026-11-22T12:48:00.511760+00:00",
+    "driver_name": "mujoco_cafe",
+    "evidence_source": "simulator",
+    "hypotheses": [
+      {
+        "diagnosis": "Policy fails mid-brew crash/restart recovery.",
+        "hypothesis_id": "h1_zeroshot_rewrite",
+        "proposed_strategy": "Replace policy with unscreened zero-shot baseline.",
+        "target_layer": "policy",
+        "title": "H1: Full Zero-Shot Rewrite (Regressing Candidate)"
+      },
+      {
+        "diagnosis": "Stateless policy cannot reconcile crashed non-idempotent brew without durable journal + status query.",
+        "hypothesis_id": "h2_craft_journal_reconcile",
+        "proposed_strategy": "Use live perception, L2 recentering, and journal-backed unknown reconciliation.",
+        "target_layer": "policy",
+        "title": "H2: CRAFT Journal-Backed Reconciliation + Slip Recentering"
+      }
+    ],
+    "recommended_candidate_id": "scr_02_h2_craft_journal_reconcile",
+    "recommended_source_sha256": "7322506b7cb7ecbc277e1c5f07c79000412c2e138738f4ba9b6b3daa98933fa7",
+    "requires_independent_acceptance": true,
+    "schema_version": 1,
+    "screening_id": "screen-reg_001_047faa-f5ebdd4b",
+    "status": "completed_with_recommendation",
+    "updated_at_utc": "2026-11-22T12:48:00.547423+00:00"
+  },
+  "shadow_check": {
+    "all_passed": true,
+    "evidence_source": "recorded_data",
+    "false_actuations": 0,
+    "passed": 4,
+    "total": 4,
+    "trials": [
+      {
+        "evidence_source": "recorded_data",
+        "expect_status": "rejected_observation_not_ready",
+        "host_runtime_status": "rejected_observation_not_ready",
+        "label": "Recorded stale perception (control_ready=False)",
+        "scenario_id": "rec_01_stale_not_ready",
+        "shadow_brew_intents": 0,
+        "task_passed": true
+      },
+      {
+        "evidence_source": "recorded_data",
+        "expect_status": "paused_for_operator",
+        "host_runtime_status": "paused_for_operator",
+        "label": "Recorded occluded/low-confidence cup (0.41 < 0.75)",
+        "scenario_id": "rec_02_low_conf_noisy_cup",
+        "shadow_brew_intents": 0,
+        "task_passed": true
+      },
+      {
+        "evidence_source": "recorded_data",
+        "expect_status": "paused_for_operator",
+        "host_runtime_status": "paused_for_operator",
+        "label": "Recorded dual ambiguous rigid cups",
+        "scenario_id": "rec_03_ambiguous_dual_cups",
+        "shadow_brew_intents": 0,
+        "task_passed": true
+      },
+      {
+        "evidence_source": "recorded_data",
+        "expect_status": "paused_for_operator",
+        "host_runtime_status": "paused_for_operator",
+        "label": "Recorded coffee-bean bag distractor only (no rigid cup)",
+        "scenario_id": "rec_04_distractor_bag_only",
+        "shadow_brew_intents": 0,
+        "task_passed": true
+      }
+    ]
+  },
+  "skill_recorded": {
+    "applicability_notes": "Promoted via RepairScreener (screen-reg_001_047faa-f5ebdd4b) + independent acceptance (acc-d32c867c18-986d7dd9).",
+    "evidence_source": "simulator",
+    "guidance": "Hypothesis 'H2: CRAFT Journal-Backed Reconciliation + Slip Recentering' verified on Order 4: Mid-Brew Host Crash & Journaled Restart with 0 regressions.",
+    "known_failure_modes": [
+      "escalated_to_human"
+    ],
+    "measured_limits": {
+      "acceptance_completion_rate": 1.0,
+      "crash_restart_reconciliation": true,
+      "recorded_shadow_pass_rate": 1.0,
+      "screening_mean_wall_s": 0.009,
+      "verified_layout_shift_mm": 35.4,
+      "verified_slip_mm": 34.2
+    },
+    "regression_case_ids": [
+      "reg_001_047faa"
+    ],
+    "required_methods": [
+      "get_order",
+      "observe_scene",
+      "query_command_status",
+      "place_cup_under_machine",
+      "recenter_cup_under_spout",
+      "start_coffee_machine",
+      "wait_for_coffee_ready",
+      "retrieve_and_deliver_cup",
+      "complete_order_delivery",
+      "retract_safe_pose",
+      "escalate_to_human_operator"
+    ],
+    "sdk_contract_sha256": "e7fce851f2b10c038eafb1a2039ed567c785edf1ac422068a55dd81be80377cc",
+    "skill_id": "skill-v2.0-reg_001_047faa",
+    "task_name": "single_cup_coffee",
+    "title": "Verified repair for escalated_to_human (v2.0)",
+    "verification_report_id": "acc-d32c867c18-986d7dd9",
+    "verified": true,
+    "verified_at_utc": "2026-11-22T12:48:00.627826+00:00"
+  },
+  "status": "promoted"
+}

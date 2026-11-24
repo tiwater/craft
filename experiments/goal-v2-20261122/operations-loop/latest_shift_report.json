@@ -1,0 +1,969 @@
+{
+  "aggregate_profile": {
+    "attributed_failures": [],
+    "attribution_counts": {
+      "control": 0,
+      "device": 0,
+      "perception": 0,
+      "policy": 0
+    },
+    "auto_repair_eligible_failures": 0,
+    "failed_trials": 0,
+    "failure_code_counts": {},
+    "mean_wall_s": 0.01,
+    "method_bottlenecks": [
+      {
+        "max_step_s": 0.003,
+        "mean_calls_per_trial": 0.67,
+        "mean_s_per_timed_trial": 0.003,
+        "method": "retrieve_and_deliver_cup",
+        "total_calls": 4,
+        "total_s": 0.012
+      },
+      {
+        "max_step_s": 0.003,
+        "mean_calls_per_trial": 0.67,
+        "mean_s_per_timed_trial": 0.002,
+        "method": "wait_for_coffee_ready",
+        "total_calls": 4,
+        "total_s": 0.009
+      },
+      {
+        "max_step_s": 0.003,
+        "mean_calls_per_trial": 0.5,
+        "mean_s_per_timed_trial": 0.003,
+        "method": "place_cup_under_machine",
+        "total_calls": 3,
+        "total_s": 0.008
+      },
+      {
+        "max_step_s": 0.002,
+        "mean_calls_per_trial": 0.67,
+        "mean_s_per_timed_trial": 0.001,
+        "method": "complete_order_delivery",
+        "total_calls": 4,
+        "total_s": 0.005
+      },
+      {
+        "max_step_s": 0.001,
+        "mean_calls_per_trial": 2.17,
+        "mean_s_per_timed_trial": 0.001,
+        "method": "observe_scene",
+        "total_calls": 13,
+        "total_s": 0.004
+      },
+      {
+        "max_step_s": 0.001,
+        "mean_calls_per_trial": 0.5,
+        "mean_s_per_timed_trial": 0.001,
+        "method": "start_coffee_machine",
+        "total_calls": 3,
+        "total_s": 0.003
+      },
+      {
+        "max_step_s": 0.002,
+        "mean_calls_per_trial": 0.17,
+        "mean_s_per_timed_trial": 0.002,
+        "method": "recenter_cup_under_spout",
+        "total_calls": 1,
+        "total_s": 0.002
+      },
+      {
+        "max_step_s": 0.0,
+        "mean_calls_per_trial": 0.5,
+        "mean_s_per_timed_trial": 0.0,
+        "method": "query_command_status",
+        "total_calls": 3,
+        "total_s": 0.0
+      },
+      {
+        "max_step_s": 0.0,
+        "mean_calls_per_trial": 0.17,
+        "mean_s_per_timed_trial": 0.0,
+        "method": "command_ack_timeout_unknown",
+        "total_calls": 1,
+        "total_s": 0.0
+      },
+      {
+        "max_step_s": 0.0,
+        "mean_calls_per_trial": 0.17,
+        "mean_s_per_timed_trial": 0.0,
+        "method": "request_operator_confirmation",
+        "total_calls": 1,
+        "total_s": 0.0
+      },
+      {
+        "max_step_s": 0.0,
+        "mean_calls_per_trial": 0.17,
+        "mean_s_per_timed_trial": 0.0,
+        "method": "retract_safe_pose",
+        "total_calls": 1,
+        "total_s": 0.0
+      },
+      {
+        "max_step_s": 0.0,
+        "mean_calls_per_trial": 0.17,
+        "mean_s_per_timed_trial": 0.0,
+        "method": "escalate_to_human_operator",
+        "total_calls": 1,
+        "total_s": 0.0
+      },
+      {
+        "max_step_s": null,
+        "mean_calls_per_trial": 1.0,
+        "mean_s_per_timed_trial": null,
+        "method": "get_order",
+        "total_calls": 6,
+        "total_s": null
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed_trials": 6,
+    "total_trials": 6
+  },
+  "captured_regression_case_ids": [],
+  "driver": "mujoco_cafe",
+  "duplicate_non_idempotent_orders": 0,
+  "enable_journal_proxy": true,
+  "evidence_source": "simulator",
+  "false_actuation_orders": 0,
+  "finished_at_utc": "2026-11-22T12:48:00.705556+00:00",
+  "pass_rate": 1.0,
+  "passed_orders": 6,
+  "policy_sha256": "d32c867c1846dd28f296d6d79c5d4850df9bc679fe84df0a8c45a767f0d544dc",
+  "portability": {
+    "error_count": 0,
+    "findings": [],
+    "portable": true,
+    "warning_count": 0
+  },
+  "schema_version": 1,
+  "shift_id": "day_shift_v2_0",
+  "throughput_orders_per_hour": 284210.5,
+  "total_orders": 6,
+  "total_wall_s": 0.076,
+  "trials": [
+    {
+      "attribution": {
+        "auto_repair_eligible": false,
+        "code": "passed",
+        "layer": "none",
+        "recommended_owner": "none",
+        "summary": "Trial passed independent verification"
+      },
+      "command_id": "day_shift_v2_0-shift_01_nominal-att1",
+      "crashed_mid_brew": false,
+      "detail": "MuJoCo host runtime finished with status=completed",
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "expect_status": "completed",
+      "fault_injection": false,
+      "host_runtime_status": "completed",
+      "human_interventions": 0,
+      "label": "Order 1: Standard Hot Americano",
+      "methods": [
+        "get_order",
+        "observe_scene",
+        "place_cup_under_machine",
+        "observe_scene",
+        "start_coffee_machine",
+        "wait_for_coffee_ready",
+        "observe_scene",
+        "retrieve_and_deliver_cup",
+        "complete_order_delivery"
+      ],
+      "non_idempotent_counts": {
+        "start_coffee_machine": 1
+      },
+      "oracle_post_run": {
+        "cup_filled": true,
+        "cup_tilt_deg": 0.054,
+        "delivery_error_mm": 0.067
+      },
+      "queried_after_unknown": true,
+      "reconciled_after_unknown": true,
+      "regression_case_id": null,
+      "restarted_after_crash": false,
+      "sandbox_mode": "mujoco_ast_sandbox",
+      "shift_order_id": "shift_01_nominal",
+      "simulator_engine": "mujoco",
+      "status": "completed",
+      "step_records": [
+        {
+          "details": {
+            "order": {
+              "cup_preference": "dine_in_red",
+              "destination_slot": "$SLOT_PICKUP_1",
+              "drink": "hot_americano",
+              "order_id": "A042",
+              "special_request": null,
+              "status": "pending"
+            },
+            "orderId": "A042"
+          },
+          "method": "get_order",
+          "receipt": "done",
+          "stepIndex": 0,
+          "timestampMs": 1795351680633
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.12173,
+            "safeToPour": false
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 1,
+          "timestampMs": 1795351680633
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_01_nominal-att1:place",
+            "cupId": "obj-cup-a"
+          },
+          "method": "place_cup_under_machine",
+          "receipt": "done",
+          "stepIndex": 2,
+          "timestampMs": 1795351680636
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.0001,
+            "safeToPour": true
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 3,
+          "timestampMs": 1795351680636
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_01_nominal-att1:brew"
+          },
+          "method": "start_coffee_machine",
+          "receipt": "running",
+          "stepIndex": 4,
+          "timestampMs": 1795351680637
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_01_nominal-att1:wait-ready",
+            "cupFilled": true
+          },
+          "method": "wait_for_coffee_ready",
+          "receipt": "done",
+          "stepIndex": 5,
+          "timestampMs": 1795351680639
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "completed",
+            "objectCount": 2,
+            "radialOffsetM": 8e-05,
+            "safeToPour": true
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 6,
+          "timestampMs": 1795351680640
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_01_nominal-att1:deliver",
+            "targetSlot": "$SLOT_PICKUP_1"
+          },
+          "method": "retrieve_and_deliver_cup",
+          "receipt": "done",
+          "stepIndex": 7,
+          "timestampMs": 1795351680643
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_01_nominal-att1:complete",
+            "orderId": "A042"
+          },
+          "method": "complete_order_delivery",
+          "receipt": "done",
+          "stepIndex": 8,
+          "timestampMs": 1795351680644
+        }
+      ],
+      "task_passed": true,
+      "unknown_events_observed": 0,
+      "wall_s": 0.014
+    },
+    {
+      "attribution": {
+        "auto_repair_eligible": false,
+        "code": "passed",
+        "layer": "none",
+        "recommended_owner": "none",
+        "summary": "Trial passed independent verification"
+      },
+      "command_id": "day_shift_v2_0-shift_02_store_b_shift-att1",
+      "crashed_mid_brew": false,
+      "detail": "MuJoCo host runtime finished with status=completed",
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "expect_status": "completed",
+      "fault_injection": false,
+      "host_runtime_status": "completed",
+      "human_interventions": 0,
+      "label": "Order 2: Cross-Store Layout Shift (+25,-25mm) Takeout",
+      "methods": [
+        "get_order",
+        "observe_scene",
+        "place_cup_under_machine",
+        "observe_scene",
+        "start_coffee_machine",
+        "wait_for_coffee_ready",
+        "observe_scene",
+        "retrieve_and_deliver_cup",
+        "complete_order_delivery"
+      ],
+      "non_idempotent_counts": {
+        "start_coffee_machine": 1
+      },
+      "oracle_post_run": {
+        "cup_filled": true,
+        "cup_tilt_deg": 0.057,
+        "delivery_error_mm": 0.058
+      },
+      "queried_after_unknown": true,
+      "reconciled_after_unknown": true,
+      "regression_case_id": null,
+      "restarted_after_crash": false,
+      "sandbox_mode": "mujoco_ast_sandbox",
+      "shift_order_id": "shift_02_store_b_shift",
+      "simulator_engine": "mujoco",
+      "status": "completed",
+      "step_records": [
+        {
+          "details": {
+            "order": {
+              "cup_preference": "takeout_green",
+              "destination_slot": "$SLOT_PICKUP_2",
+              "drink": "takeout_americano",
+              "order_id": "A043",
+              "special_request": null,
+              "status": "pending"
+            },
+            "orderId": "A043"
+          },
+          "method": "get_order",
+          "receipt": "done",
+          "stepIndex": 0,
+          "timestampMs": 1795351680647
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.11092,
+            "safeToPour": false
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 1,
+          "timestampMs": 1795351680647
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_02_store_b_shift-att1:place",
+            "cupId": "obj-cup-a"
+          },
+          "method": "place_cup_under_machine",
+          "receipt": "done",
+          "stepIndex": 2,
+          "timestampMs": 1795351680650
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.0001,
+            "safeToPour": true
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 3,
+          "timestampMs": 1795351680651
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_02_store_b_shift-att1:brew"
+          },
+          "method": "start_coffee_machine",
+          "receipt": "running",
+          "stepIndex": 4,
+          "timestampMs": 1795351680652
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_02_store_b_shift-att1:wait-ready",
+            "cupFilled": true
+          },
+          "method": "wait_for_coffee_ready",
+          "receipt": "done",
+          "stepIndex": 5,
+          "timestampMs": 1795351680655
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "completed",
+            "objectCount": 2,
+            "radialOffsetM": 8e-05,
+            "safeToPour": true
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 6,
+          "timestampMs": 1795351680655
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_02_store_b_shift-att1:deliver",
+            "targetSlot": "$SLOT_PICKUP_2"
+          },
+          "method": "retrieve_and_deliver_cup",
+          "receipt": "done",
+          "stepIndex": 7,
+          "timestampMs": 1795351680658
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_02_store_b_shift-att1:complete",
+            "orderId": "A043"
+          },
+          "method": "complete_order_delivery",
+          "receipt": "done",
+          "stepIndex": 8,
+          "timestampMs": 1795351680660
+        }
+      ],
+      "task_passed": true,
+      "unknown_events_observed": 0,
+      "wall_s": 0.015
+    },
+    {
+      "attribution": {
+        "auto_repair_eligible": false,
+        "code": "passed",
+        "layer": "none",
+        "recommended_owner": "none",
+        "summary": "Trial passed independent verification"
+      },
+      "command_id": "day_shift_v2_0-shift_03_slip_timeout-att1",
+      "crashed_mid_brew": false,
+      "detail": "MuJoCo host runtime finished with status=completed",
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "expect_status": "completed",
+      "fault_injection": true,
+      "host_runtime_status": "completed",
+      "human_interventions": 0,
+      "label": "Order 3: Placement Slip (32,-12mm) + Brew Ack Timeout",
+      "methods": [
+        "get_order",
+        "observe_scene",
+        "place_cup_under_machine",
+        "observe_scene",
+        "recenter_cup_under_spout",
+        "observe_scene",
+        "start_coffee_machine",
+        "command_ack_timeout_unknown",
+        "query_command_status",
+        "wait_for_coffee_ready",
+        "observe_scene",
+        "retrieve_and_deliver_cup",
+        "complete_order_delivery"
+      ],
+      "non_idempotent_counts": {
+        "start_coffee_machine": 1
+      },
+      "oracle_post_run": {
+        "cup_filled": true,
+        "cup_tilt_deg": 0.054,
+        "delivery_error_mm": 0.067
+      },
+      "queried_after_unknown": true,
+      "reconciled_after_unknown": true,
+      "regression_case_id": null,
+      "restarted_after_crash": false,
+      "sandbox_mode": "mujoco_ast_sandbox",
+      "shift_order_id": "shift_03_slip_timeout",
+      "simulator_engine": "mujoco",
+      "status": "completed",
+      "step_records": [
+        {
+          "details": {
+            "order": {
+              "cup_preference": "dine_in_red",
+              "destination_slot": "$SLOT_PICKUP_1",
+              "drink": "hot_americano",
+              "order_id": "A042",
+              "special_request": null,
+              "status": "pending"
+            },
+            "orderId": "A042"
+          },
+          "method": "get_order",
+          "receipt": "done",
+          "stepIndex": 0,
+          "timestampMs": 1795351680663
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.12173,
+            "safeToPour": false
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 1,
+          "timestampMs": 1795351680663
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_03_slip_timeout-att1:place",
+            "cupId": "obj-cup-a"
+          },
+          "method": "place_cup_under_machine",
+          "receipt": "done",
+          "stepIndex": 2,
+          "timestampMs": 1795351680665
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.03348,
+            "safeToPour": false
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 3,
+          "timestampMs": 1795351680666
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_03_slip_timeout-att1:recenter",
+            "cupId": "obj-cup-a"
+          },
+          "method": "recenter_cup_under_spout",
+          "receipt": "done",
+          "stepIndex": 4,
+          "timestampMs": 1795351680668
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.00407,
+            "safeToPour": true
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 5,
+          "timestampMs": 1795351680669
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_03_slip_timeout-att1:brew"
+          },
+          "method": "start_coffee_machine",
+          "receipt": "unknown",
+          "stepIndex": 6,
+          "timestampMs": 1795351680670
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_03_slip_timeout-att1:brew"
+          },
+          "method": "command_ack_timeout_unknown",
+          "receipt": "unknown",
+          "stepIndex": 7,
+          "timestampMs": 1795351680670
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_03_slip_timeout-att1:brew"
+          },
+          "method": "query_command_status",
+          "receipt": "running",
+          "stepIndex": 8,
+          "timestampMs": 1795351680670
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_03_slip_timeout-att1:wait-ready",
+            "cupFilled": true
+          },
+          "method": "wait_for_coffee_ready",
+          "receipt": "done",
+          "stepIndex": 9,
+          "timestampMs": 1795351680672
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "completed",
+            "objectCount": 2,
+            "radialOffsetM": 0.00406,
+            "safeToPour": true
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 10,
+          "timestampMs": 1795351680672
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_03_slip_timeout-att1:deliver",
+            "targetSlot": "$SLOT_PICKUP_1"
+          },
+          "method": "retrieve_and_deliver_cup",
+          "receipt": "done",
+          "stepIndex": 11,
+          "timestampMs": 1795351680675
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_03_slip_timeout-att1:complete",
+            "orderId": "A042"
+          },
+          "method": "complete_order_delivery",
+          "receipt": "done",
+          "stepIndex": 12,
+          "timestampMs": 1795351680676
+        }
+      ],
+      "task_passed": true,
+      "unknown_events_observed": 1,
+      "wall_s": 0.016
+    },
+    {
+      "attribution": {
+        "auto_repair_eligible": false,
+        "code": "passed",
+        "layer": "none",
+        "recommended_owner": "none",
+        "summary": "Trial passed independent verification"
+      },
+      "command_id": "day_shift_v2_0-shift_04_mid_brew_crash_restart-att2",
+      "crashed_mid_brew": false,
+      "detail": "MuJoCo host runtime finished with status=completed",
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "expect_status": "completed",
+      "fault_injection": false,
+      "host_runtime_status": "completed",
+      "human_interventions": 0,
+      "label": "Order 4: Mid-Brew Host Crash & Journaled Restart",
+      "methods": [
+        "get_order",
+        "observe_scene",
+        "query_command_status",
+        "query_command_status",
+        "wait_for_coffee_ready",
+        "observe_scene",
+        "retrieve_and_deliver_cup",
+        "complete_order_delivery"
+      ],
+      "non_idempotent_counts": {
+        "start_coffee_machine": 1
+      },
+      "oracle_post_run": {
+        "cup_filled": true,
+        "cup_tilt_deg": 0.054,
+        "delivery_error_mm": 0.067
+      },
+      "queried_after_unknown": true,
+      "reconciled_after_unknown": true,
+      "regression_case_id": null,
+      "restarted_after_crash": true,
+      "sandbox_mode": "mujoco_ast_sandbox",
+      "shift_order_id": "shift_04_mid_brew_crash_restart",
+      "simulator_engine": "mujoco",
+      "status": "completed",
+      "step_records": [
+        {
+          "details": {
+            "order": {
+              "cup_preference": "dine_in_red",
+              "destination_slot": "$SLOT_PICKUP_1",
+              "drink": "hot_americano",
+              "order_id": "A042",
+              "special_request": null,
+              "status": "pending"
+            },
+            "orderId": "A042"
+          },
+          "method": "get_order",
+          "receipt": "done",
+          "stepIndex": 0,
+          "timestampMs": 1795351680691
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "running",
+            "objectCount": 2,
+            "radialOffsetM": 0.0001,
+            "safeToPour": true
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 1,
+          "timestampMs": 1795351680691
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_04_mid_brew_crash_restart-att2:brew"
+          },
+          "method": "query_command_status",
+          "receipt": "unknown",
+          "stepIndex": 2,
+          "timestampMs": 1795351680691
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_04_mid_brew_crash_restart-att1:brew"
+          },
+          "method": "query_command_status",
+          "receipt": "running",
+          "stepIndex": 3,
+          "timestampMs": 1795351680691
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_04_mid_brew_crash_restart-att2:wait-ready",
+            "cupFilled": true
+          },
+          "method": "wait_for_coffee_ready",
+          "receipt": "done",
+          "stepIndex": 4,
+          "timestampMs": 1795351680693
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "completed",
+            "objectCount": 2,
+            "radialOffsetM": 8e-05,
+            "safeToPour": true
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 5,
+          "timestampMs": 1795351680693
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_04_mid_brew_crash_restart-att2:deliver",
+            "targetSlot": "$SLOT_PICKUP_1"
+          },
+          "method": "retrieve_and_deliver_cup",
+          "receipt": "done",
+          "stepIndex": 6,
+          "timestampMs": 1795351680696
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_04_mid_brew_crash_restart-att2:complete",
+            "orderId": "A042"
+          },
+          "method": "complete_order_delivery",
+          "receipt": "done",
+          "stepIndex": 7,
+          "timestampMs": 1795351680697
+        }
+      ],
+      "task_passed": true,
+      "unknown_events_observed": 1,
+      "wall_s": 0.009
+    },
+    {
+      "attribution": {
+        "auto_repair_eligible": false,
+        "code": "passed",
+        "layer": "none",
+        "recommended_owner": "none",
+        "summary": "Trial passed independent verification"
+      },
+      "command_id": "day_shift_v2_0-shift_05_ambiguity_pause-att1",
+      "crashed_mid_brew": false,
+      "detail": "MuJoCo host runtime finished with status=paused_for_operator",
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "expect_status": "paused_for_operator",
+      "fault_injection": false,
+      "host_runtime_status": "paused_for_operator",
+      "human_interventions": 1,
+      "label": "Order 5: Dual-Cup Ambiguity (Must Pause, 0 Brew)",
+      "methods": [
+        "get_order",
+        "observe_scene",
+        "request_operator_confirmation"
+      ],
+      "non_idempotent_counts": {
+        "start_coffee_machine": 0
+      },
+      "oracle_post_run": {
+        "cup_filled": false,
+        "cup_tilt_deg": 0.089,
+        "delivery_error_mm": 158.137
+      },
+      "queried_after_unknown": true,
+      "reconciled_after_unknown": true,
+      "regression_case_id": null,
+      "restarted_after_crash": false,
+      "sandbox_mode": "mujoco_ast_sandbox",
+      "shift_order_id": "shift_05_ambiguity_pause",
+      "simulator_engine": "mujoco",
+      "status": "failed",
+      "step_records": [
+        {
+          "details": {
+            "order": {
+              "cup_preference": "dine_in_red",
+              "destination_slot": "$SLOT_PICKUP_1",
+              "drink": "hot_americano",
+              "order_id": "A042",
+              "special_request": null,
+              "status": "pending"
+            },
+            "orderId": "A042"
+          },
+          "method": "get_order",
+          "receipt": "done",
+          "stepIndex": 0,
+          "timestampMs": 1795351680700
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 3,
+            "radialOffsetM": 0.12173,
+            "safeToPour": false
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 1,
+          "timestampMs": 1795351680700
+        },
+        {
+          "details": {
+            "candidates": 2,
+            "reason": "Cup identity is missing or ambiguous."
+          },
+          "method": "request_operator_confirmation",
+          "receipt": "paused_for_operator",
+          "stepIndex": 2,
+          "timestampMs": 1795351680700
+        }
+      ],
+      "task_passed": true,
+      "unknown_events_observed": 0,
+      "wall_s": 0.002
+    },
+    {
+      "attribution": {
+        "auto_repair_eligible": false,
+        "code": "passed",
+        "layer": "none",
+        "recommended_owner": "none",
+        "summary": "Trial passed independent verification"
+      },
+      "command_id": "day_shift_v2_0-shift_06_hazard_nogo-att1",
+      "crashed_mid_brew": false,
+      "detail": "MuJoCo host runtime finished with status=escalated_to_human",
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "expect_status": "escalated_to_human",
+      "fault_injection": false,
+      "host_runtime_status": "escalated_to_human",
+      "human_interventions": 1,
+      "label": "Order 6: Forbidden Steam Zone (Must Escalate, 0 Brew)",
+      "methods": [
+        "get_order",
+        "retract_safe_pose",
+        "escalate_to_human_operator"
+      ],
+      "non_idempotent_counts": {
+        "start_coffee_machine": 0
+      },
+      "oracle_post_run": {
+        "cup_filled": false,
+        "cup_tilt_deg": 0.075,
+        "delivery_error_mm": 158.167
+      },
+      "queried_after_unknown": true,
+      "reconciled_after_unknown": true,
+      "regression_case_id": null,
+      "restarted_after_crash": false,
+      "sandbox_mode": "mujoco_ast_sandbox",
+      "shift_order_id": "shift_06_hazard_nogo",
+      "simulator_engine": "mujoco",
+      "status": "failed",
+      "step_records": [
+        {
+          "details": {
+            "order": {
+              "cup_preference": "dine_in_red",
+              "destination_slot": "$SLOT_PICKUP_1",
+              "drink": "hot_americano",
+              "order_id": "A042",
+              "special_request": null,
+              "status": "pending"
+            },
+            "orderId": "A042"
+          },
+          "method": "get_order",
+          "receipt": "done",
+          "stepIndex": 0,
+          "timestampMs": 1795351680703
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_06_hazard_nogo-att1:retract"
+          },
+          "method": "retract_safe_pose",
+          "receipt": "done",
+          "stepIndex": 1,
+          "timestampMs": 1795351680703
+        },
+        {
+          "details": {
+            "commandId": "day_shift_v2_0-shift_06_hazard_nogo-att1:escalate",
+            "orderId": "A042",
+            "reason": "The requested destination is a forbidden zone."
+          },
+          "method": "escalate_to_human_operator",
+          "receipt": "escalated_to_human",
+          "stepIndex": 2,
+          "timestampMs": 1795351680703
+        }
+      ],
+      "task_passed": true,
+      "unknown_events_observed": 0,
+      "wall_s": 0.002
+    }
+  ],
+  "unreconciled_unknown_orders": 0
+}

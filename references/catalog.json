@@ -1,6 +1,6 @@
 {
   "scope": "CaP only; reconstruction excluded; discovery is not exhaustive",
-  "as_of": "2026-11-19",
+  "as_of": "2026-11-22",
   "entries": [
     {
       "key": "liang2022cap",
@@ -1508,6 +1508,152 @@
         "Check code/license and distinguish reproduction from reimplementation."
       ],
       "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim"
+    },
+    {
+      "key": "hu2026simex",
+      "arxiv_id": "2609.38982",
+      "title": "SimEX: Simulation-Integrated Robotics AutoResearch",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2609.38982",
+      "category": "experimentation",
+      "relevance_zh": "仿真作实验室（Stage 1 开放探针+能力库回放建工具箱，Stage 2 真机小预算回仿真对齐与多假设预筛）；方法论核心对照。",
+      "reading_status": "main_text_and_appendix_text_reviewed",
+      "full_text_reviewed": true,
+      "reproduced": false,
+      "checked_on": "2026-11-22",
+      "authors": [
+        "Hu, Jiaheng",
+        "Martin-Martin, Roberto",
+        "Stone, Peter",
+        "Duan, Rocky",
+        "Jiang, Zhenyu",
+        "Shi, Guanya"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "SimEX: Simulation-Integrated Robotics AutoResearch"
+        ],
+        "citation_author": [
+          "Hu, Jiaheng",
+          "Martin-Martin, Roberto",
+          "Stone, Peter",
+          "Duan, Rocky",
+          "Jiang, Zhenyu",
+          "Shi, Guanya"
+        ],
+        "citation_date": [
+          "2026/09/30"
+        ],
+        "citation_online_date": [
+          "2026/09/30"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2609.38982"
+        ],
+        "citation_arxiv_id": [
+          "2609.38982"
+        ],
+        "citation_abstract": [
+          "Coding agents powered by large language models (LLMs) have shown remarkable abilities to autonomously reason about and achieve goals in the digital world. However, bringing this success to the physical world remains challenging. On the one hand, direct generation methods (e.g., Code as Policies) often suffer from the LLMs' insufficient understanding of robots and physical environments. On the other hand, iterative trial-and-error tuning in the physical world (e.g., physical autoresearch) induces significant experimental cost and safety concerns. We introduce SimEX: Simulation-Integrated Robotics AutoResearch, an autoresearch framework that tightly integrates simulated experimentation, enabling coding agents to efficiently acquire physical capabilities for controlling real robots. SimEX operates in two stages. First, the agent conducts open-ended probe-and-optimize iterations in simulation, developing a robot toolbox with robust and generalizable capabilities. Second, the agent adapts the toolbox and the simulator together through only a few physical trials: each trial corrects the simulator, and the corrected simulator is used to diagnose failures and screen candidate repairs. We evaluate SimEX extensively in sim-to-sim settings and on physical robots. On challenging real-world manipulation tasks including towel folding, barcode scanning, and plate manipulation, SimEX enables coding agents to efficiently acquire robot skills without any demonstration and with only 10 minutes of real-robot interaction. These results suggest that simulation can be a critical component in achieving physical intelligence, not only as a source of training data that must closely replicate the real world, but also as a roughly correct laboratory where a coding agent develops the knowledge and procedures needed to act on the robot. More details and robot videos at https://robo-simex.github.io/"
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": "https://robo-simex.github.io/",
+      "follow_up": [
+        "Monitor official project page for any public source release and software license.",
+        "Evaluate whether lightweight replay-and-screen and capability-bank regression patterns improve CRAFT simulation/deployment recovery under matched host contracts and budgets."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
+      "review_note": "notes/simex-full-text-review.md",
+      "reading_scope": "arXiv v1 sections 1-5 and appendices A-E text and tables 1-9; figure images not independently audited; no confirmed public code repository as of 2026-11-22; not reproduced"
+    },
+    {
+      "key": "huang2026rax",
+      "arxiv_id": "2610.22496",
+      "title": "Scaling Online Exploration for Robot Agents",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2610.22496",
+      "category": "experimentation",
+      "relevance_zh": "跨 5 类具身形态的大规模在线探索与自主程序编译、前后端安全隔离及版本化技能库；核心对照。",
+      "reading_status": "main_text_reviewed",
+      "full_text_reviewed": true,
+      "reproduced": false,
+      "checked_on": "2026-11-24",
+      "authors": [
+        "Huang, Runhan",
+        "Zhang, Xiangcheng",
+        "Chen, Haoyu",
+        "Li, Yitong",
+        "Wang, Yen-Jen",
+        "Lyu, Bohan",
+        "Ye, Haotian",
+        "Hong, Chuye",
+        "Wang, Yixuan",
+        "Su, Chloe",
+        "Xiong, Haoyu",
+        "Wu, Yangzhen",
+        "Xie, Enze",
+        "Manderson, Travis",
+        "Ermon, Stefano",
+        "Abbeel, Pieter",
+        "Torralba, Antonio",
+        "Song, Dawn",
+        "Ye, Weirui",
+        "Du, Yilun"
+      ],
+      "metadata_status": "verified_primary_metadata",
+      "metadata": {
+        "citation_title": [
+          "Scaling Online Exploration for Robot Agents"
+        ],
+        "citation_author": [
+          "Huang, Runhan",
+          "Zhang, Xiangcheng",
+          "Chen, Haoyu",
+          "Li, Yitong",
+          "Wang, Yen-Jen",
+          "Lyu, Bohan",
+          "Ye, Haotian",
+          "Hong, Chuye",
+          "Wang, Yixuan",
+          "Su, Chloe",
+          "Xiong, Haoyu",
+          "Wu, Yangzhen",
+          "Xie, Enze",
+          "Manderson, Travis",
+          "Ermon, Stefano",
+          "Abbeel, Pieter",
+          "Torralba, Antonio",
+          "Song, Dawn",
+          "Ye, Weirui",
+          "Du, Yilun"
+        ],
+        "citation_date": [
+          "2026/10/15"
+        ],
+        "citation_online_date": [
+          "2026/10/15"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/2610.22496"
+        ],
+        "citation_arxiv_id": [
+          "2610.22496"
+        ],
+        "citation_abstract": [
+          "Robot learning has advanced by scaling demonstration datasets and model capacity; however, deploying a new robot embodiment or task typically necessitates a dedicated teleoperation corpus. The resulting policies remain bounded by their imitation distributions, limiting generalization and continual self-improvement. We introduce RAX (Robot Agent eXploration), an open-source framework for robot agents centered on scaling exploration: enabling agents to improve by acquiring online experience and synthesizing executable programs. In RAX, a general-purpose coding agent generates robot control code, operating without action demonstration data, hand-engineered action primitives, or value-function guidance. Through online exploration, the agent identifies decision sequences that achieve task goals and compiles them into modular programs encapsulating the full perception-planning-control loop. Using RAX, we present a systematic multi-embodiment study on scaling online exploration across precision and long-horizon manipulation tasks using single-arm, bimanual, dexterous, mobile, and humanoid systems in simulation and on real robots. Generalization performance on unseen environments improves consistently as exploration scales. In simulation, RAX outperforms top baseline models by +37.4% on average. On real robots, RAX autonomously learns memory-dependent, articulated, high-precision, deformable, and long-horizon mobile manipulation tasks without human demonstrations, continually improving performance by composing verified skills from prior exploration sessions. As exploration scales, we observe emergent capabilities including active perception, error recovery, safety guardrails, and human-robot collaboration. We open-source RAX as a generalist robot-agent platform in which new robot embodiments are integrated through their APIs alone, without teleoperated data collection or policy training."
+        ]
+      },
+      "metadata_title_differs_from_search": false,
+      "project_url": null,
+      "follow_up": [
+        "Verify public repository URL and software license once published.",
+        "Evaluate backend dry-run limit-refusal feedback and branch-per-session skill validation patterns for CRAFT."
+      ],
+      "claim_status": "Prior-work summary only; no CRAFT novelty or superiority claim",
+      "review_note": "notes/rax-full-text-review.md",
+      "reading_scope": "arXiv v1 sections 1-6 and tables 1, 2, 4, 7, 8 text extracted from PDF; figure images and full appendices not independently audited; not reproduced"
     }
   ]
 }

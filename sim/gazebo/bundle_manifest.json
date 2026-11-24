@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "simulator_engine": "gazebo_fortress",
+  "render_engine": "ogre2",
+  "physics_engine": "dart_500hz",
+  "sdf_version": "1.9",
+  "ros2_distro": "humble",
+  "output_dir": "sim/gazebo",
+  "world_sdf": "sim/gazebo/worlds/craft_cafe_fortress.sdf",
+  "ros_gz_bridge_yaml": "sim/gazebo/config/ros_gz_bridge.yaml",
+  "copied_meshes": [
+    "finger.stl",
+    "finger_vis.stl",
+    "hand_vis.stl",
+    "link0.stl",
+    "link1.stl",
+    "link2.stl",
+    "link3.stl",
+    "link4.stl",
+    "link5.stl",
+    "link6.stl",
+    "link7.stl"
+  ],
+  "copied_textures": [
+    "brass-ambra.png",
+    "ceramic.png",
+    "dark-wood.png",
+    "gray-felt.png",
+    "light-gray-floor-tile.png",
+    "steel-brushed.png",
+    "steel-scratched.png",
+    "white-bricks.png"
+  ],
+  "has_panda_meshes": true,
+  "has_pbr_textures": true,
+  "cameras": [
+    "overview",
+    "overhead",
+    "spout",
+    "wrist"
+  ],
+  "sensor_noise_gaussian_stddev": 0.007
+}

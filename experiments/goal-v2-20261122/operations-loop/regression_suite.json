@@ -1,0 +1,34 @@
+{
+  "cases": {
+    "047faab48d15337c": {
+      "attribution_code": "escalated_to_human",
+      "attribution_layer": "policy",
+      "captured_at_utc": "2026-11-22T12:48:00.502125+00:00",
+      "case_id": "reg_001_047faa",
+      "evidence_source": "simulator",
+      "extra_scenario": {
+        "simulate_crash_mid_brew": true
+      },
+      "fingerprint": "047faab48d15337c",
+      "hit_count": 1,
+      "last_seen_utc": "2026-11-22T12:48:00.502125+00:00",
+      "notes": "Trial did not meet acceptance criteria (escalated_to_human)",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": null,
+        "label": "Order 4: Mid-Brew Host Crash & Journaled Restart",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_001_047faa",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "day_shift_v1_0-shift_04_mid_brew_crash_restart-att2"
+    }
+  },
+  "schema_version": 1
+}

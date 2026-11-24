@@ -690,12 +690,18 @@ def _create_mujoco_cafe_driver(config: SceneConfig) -> SceneHostDriver:
     return MuJoCoCafeHostDriver(config)
 
 
+def _create_gazebo_cafe_driver(config: SceneConfig) -> SceneHostDriver:
+    from .gazebo_cafe_driver import GazeboCafeHostDriver
+    return GazeboCafeHostDriver(config)
+
+
 _DRIVER_REGISTRY: dict[str, DriverFactory] = {
     "fixture": FixtureHostDriver,
     "http": HttpHostDriver,
     "http_edge": HttpHostDriver,
     "recorded": _create_recorded_driver,
     "mujoco_cafe": _create_mujoco_cafe_driver,
+    "gazebo_cafe": _create_gazebo_cafe_driver,
 }
 
 

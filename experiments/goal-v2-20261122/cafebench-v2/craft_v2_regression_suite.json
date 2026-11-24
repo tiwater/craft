@@ -1,0 +1,225 @@
+{
+  "cases": {
+    "26ff392d0a8c575a": {
+      "attribution_code": "escalated_to_human",
+      "attribution_layer": "policy",
+      "captured_at_utc": "2026-11-22T09:45:03.327639+00:00",
+      "case_id": "reg_004_26ff39",
+      "evidence_source": "simulator",
+      "fingerprint": "26ff392d0a8c575a",
+      "hit_count": 6,
+      "last_seen_utc": "2026-11-22T09:50:35.867903+00:00",
+      "notes": "Trial did not meet acceptance criteria (escalated_to_human)",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "paused_for_operator",
+        "fault_inject_slip_xy_m": null,
+        "label": "Dev-06 Dual-Cup Ambiguity (Must Pause)",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "sim_dual_cup",
+        "scenario_id": "reg_004_26ff39",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "dev-craft-1-06-1795340703323684187-att1"
+    },
+    "2bb2fefd0c5fa106": {
+      "attribution_code": "rejected_observation_not_ready",
+      "attribution_layer": "perception",
+      "captured_at_utc": "2026-11-22T10:06:58.813355+00:00",
+      "case_id": "reg_006_2bb2fe",
+      "evidence_source": "simulator",
+      "fingerprint": "2bb2fefd0c5fa106",
+      "hit_count": 2,
+      "last_seen_utc": "2026-11-22T10:27:40.488297+00:00",
+      "notes": "Perception evidence was stale, unready, missing, or ambiguous",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": [
+          0.028,
+          -0.01
+        ],
+        "label": "Dev-02 Slip (28,-10mm) + Brew Timeout",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_006_2bb2fe",
+        "simulate_timeout": true,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "dev-craft-1-02-1795342018802650053-att1"
+    },
+    "367066e629f5f9ea": {
+      "attribution_code": "escalated_to_human",
+      "attribution_layer": "policy",
+      "captured_at_utc": "2026-11-22T09:45:03.327277+00:00",
+      "case_id": "reg_002_367066",
+      "evidence_source": "simulator",
+      "fingerprint": "367066e629f5f9ea",
+      "hit_count": 7,
+      "last_seen_utc": "2026-11-22T10:07:50.981877+00:00",
+      "notes": "Trial did not meet acceptance criteria (escalated_to_human)",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": [
+          0.028,
+          -0.01
+        ],
+        "label": "Dev-02 Slip (28,-10mm) + Brew Timeout",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_002_367066",
+        "simulate_timeout": true,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "dev-craft-1-02-1795340703305784948-att1"
+    },
+    "486c15b7ba05b5a9": {
+      "attribution_code": "rejected_observation_not_ready",
+      "attribution_layer": "perception",
+      "captured_at_utc": "2026-11-22T10:06:58.813540+00:00",
+      "case_id": "reg_007_486c15",
+      "evidence_source": "simulator",
+      "fingerprint": "486c15b7ba05b5a9",
+      "hit_count": 4,
+      "last_seen_utc": "2026-11-22T10:27:40.488795+00:00",
+      "notes": "Perception evidence was stale, unready, missing, or ambiguous",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": null,
+        "label": "Dev-03 Espresso Machine Busy (2 polls)",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_007_486c15",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "dev-craft-1-03-1795342018804677592-att1"
+    },
+    "6086074c3f9de35c": {
+      "attribution_code": "rejected_observation_not_ready",
+      "attribution_layer": "perception",
+      "captured_at_utc": "2026-11-22T10:06:58.813041+00:00",
+      "case_id": "reg_005_608607",
+      "evidence_source": "simulator",
+      "fingerprint": "6086074c3f9de35c",
+      "hit_count": 2,
+      "last_seen_utc": "2026-11-22T10:27:40.487977+00:00",
+      "notes": "Perception evidence was stale, unready, missing, or ambiguous",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": [
+          0.33,
+          -0.02
+        ],
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": null,
+        "label": "Dev-01 Nominal Single Cup",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_005_608607",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "dev-craft-1-01-1795342018800457009-att1"
+    },
+    "613b42e33e38f118": {
+      "attribution_code": "rejected_observation_not_ready",
+      "attribution_layer": "perception",
+      "captured_at_utc": "2026-11-22T10:06:58.813705+00:00",
+      "case_id": "reg_008_613b42",
+      "evidence_source": "simulator",
+      "fingerprint": "613b42e33e38f118",
+      "hit_count": 2,
+      "last_seen_utc": "2026-11-22T10:27:40.488643+00:00",
+      "notes": "Perception evidence was stale, unready, missing, or ambiguous",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "escalated_to_human",
+        "fault_inject_slip_xy_m": null,
+        "label": "Dev-04 Contradictory Unknown Receipt (Must Escalate)",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_008_613b42",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "dev-craft-1-04-1795342018806748745-att1"
+    },
+    "6e74475b14601e3f": {
+      "attribution_code": "escalated_to_human",
+      "attribution_layer": "policy",
+      "captured_at_utc": "2026-11-22T09:45:03.327417+00:00",
+      "case_id": "reg_003_6e7447",
+      "evidence_source": "simulator",
+      "fingerprint": "6e74475b14601e3f",
+      "hit_count": 14,
+      "last_seen_utc": "2026-11-22T10:07:50.982217+00:00",
+      "notes": "Trial did not meet acceptance criteria (escalated_to_human)",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": null,
+        "label": "Dev-03 Espresso Machine Busy (2 polls)",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_003_6e7447",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "dev-craft-1-03-1795340703314326296-att1"
+    },
+    "d373f2c5fc6dc015": {
+      "attribution_code": "escalated_to_human",
+      "attribution_layer": "policy",
+      "captured_at_utc": "2026-11-22T09:45:03.327026+00:00",
+      "case_id": "reg_001_d373f2",
+      "evidence_source": "simulator",
+      "fingerprint": "d373f2c5fc6dc015",
+      "hit_count": 7,
+      "last_seen_utc": "2026-11-22T10:07:50.981576+00:00",
+      "notes": "Trial did not meet acceptance criteria (escalated_to_human)",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": [
+          0.33,
+          -0.02
+        ],
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": null,
+        "label": "Dev-01 Nominal Single Cup",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_001_d373f2",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "dev-craft-1-01-1795340703302365537-att1"
+    }
+  },
+  "schema_version": 1
+}

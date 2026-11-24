@@ -7,7 +7,7 @@ silently return.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -51,6 +51,19 @@ def _scenario_from_dict(data: Mapping[str, Any]) -> BenchmarkScenario:
     )
 
 
+_EXTRA_SCENARIO_KEYS = (
+    "simulate_crash_mid_brew",
+    "simulate_foreign_brew_running",
+    "simulate_machine_fault",
+    "simulate_machine_busy_polls",
+    "store_layout_shift_xy_m",
+    "cup_class",
+    "cup_confidence",
+    "stale_observation",
+    "contradictory_receipt",
+)
+
+
 @dataclass(frozen=True)
 class RegressionCase:
     case_id: str
@@ -64,9 +77,15 @@ class RegressionCase:
     captured_at_utc: str
     last_seen_utc: str
     notes: str = ""
+    extra_scenario: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_scenario_dict(self) -> dict[str, Any]:
+        merged = self.scenario.to_dict()
+        merged.update(dict(self.extra_scenario))
+        return merged
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d = {
             "case_id": self.case_id,
             "fingerprint": self.fingerprint,
             "scenario": self.scenario.to_dict(),
@@ -79,6 +98,9 @@ class RegressionCase:
             "last_seen_utc": self.last_seen_utc,
             "notes": self.notes,
         }
+        if self.extra_scenario:
+            d["extra_scenario"] = dict(self.extra_scenario)
+        return d
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> RegressionCase:
@@ -94,6 +116,7 @@ class RegressionCase:
             captured_at_utc=str(data["captured_at_utc"]),
             last_seen_utc=str(data["last_seen_utc"]),
             notes=str(data.get("notes", "")),
+            extra_scenario=dict(data.get("extra_scenario") or {}),
         )
 
 
@@ -144,6 +167,8 @@ class RegressionSuite:
         target_slot = str(ctx.get("target_slot", trial.get("target_slot", "$SLOT_PICKUP_1")))
         max_err = float(ctx.get("max_delivery_error_mm", trial.get("max_delivery_error_mm", 15.0)))
 
+        extra_scen = {k: ctx[k] for k in _EXTRA_SCENARIO_KEYS if k in ctx and ctx[k] not in (None, False, 0)}
+
         fp_payload = {
             "preset": preset,
             "cup_a_xy": list(cup_a) if cup_a is not None else None,
@@ -153,6 +178,7 @@ class RegressionSuite:
             "order_id": order_id,
             "target_slot": target_slot,
             "expect_status": expect_status,
+            "extra_scenario": extra_scen,
             "attribution_code": attr.code if attr.layer != "none" else "unexpected_human_intervention",
         }
         fp = digest(fp_payload)[:16]
@@ -196,6 +222,7 @@ class RegressionSuite:
             captured_at_utc=now,
             last_seen_utc=now,
             notes=notes or attr.summary,
+            extra_scenario=extra_scen,
         )
         self._state["cases"][fp] = case.to_dict()
         self._save()
@@ -224,7 +251,7 @@ class RegressionSuite:
         results: list[dict[str, Any]] = []
         failed_ids: list[str] = []
         for case in cases:
-            scen_dict = case.scenario.to_dict()
+            scen_dict = case.to_scenario_dict()
             driver.reset_scenario(scen_dict)
             cmd_id = f"reg-gate-{policy_id}-{case.case_id}-{time.time_ns()}"
             res = driver.run_policy_scenario(policy_source, command_id=cmd_id, scenario=scen_dict)

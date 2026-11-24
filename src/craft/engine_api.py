@@ -21,10 +21,12 @@ from .autonomy import AutonomyPromotionLedger, StageEvidence
 from .coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
 from .config import SceneConfig
 from .host_driver import SceneHostDriver, list_host_drivers
+from .operations import run_continuous_shift, run_nightly_evolution
 from .portability import check_policy_portability
 from .profiler import aggregate_trial_profiles, attribute_trial, profile_steps
 from .regression import RegressionSuite
 from .release import ReleaseRegistry
+from .repair_screener import RepairHypothesis, RepairScreener
 from .skills import SkillExperienceStore
 from .teaching import TeachingMaterial, build_task_specification
 
@@ -146,6 +148,123 @@ class CraftEngineService:
                 policy_id=str(body.get("policy_id") or "candidate"),
             )
 
+    def screen_repair(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        """Run simulation replay-alignment and multi-hypothesis repair screening."""
+        case_id = str(body.get("case_id") or "")
+        if not case_id:
+            raise ValueError("case_id is required")
+        matched = [c for c in self.regression.cases if c.case_id == case_id]
+        if not matched:
+            raise KeyError(f"Unknown regression case_id: {case_id}")
+        case = matched[0]
+
+        baseline_source = body.get("baseline_source")
+        if not baseline_source:
+            baseline_source = self.registry.get_policy_source()
+        if not str(baseline_source).strip():
+            raise ValueError("baseline_source is required")
+
+        raw_hyps = body.get("hypotheses")
+        hypotheses = [RepairHypothesis.from_dict(h) for h in raw_hyps] if raw_hyps is not None else None
+        cand_sources = body.get("candidate_sources")
+        if cand_sources is None and not bool(body.get("use_live_generator", False)):
+            raise ValueError("Provide candidate_sources or explicitly set use_live_generator=True")
+
+        screener = RepairScreener(
+            self.workspace_dir,
+            self.config,
+            self.driver,
+            regression_suite=self.regression,
+        )
+        with self._lock:
+            return screener.screen_repair(
+                baseline_source=str(baseline_source),
+                case=case,
+                screening_id=body.get("screening_id"),
+                hypotheses=hypotheses,
+                candidate_sources=cand_sources,
+                max_candidates=int(body.get("max_candidates", 3)),
+                max_model_calls=body.get("max_model_calls"),
+                max_trials=body.get("max_trials"),
+                allow_non_policy_repair=bool(body.get("allow_non_policy_repair", False)),
+                allow_unreproduced=bool(body.get("allow_unreproduced", False)),
+            )
+
+    def list_screening_sessions(self) -> dict[str, Any]:
+        scr_root = self.workspace_dir / "screening"
+        sessions: list[dict[str, Any]] = []
+        if scr_root.is_dir():
+            for p in sorted(scr_root.glob("*/session.json")):
+                try:
+                    sessions.append(json.loads(p.read_text(encoding="utf-8")))
+                except ValueError:
+                    continue
+        return {"sessions": sessions}
+
+    def run_shift(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        policy_source = body.get("policy_source")
+        if not policy_source:
+            policy_source = self.registry.get_policy_source()
+        if not str(policy_source).strip():
+            raise ValueError("policy_source is required (or publish an active release first)")
+        with self._lock:
+            return run_continuous_shift(
+                self.driver,
+                self.config,
+                self.workspace_dir,
+                policy_source=str(policy_source),
+                orders=body.get("orders"),
+                shift_id=body.get("shift_id"),
+                release_registry=self.registry,
+                regression_suite=self.regression,
+                enable_journal_proxy=bool(body.get("enable_journal_proxy", True)),
+                verify_frozen_release=bool(body.get("verify_frozen_release", False)),
+            )
+
+    def run_nightly(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        case_id = str(body.get("case_id") or "")
+        if not case_id:
+            raise ValueError("case_id is required")
+        matched = [c for c in self.regression.cases if c.case_id == case_id]
+        if not matched:
+            raise KeyError(f"Unknown regression case_id: {case_id}")
+        baseline_source = body.get("baseline_source") or self.registry.get_policy_source()
+        if not str(baseline_source).strip():
+            raise ValueError("baseline_source is required")
+        cand_sources = body.get("candidate_sources")
+        if cand_sources is None and not bool(body.get("use_live_generator", False)):
+            raise ValueError("Provide candidate_sources or explicitly set use_live_generator=True")
+        heldout = body.get("heldout_scenarios") or [
+            {"scenario_id": "h1_default", "preset": "default", "expect_status": "completed"},
+            {
+                "scenario_id": "h2_slip_timeout",
+                "preset": "default",
+                "fault_inject_slip_xy_m": [0.032, -0.012],
+                "simulate_timeout": True,
+                "expect_status": "completed",
+            },
+        ]
+        new_version = str(body.get("new_version") or f"v-nightly-{int(time.time())}")
+        raw_hyps = body.get("hypotheses")
+        hypotheses = [RepairHypothesis.from_dict(h) for h in raw_hyps] if raw_hyps is not None else None
+        with self._lock:
+            return run_nightly_evolution(
+                self.driver,
+                self.config,
+                self.workspace_dir,
+                baseline_source=str(baseline_source),
+                target_case=matched[0],
+                regression_suite=self.regression,
+                release_registry=self.registry,
+                skill_store=self.skills,
+                heldout_scenarios=heldout,
+                new_version=new_version,
+                hypotheses=hypotheses,
+                candidate_sources=cand_sources,
+                run_shadow_check=bool(body.get("run_shadow_check", True)),
+                max_candidates=int(body.get("max_candidates", 3)),
+            )
+
     def profile_trials(self, body: Mapping[str, Any]) -> dict[str, Any]:
         trials = body.get("trials")
         if trials is None:
@@ -258,6 +377,8 @@ def create_engine_server(
                     self._send_json(service.applicable_skills())
                 elif path == "/v1/regression/cases":
                     self._send_json(service.list_regression_cases())
+                elif path == "/v1/screening":
+                    self._send_json(service.list_screening_sessions())
                 elif path == "/v1/telemetry/attribution":
                     self._send_json(service.profile_trials({}))
                 else:
@@ -277,6 +398,12 @@ def create_engine_server(
                     self._send_json(service.capture_regression_case(body))
                 elif path == "/v1/regression/gate":
                     self._send_json(service.run_regression_gate(body))
+                elif path == "/v1/repair/screen":
+                    self._send_json(service.screen_repair(body))
+                elif path == "/v1/shift/run":
+                    self._send_json(service.run_shift(body))
+                elif path == "/v1/nightly/evolve":
+                    self._send_json(service.run_nightly(body))
                 elif path == "/v1/telemetry/profile":
                     self._send_json(service.profile_trials(body))
                 elif path == "/v1/autonomy/evidence":

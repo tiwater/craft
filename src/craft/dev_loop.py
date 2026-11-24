@@ -189,6 +189,7 @@ def build_development_prompt(
     *,
     prior_trials: Sequence[TrialRecord] = (),
     skill_hints: Sequence[Mapping[str, Any]] = (),
+    regression_summaries: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     """Construct a traceable policy-generation prompt grounded in host capabilities and real feedback."""
     failed_feedback = [
@@ -218,6 +219,7 @@ def build_development_prompt(
         "teaching_materials": [m.to_dict() for m in spec.materials],
         "evidence_notes": list(spec.evidence_notes),
         "verified_skill_hints": list(skill_hints),
+        "regression_cases_to_preserve": list(regression_summaries),
         "prior_failure_feedback": failed_feedback,
     }
     header = (
@@ -371,8 +373,10 @@ class DevelopmentLoop:
         evaluator_fn: EvaluatorFn,
         conditions: Sequence[str] = ("normal",),
         skill_hints: Sequence[Mapping[str, Any]] = (),
+        regression_suite: Any | None = None,
+        regression_driver: Any | None = None,
     ) -> dict[str, Any]:
-        """Run one generate -> syntax-check -> evaluate iteration with full persistence."""
+        """Run one generate -> syntax-check -> evaluate (+ optional regression replay) iteration."""
         if self.status in {"awaiting_teaching", "blocked", "paused", "budget_exhausted"}:
             return {"status": self.status, "candidate_id": None, "trials": []}
 
@@ -383,11 +387,22 @@ class DevelopmentLoop:
 
         self.state["status"] = "running"
         spec = TaskSpecification.from_dict(self.state["spec"])
+        reg_cases = list(regression_suite.cases) if regression_suite is not None else []
+        reg_summaries = [
+            {
+                "case_id": c.case_id,
+                "label": c.scenario.label,
+                "attribution_code": c.attribution_code,
+                "preset": c.scenario.preset,
+            }
+            for c in reg_cases
+        ]
         prompt = build_development_prompt(
             self.config,
             spec,
             prior_trials=self.trials,
             skill_hints=skill_hints,
+            regression_summaries=reg_summaries,
         )
         prompt_hash = digest(prompt)
 
@@ -476,6 +491,50 @@ class DevelopmentLoop:
                     "candidate_id": candidate_id,
                     "trials": [t.to_dict() for t in iter_trials],
                 }
+
+        # Capability-bank replay: evaluate accumulated RegressionSuite cases against candidate
+        if reg_cases and regression_driver is not None:
+            for reg_case in reg_cases:
+                if self._budget_exhausted(need_trial=True):
+                    self.state["status"] = "budget_exhausted"
+                    self._save()
+                    return {
+                        "status": "budget_exhausted",
+                        "candidate_id": candidate_id,
+                        "trials": [t.to_dict() for t in iter_trials],
+                    }
+                scen_dict = reg_case.scenario.to_dict()
+                regression_driver.reset_scenario(scen_dict)
+                cmd_id = f"dev-reg-{candidate_id}-{reg_case.case_id}-{time.time_ns()}"
+                res = regression_driver.run_policy_scenario(source, command_id=cmd_id, scenario=scen_dict)
+                trial_id = f"trial_{len(self.state['trials']) + 1:03d}"
+                passed_reg = bool(res.get("task_passed", False))
+                reg_trial = TrialRecord(
+                    trial_id=trial_id,
+                    candidate_id=candidate_id,
+                    condition=f"regression:{reg_case.case_id}",
+                    evidence_source=str(res.get("evidence_source", regression_driver.evidence_source)),
+                    status=str(res.get("host_runtime_status") or res.get("status") or "failed"),
+                    passed=passed_reg,
+                    wall_s=float(res.get("wall_s", 0.0)),
+                    non_idempotent_counts=dict(res.get("non_idempotent_counts") or {}),
+                    duplicate_non_idempotent=bool(res.get("duplicate_non_idempotent", False)),
+                    unknown_events_observed=int(res.get("unknown_events_observed", 0)),
+                    queried_after_unknown=bool(res.get("queried_after_unknown", True)),
+                    human_interventions=int(res.get("human_interventions", 0)),
+                    delivery_error_mm=(res.get("oracle_post_run") or {}).get("delivery_error_mm"),
+                    failure_detail=""
+                    if passed_reg
+                    else f"Regression case {reg_case.case_id} ({reg_case.scenario.label}) failed: {res.get('detail', '')}",
+                )
+                self.state["budget_used"]["trials"] += 1
+                self.state["budget_used"]["wall_s"] = round(
+                    self.state["budget_used"]["wall_s"] + reg_trial.wall_s, 3
+                )
+                self.state["trials"].append(reg_trial.to_dict())
+                _write_json_atomic(self.workspace_dir / f"trials/{reg_trial.trial_id}.json", reg_trial.to_dict())
+                iter_trials.append(reg_trial)
+                self._save()
 
         all_passed = bool(iter_trials) and all(
             t.passed and not t.duplicate_non_idempotent and (t.unknown_events_observed == 0 or t.queried_after_unknown)

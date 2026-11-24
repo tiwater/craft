@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>CRAFT-Robosuite-Parity-v2.0</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #070b14; color: #f1f5f9; margin: 0; padding: 26px; }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  .hero { background: #0f172a; border: 1px solid #1e2f4f; border-left: 4px solid #38bdf8; border-radius: 10px; padding: 16px 20px; margin-bottom: 18px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #1e293b; color: #7dd3fc; margin-right: 8px; }
+  .card { background: #0f172a; border: 1px solid #1e2f4f; border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { border-bottom: 1px solid #1e2f4f; padding: 8px 10px; text-align: left; }
+  th { color: #94a3b8; background: #0a101f; }
+  td.pass { background: rgba(34,197,94,0.14); color: #86efac; font-weight: 700; }
+  td.partial { background: rgba(245,158,11,0.16); color: #fde047; font-weight: 700; }
+  td.fail { background: rgba(239,68,68,0.16); color: #fca5a5; font-weight: 700; }
+  small { color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>CRAFT-Robosuite-Parity-v2.0 — Public MuJoCo Robosuite Benchmark</h1>
+    <div>
+      <span class="badge">simulator=MuJoCo 3.3 / Robosuite 1.5 (Panda)</span>
+      <span class="badge">model=gpt-6-astra (medium)</span>
+      <span class="badge">dev_seeds=[101, 102, 103, 104, 105]</span>
+      <span class="badge">heldout_seeds=20/task</span>
+    </div>
+    <p style="margin:8px 0 0;font-size:12px;color:#94a3b8;">
+      git=4b535cb89a2e · finished=2026-11-22T19:13:05.952977+00:00
+    </p>
+  </div>
+  <div class="card">
+    <h2>1. Overall Held-Out Success Rate Across All Public Tasks (Wilson 95% CI)</h2>
+    <svg viewBox="0 0 930 275" style="width:100%;max-width:930px;background:#0a101f;border-radius:8px;">
+      <line x1="40" y1="220" x2="910" y2="220" stroke="#334155" stroke-width="1"/>
+      <line x1="40" y1="125" x2="910" y2="125" stroke="#1e293b" stroke-dasharray="4 4"/>
+      <line x1="40" y1="30" x2="910" y2="30" stroke="#1e293b" stroke-dasharray="4 4"/>
+      <text x="34" y="224" fill="#64748b" font-size="10" text-anchor="end">0%</text>
+      <text x="34" y="129" fill="#64748b" font-size="10" text-anchor="end">50%</text>
+      <text x="34" y="34" fill="#64748b" font-size="10" text-anchor="end">100%</text>
+      <rect x="60" y="166" width="120" height="54" rx="6" fill="#94a3b8" opacity="0.88"/><line x1="120" y1="146" x2="120" y2="183" stroke="#f8fafc" stroke-width="2"/><line x1="112" y1="146" x2="128" y2="146" stroke="#f8fafc" stroke-width="2"/><line x1="112" y1="183" x2="128" y2="183" stroke="#f8fafc" stroke-width="2"/><text x="120" y="157" fill="#f8fafc" font-size="12" font-weight="700" text-anchor="middle">28.7% (23/80)</text><text x="120" y="242" fill="#cbd5e1" font-size="11" text-anchor="middle">Strong Zero-Shot</text><text x="120" y="257" fill="#64748b" font-size="10" text-anchor="middle">devLLM=4 · evalLLM=0</text><rect x="228" y="104" width="120" height="116" rx="6" fill="#f59e0b" opacity="0.88"/><line x1="288" y1="85" x2="288" y2="125" stroke="#f8fafc" stroke-width="2"/><line x1="280" y1="85" x2="296" y2="85" stroke="#f8fafc" stroke-width="2"/><line x1="280" y1="125" x2="296" y2="125" stroke="#f8fafc" stroke-width="2"/><text x="288" y="95" fill="#f8fafc" font-size="12" font-weight="700" text-anchor="middle">61.3% (49/80)</text><text x="288" y="242" fill="#cbd5e1" font-size="11" text-anchor="middle">ASPIRE-Protocol (Adapted)</text><text x="288" y="257" fill="#64748b" font-size="10" text-anchor="middle">devLLM=15 · evalLLM=0</text><rect x="396" y="54" width="120" height="166" rx="6" fill="#a78bfa" opacity="0.88"/><line x1="456" y1="44" x2="456" y2="71" stroke="#f8fafc" stroke-width="2"/><line x1="448" y1="44" x2="464" y2="44" stroke="#f8fafc" stroke-width="2"/><line x1="448" y1="71" x2="464" y2="71" stroke="#f8fafc" stroke-width="2"/><text x="456" y="45" fill="#f8fafc" font-size="12" font-weight="700" text-anchor="middle">87.5% (70/80)</text><text x="456" y="242" fill="#cbd5e1" font-size="11" text-anchor="middle">CaP-X-Protocol (Adapted)</text><text x="456" y="257" fill="#64748b" font-size="10" text-anchor="middle">devLLM=15 · evalLLM=9</text><rect x="564" y="125" width="120" height="95" rx="6" fill="#38bdf8" opacity="0.88"/><line x1="624" y1="105" x2="624" y2="146" stroke="#f8fafc" stroke-width="2"/><line x1="616" y1="105" x2="632" y2="105" stroke="#f8fafc" stroke-width="2"/><line x1="616" y1="146" x2="632" y2="146" stroke="#f8fafc" stroke-width="2"/><text x="624" y="116" fill="#f8fafc" font-size="12" font-weight="700" text-anchor="middle">50.0% (40/80)</text><text x="624" y="242" fill="#cbd5e1" font-size="11" text-anchor="middle">SimEX-Direct-Repair (Ablation)</text><text x="624" y="257" fill="#64748b" font-size="10" text-anchor="middle">devLLM=15 · evalLLM=0</text><rect x="732" y="35" width="120" height="185" rx="6" fill="#22c55e" opacity="0.88"/><line x1="792" y1="32" x2="792" y2="47" stroke="#f8fafc" stroke-width="2"/><line x1="784" y1="32" x2="800" y2="32" stroke="#f8fafc" stroke-width="2"/><line x1="784" y1="47" x2="800" y2="47" stroke="#f8fafc" stroke-width="2"/><text x="792" y="26" fill="#f8fafc" font-size="12" font-weight="700" text-anchor="middle">97.5% (78/80)</text><text x="792" y="242" fill="#cbd5e1" font-size="11" text-anchor="middle">CRAFT (RepairScreener + Regression + Skills)</text><text x="792" y="257" fill="#64748b" font-size="10" text-anchor="middle">devLLM=11 · evalLLM=0</text>
+    </svg>
+  </div>
+  <div class="card">
+    <h2>2. Per-Task Quantitative Results, Cost Accounting &amp; Paired McNemar Significance</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Overall Held-Out</th>
+          <th>Lift</th><th>PickPlaceCan</th><th>NutAssemblySquare</th><th>Door</th>
+          <th>Dev &amp; Eval Cost</th>
+          <th>Mean / P95 Wall</th>
+          <th>McNemar vs CRAFT</th>
+        </tr>
+      </thead>
+      <tbody><tr><td><strong>Strong Zero-Shot</strong><br><small>baseline_control</small></td><td><strong>23/80 (28.7%)</strong><br><small>CI [20.0%, 39.5%]</small></td><td class="pass">20/20 (100%)</td><td class="fail">0/20 (0%)</td><td class="fail">0/20 (0%)</td><td class="fail">3/20 (15%)</td><td>dev=4 / rst=0<br><small>evalLLM=0</small></td><td>1.518s / 1.981s</td><td><small>p=0.0 (+55/-0)</small></td></tr><tr><td><strong>ASPIRE-Protocol (Adapted)</strong><br><small>protocol_adapted_from_official_repo</small></td><td><strong>49/80 (61.3%)</strong><br><small>CI [50.3%, 71.2%]</small></td><td class="pass">20/20 (100%)</td><td class="pass">20/20 (100%)</td><td class="fail">0/20 (0%)</td><td class="partial">9/20 (45%)</td><td>dev=15 / rst=75<br><small>evalLLM=0</small></td><td>1.68s / 2.086s</td><td><small>p=0.0 (+29/-0)</small></td></tr><tr><td><strong>CaP-X-Protocol (Adapted)</strong><br><small>protocol_adapted_from_official_repo</small></td><td><strong>70/80 (87.5%)</strong><br><small>CI [78.5%, 93.1%]</small><br><small>Turn-1 frozen: 70/80 (87.5%)</small></td><td class="pass">20/20 (100%)</td><td class="pass">20/20 (100%)</td><td class="partial">11/20 (55%)</td><td class="pass">19/20 (95%)</td><td>dev=15 / rst=75<br><small>evalLLM=9</small></td><td>6.801s / 47.781s</td><td><small>p=0.038574 (+10/-2)</small></td></tr><tr><td><strong>SimEX-Direct-Repair (Ablation)</strong><br><small>ablation_protocol_from_simex_2609_38982</small></td><td><strong>40/80 (50.0%)</strong><br><small>CI [39.3%, 60.7%]</small></td><td class="pass">20/20 (100%)</td><td class="pass">20/20 (100%)</td><td class="fail">0/20 (0%)</td><td class="fail">0/20 (0%)</td><td>dev=15 / rst=75<br><small>evalLLM=0</small></td><td>1.77s / 2.066s</td><td><small>p=0.0 (+38/-0)</small></td></tr><tr><td><strong>CRAFT (RepairScreener + Regression + Skills)</strong><br><small>craft_proposed_system</small></td><td><strong>78/80 (97.5%)</strong><br><small>CI [91.3%, 99.3%]</small></td><td class="pass">20/20 (100%)</td><td class="pass">20/20 (100%)</td><td class="pass">18/20 (90%)</td><td class="pass">20/20 (100%)</td><td>dev=11 / rst=55<br><small>evalLLM=0</small></td><td>1.733s / 2.267s</td><td><small>ref</small></td></tr></tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>

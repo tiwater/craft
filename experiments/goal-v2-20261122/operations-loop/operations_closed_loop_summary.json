@@ -1,0 +1,131 @@
+{
+  "evidence_sources": [
+    "simulator",
+    "recorded_data"
+  ],
+  "v1_release": "v1.0",
+  "day_shift_v1_0": {
+    "passed": 5,
+    "total": 6,
+    "captured_regression_cases": [
+      "reg_001_047faa"
+    ]
+  },
+  "nightly_evolution": {
+    "status": "promoted",
+    "screening_id": "screen-reg_001_047faa-f5ebdd4b",
+    "replay_reproduced": true,
+    "replay_status": "reproduced_exact",
+    "candidates": [
+      {
+        "id": "scr_01_h1_zeroshot_rewrite",
+        "title": "H1: Full Zero-Shot Rewrite (Regressing Candidate)",
+        "target_fixed": false,
+        "regression_passed": 0,
+        "regression_total": 0,
+        "eligible_for_acceptance": false,
+        "rejection_reasons": [
+          "target_failure_not_fixed"
+        ]
+      },
+      {
+        "id": "scr_02_h2_craft_journal_reconcile",
+        "title": "H2: CRAFT Journal-Backed Reconciliation + Slip Recentering",
+        "target_fixed": true,
+        "regression_passed": 0,
+        "regression_total": 0,
+        "eligible_for_acceptance": true,
+        "rejection_reasons": []
+      }
+    ],
+    "recommended_candidate_id": "scr_02_h2_craft_journal_reconcile",
+    "recorded_shadow": {
+      "evidence_source": "recorded_data",
+      "passed": 4,
+      "total": 4,
+      "false_actuations": 0
+    },
+    "acceptance": {
+      "report_id": "acc-d32c867c18-986d7dd9",
+      "passed": true,
+      "completion_rate": 1.0,
+      "max_delivery_error_mm": 0.067
+    },
+    "published_version": "v2.0",
+    "skill_id": "skill-v2.0-reg_001_047faa",
+    "skill_measured_limits": {
+      "acceptance_completion_rate": 1.0,
+      "crash_restart_reconciliation": true,
+      "recorded_shadow_pass_rate": 1.0,
+      "screening_mean_wall_s": 0.009,
+      "verified_layout_shift_mm": 35.4,
+      "verified_slip_mm": 34.2
+    }
+  },
+  "rollback_drill": {
+    "history_events": [
+      {
+        "event": "publish",
+        "version": "v1.0",
+        "reason": ""
+      },
+      {
+        "event": "publish",
+        "version": "v2.0",
+        "reason": ""
+      },
+      {
+        "event": "rollback",
+        "version": "v1.0",
+        "reason": "drilled_rollback_check"
+      },
+      {
+        "event": "rollback",
+        "version": "v2.0",
+        "reason": "re_activate_verified_v2_0"
+      }
+    ],
+    "active_version": "v2.0"
+  },
+  "day_shift_v2_0": {
+    "passed": 6,
+    "total": 6,
+    "duplicate_non_idempotent_orders": 0,
+    "false_actuation_orders": 0,
+    "unreconciled_unknown_orders": 0,
+    "throughput_orders_per_hour": 284210.5
+  },
+  "control_plane_verified": {
+    "engine_health_active_release": "v2.0",
+    "studio_state_keys": [
+      "active_release",
+      "autonomy_physical_gate",
+      "benchmark",
+      "benchmark_running",
+      "cameras",
+      "capability_check",
+      "driver",
+      "evidence_source",
+      "latest_nightly_evolution",
+      "latest_shift_report",
+      "live_runtime",
+      "oven_gap",
+      "phase2_profiler",
+      "phase2_throughput",
+      "policies",
+      "portability_checks",
+      "registry",
+      "regression_cases",
+      "run_state",
+      "scene_observation",
+      "screening_sessions",
+      "skills",
+      "v1_acceptance",
+      "v2_acceptance",
+      "workspace_summary"
+    ],
+    "studio_latest_shift_id": "day_shift_v2_0",
+    "engine_api_screening_sessions": 1,
+    "studio_skills_count": 1
+  }
+}

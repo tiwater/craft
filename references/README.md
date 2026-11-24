@@ -2,9 +2,9 @@
 
 Scope: code policies, execution feedback, repair, skill reuse, verification and
 relevant evaluation. **Scene reconstruction is excluded.** This is a maintained
-research map, not an exhaustive systematic review. Snapshot: 2026-11-19.
+research map, not an exhaustive systematic review. Snapshot: 2026-11-22.
 
-- [references.bib](references.bib): 22 citeable arXiv entries; authors and titles
+- [references.bib](references.bib): 23 citeable arXiv entries; authors and titles
   retrieved from primary-page citation metadata. Publication year is the arXiv
   submission year, not necessarily the conference year. No invented venues/DOIs.
 - [catalog.json](catalog.json): stable keys, original metadata, reading status,
@@ -36,6 +36,8 @@ visible when preparing a manuscript.
 | `ahn2025reliablecap` | [Towards Reliable Code-as-Policies: A Neuro-Symbolic Framework for Embodied Task Planning](https://arxiv.org/abs/2510.21302) (2025) | 符号验证和主动获取缺失观测；证据条件选题需直接比较。 |
 | `lu2026aspire` | [ASPIRE: Agentic /Skills Discovery for Robotics](https://arxiv.org/abs/2607.00272) (2026) | 多模态执行记录、程序修复、技能库与搜索；核心对照。 |
 | `enpire2026` | [ENPIRE: Agentic Robot Policy Self-Improvement in the Real World](https://arxiv.org/abs/2606.19980) (2026) | 自动复位、执行、验证与改进；包括非 CaP 的学习路线。 |
+| `hu2026simex` | [SimEX: Simulation-Integrated Robotics AutoResearch](https://arxiv.org/abs/2609.38982) (2026) | 仿真作实验室（Stage 1 开放探针+能力库回放建工具箱，Stage 2 真机小预算回仿真对齐与多假设预筛）；方法论核心对照。 |
+| `huang2026rax` | [Scaling Online Exploration for Robot Agents (RAX)](https://arxiv.org/abs/2610.22496) (2026) | 跨 5 类具身形态的大规模在线探索与自主程序编译、前后端安全隔离及版本化技能库；核心对照。 |
 | `xie2026roboskill` | [Explore, Execute, Evolve: A Skill Acquisition and Reuse Loop for Embodied Agents](https://arxiv.org/abs/2609.37810) (2026) | 文本和代码技能复用及成本摊销；核心对照。 |
 | `fu2026capx` | [CaP-X: A Framework for Benchmarking and Improving Coding Agents for Robot Manipulation](https://arxiv.org/abs/2603.22435) (2026) | CaP-Gym/Bench/Agent0/RL；控制 API 抽象和反馈条件。 |
 | `chen2026amp` | [On Agentic Manipulation Policies](https://arxiv.org/abs/2611.09892) (2026) | AMP1 实时智能体执行和记忆；与冻结策略分别比较成本。 |

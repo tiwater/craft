@@ -1,0 +1,47 @@
+{
+  "skill-cafebench-v2-craft": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified with RepairScreener multi-hypothesis screening, RegressionSuite replay, and SQLite Journal crash reconciliation.",
+    "known_failure_modes": [
+      "escalated_to_human",
+      "rejected_observation_not_ready"
+    ],
+    "measured_limits": {
+      "crash_restart_duplicates": 0,
+      "dev_pass_rate": 1.0,
+      "max_busy_polls_verified": 2,
+      "max_dev_slip_mm": 29.7
+    },
+    "regression_case_ids": [
+      "reg_004_26ff39",
+      "reg_006_2bb2fe",
+      "reg_002_367066",
+      "reg_007_486c15",
+      "reg_005_608607",
+      "reg_008_613b42",
+      "reg_003_6e7447",
+      "reg_001_d373f2"
+    ],
+    "required_methods": [
+      "get_order",
+      "observe_scene",
+      "query_command_status",
+      "place_cup_under_machine",
+      "recenter_cup_under_spout",
+      "start_coffee_machine",
+      "wait_for_coffee_ready",
+      "retrieve_and_deliver_cup",
+      "complete_order_delivery",
+      "retract_safe_pose",
+      "escalate_to_human_operator"
+    ],
+    "sdk_contract_sha256": "e7fce851f2b10c038eafb1a2039ed567c785edf1ac422068a55dd81be80377cc",
+    "skill_id": "skill-cafebench-v2-craft",
+    "task_name": "single_cup_coffee",
+    "title": "CafeBench v2 Verified Commercial Operations Policy",
+    "verification_report_id": "cafebench-v2-dev-screen",
+    "verified": true,
+    "verified_at_utc": "2026-11-22T10:28:29.219909+00:00"
+  }
+}

@@ -78,15 +78,20 @@ Strict separation of ownership is mandatory:
      `ticos-edge/tools/cap_llm_backends.py`. Explicit `codex_cli` or
      `openai_api` selection with `medium` default reasoning effort; generated
      code is always an unapproved draft.
-   - **Teaching & Development Loop (`teaching`, `dev_loop`):** Structured task
+   - **Teaching & Development Loop (`teaching`, `dev_loop`, `regression`, `repair_screener`):** Structured task
      specs, ACE-inspired on-demand clarification/teaching requests, iterative
      candidate generation and execution, budget caps, pause/resume checkpoints,
-     and complete failure retention.
+     complete failure retention, capability-bank regression replay (`RegressionSuite`),
+     and SimEX-inspired replay-aligned multi-hypothesis simulation pre-screening
+     (`RepairScreener`, exposed via `POST /v1/repair/screen`). Screening strictly
+     preserves host ownership boundaries (blocking non-policy failures and
+     unreproduced-in-sim defects) and never bypasses independent acceptance.
    - **Independent Acceptance & Release (`acceptance`, `release`, `skills`):**
      Acceptance criteria frozen outside policy generation, held-out evaluation,
      reliability-first gating before latency comparison, fixed-version release
      registry with rollback, slow-step optimization queue, and verified skill
-     experience records with applicability conditions.
+     experience records carrying applicability conditions, measured limits,
+     known failure modes, and linked regression case IDs.
    - **Core Contract Baseline (`policy.py`, `journal.py`, `runtime.py`,
      `contracts.py`, `fixtures.py`):** Preserved stdlib-only v0.1.0 components:
      `PolicyBundle` (content-hashed frozen policy), `Journal` (SQLite
@@ -123,7 +128,7 @@ Every recorded trial, acceptance evaluation, and skill experience entry must
 carry an explicit `evidence_source` tag:
 
 - `fixture`: deterministic in-process software contract fixture (no robot/sim).
-- `simulator`: live `ticos-edge` / Isaac simulation run.
+- `simulator`: live `ticos-edge` / Isaac Sim, Gazebo Fortress (`gazebo_cafe`), or MuJoCo (`mujoco_cafe` / Robosuite) simulation run (see [`docs/gazebo_and_fidelity.md`](gazebo_and_fidelity.md) for host ownership & fidelity details).
 - `recorded_data`: offline replay on recorded RGB-D / trace data.
 - `physical_robot`: physical robot execution.
 

@@ -13,3 +13,7 @@ dist/
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# Exported third-party Gazebo binary meshes/textures (re-generated via `craft gazebo-export`)
+sim/gazebo/models/*/meshes/
+sim/gazebo/models/*/textures/

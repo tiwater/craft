@@ -1,0 +1,340 @@
+[CafeBench v2] Dev 1/5: Strong Zero-Shot...
+[CafeBench v2] Dev 2/5: ASPIRE-Protocol (Adapted)...
+  [ASPIRE it=1] dev=0/6
+  [ASPIRE it=2] dev=1/6
+  [ASPIRE it=3] dev=2/6
+  [ASPIRE it=4] dev=5/6
+  [ASPIRE it=5] dev=5/6
+  [ASPIRE it=6] dev=5/6
+[CafeBench v2] Dev 3/5: CaP-X-Protocol (Adapted)...
+  [CaP-X it=1] dev=2/6
+  [CaP-X it=2] dev=5/6
+  [CaP-X it=3] dev=5/6
+  [CaP-X it=4] dev=5/6
+  [CaP-X it=5] dev=5/6
+  [CaP-X it=6] dev=5/6
+[CafeBench v2] Dev 4/5: SimEX-Direct-Repair (Ablation Baseline)...
+  [SimEX-Direct it=1] dev=1/6
+  [SimEX-Direct it=2] dev=5/6
+  [SimEX-Direct it=3] dev=5/6
+  [SimEX-Direct it=4] dev=5/6
+  [SimEX-Direct it=5] dev=5/6
+  [SimEX-Direct it=6] dev=5/6
+[CafeBench v2] Dev 5/5: CRAFT Full Engine (RepairScreener + RegressionSuite + Journal)...
+  [CRAFT it=1] (Initial Policy Synthesis) dev=1/6 regressions=0
+  [CRAFT it=2] (H1: Strict State-Machine, Crash-Resume & Reconciliation Guard) dev=6/6 regressions=0
+[CafeBench v2] Evaluating Strong Zero-Shot (Full Contract) on 30 held-out scenarios...
+[CafeBench v2] Evaluating ASPIRE-Protocol (Adapted) on 30 held-out scenarios...
+[CafeBench v2] Evaluating CaP-X-Protocol (Adapted) on 30 held-out scenarios...
+[CafeBench v2] Evaluating SimEX-Direct-Repair (No Screening/Journal) on 30 held-out scenarios...
+[CafeBench v2] Evaluating CRAFT (RepairScreener + RegressionSuite + Journal) on 30 held-out scenarios...
+{
+  "benchmark_version": "CRAFT-CafeBench-v2.0",
+  "summary_by_method": {
+    "strong_zeroshot": {
+      "label": "Strong Zero-Shot (Full Contract)",
+      "online_mode": "frozen_stateless",
+      "passed": 7,
+      "total": 30,
+      "pass_rate": 0.2333,
+      "wilson_95_ci": [
+        0.1179,
+        0.4093
+      ],
+      "simulator_passed": 3,
+      "simulator_total": 26,
+      "recorded_shadow_passed": 4,
+      "recorded_shadow_total": 4,
+      "non_crash_passed": 7,
+      "non_crash_total": 30,
+      "non_crash_pass_rate": 0.2333,
+      "duplicate_non_idempotent_count": 0,
+      "unreconciled_unknown_count": 0,
+      "false_actuation_count": 0,
+      "false_actuation_rate": 0.0,
+      "portable": true,
+      "mean_sim_wall_s": 0.0022,
+      "p95_sim_wall_s": 0.002,
+      "dev_llm_calls": 1,
+      "dev_sim_resets": 0,
+      "dev_wall_s": 55.411,
+      "by_tier": {
+        "tier1_layout_and_cup": {
+          "passed": 0,
+          "total": 5,
+          "rate": 0.0
+        },
+        "tier2_crash_and_reconciliation": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "tier3_appliance_and_redlines": {
+          "passed": 3,
+          "total": 6,
+          "rate": 0.5
+        },
+        "tier4_compound_faults": {
+          "passed": 0,
+          "total": 5,
+          "rate": 0.0
+        },
+        "tier5_recorded_shadow": {
+          "passed": 4,
+          "total": 4,
+          "rate": 1.0
+        }
+      }
+    },
+    "aspire_protocol": {
+      "label": "ASPIRE-Protocol (Adapted)",
+      "online_mode": "frozen_stateless",
+      "passed": 23,
+      "total": 30,
+      "pass_rate": 0.7667,
+      "wilson_95_ci": [
+        0.5907,
+        0.8821
+      ],
+      "simulator_passed": 19,
+      "simulator_total": 26,
+      "recorded_shadow_passed": 4,
+      "recorded_shadow_total": 4,
+      "non_crash_passed": 23,
+      "non_crash_total": 23,
+      "non_crash_pass_rate": 1.0,
+      "duplicate_non_idempotent_count": 0,
+      "unreconciled_unknown_count": 0,
+      "false_actuation_count": 0,
+      "false_actuation_rate": 0.0,
+      "portable": true,
+      "mean_sim_wall_s": 0.0053,
+      "p95_sim_wall_s": 0.009,
+      "dev_llm_calls": 6,
+      "dev_sim_resets": 36,
+      "dev_wall_s": 326.154,
+      "by_tier": {
+        "tier1_layout_and_cup": {
+          "passed": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "tier2_crash_and_reconciliation": {
+          "passed": 3,
+          "total": 10,
+          "rate": 0.3
+        },
+        "tier3_appliance_and_redlines": {
+          "passed": 6,
+          "total": 6,
+          "rate": 1.0
+        },
+        "tier4_compound_faults": {
+          "passed": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "tier5_recorded_shadow": {
+          "passed": 4,
+          "total": 4,
+          "rate": 1.0
+        }
+      }
+    },
+    "capx_protocol": {
+      "label": "CaP-X-Protocol (Adapted)",
+      "online_mode": "frozen_stateless",
+      "passed": 23,
+      "total": 30,
+      "pass_rate": 0.7667,
+      "wilson_95_ci": [
+        0.5907,
+        0.8821
+      ],
+      "simulator_passed": 19,
+      "simulator_total": 26,
+      "recorded_shadow_passed": 4,
+      "recorded_shadow_total": 4,
+      "non_crash_passed": 23,
+      "non_crash_total": 23,
+      "non_crash_pass_rate": 1.0,
+      "duplicate_non_idempotent_count": 0,
+      "unreconciled_unknown_count": 0,
+      "false_actuation_count": 0,
+      "false_actuation_rate": 0.0,
+      "portable": true,
+      "mean_sim_wall_s": 0.0048,
+      "p95_sim_wall_s": 0.008,
+      "dev_llm_calls": 6,
+      "dev_sim_resets": 36,
+      "dev_wall_s": 256.987,
+      "by_tier": {
+        "tier1_layout_and_cup": {
+          "passed": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "tier2_crash_and_reconciliation": {
+          "passed": 3,
+          "total": 10,
+          "rate": 0.3
+        },
+        "tier3_appliance_and_redlines": {
+          "passed": 6,
+          "total": 6,
+          "rate": 1.0
+        },
+        "tier4_compound_faults": {
+          "passed": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "tier5_recorded_shadow": {
+          "passed": 4,
+          "total": 4,
+          "rate": 1.0
+        }
+      }
+    },
+    "simex_direct_repair": {
+      "label": "SimEX-Direct-Repair (No Screening/Journal)",
+      "online_mode": "frozen_stateless",
+      "passed": 21,
+      "total": 30,
+      "pass_rate": 0.7,
+      "wilson_95_ci": [
+        0.5212,
+        0.8334
+      ],
+      "simulator_passed": 19,
+      "simulator_total": 26,
+      "recorded_shadow_passed": 2,
+      "recorded_shadow_total": 4,
+      "non_crash_passed": 21,
+      "non_crash_total": 23,
+      "non_crash_pass_rate": 0.913,
+      "duplicate_non_idempotent_count": 0,
+      "unreconciled_unknown_count": 0,
+      "false_actuation_count": 0,
+      "false_actuation_rate": 0.0,
+      "portable": true,
+      "mean_sim_wall_s": 0.0062,
+      "p95_sim_wall_s": 0.01,
+      "dev_llm_calls": 6,
+      "dev_sim_resets": 36,
+      "dev_wall_s": 310.822,
+      "by_tier": {
+        "tier1_layout_and_cup": {
+          "passed": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "tier2_crash_and_reconciliation": {
+          "passed": 3,
+          "total": 10,
+          "rate": 0.3
+        },
+        "tier3_appliance_and_redlines": {
+          "passed": 6,
+          "total": 6,
+          "rate": 1.0
+        },
+        "tier4_compound_faults": {
+          "passed": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "tier5_recorded_shadow": {
+          "passed": 2,
+          "total": 4,
+          "rate": 0.5
+        }
+      }
+    },
+    "craft_full": {
+      "label": "CRAFT (RepairScreener + RegressionSuite + Journal)",
+      "online_mode": "frozen_journaled",
+      "passed": 30,
+      "total": 30,
+      "pass_rate": 1.0,
+      "wilson_95_ci": [
+        0.8865,
+        1.0
+      ],
+      "simulator_passed": 26,
+      "simulator_total": 26,
+      "recorded_shadow_passed": 4,
+      "recorded_shadow_total": 4,
+      "non_crash_passed": 23,
+      "non_crash_total": 23,
+      "non_crash_pass_rate": 1.0,
+      "duplicate_non_idempotent_count": 0,
+      "unreconciled_unknown_count": 0,
+      "false_actuation_count": 0,
+      "false_actuation_rate": 0.0,
+      "portable": true,
+      "mean_sim_wall_s": 0.012,
+      "p95_sim_wall_s": 0.021,
+      "dev_llm_calls": 2,
+      "dev_sim_resets": 12,
+      "dev_wall_s": 102.251,
+      "by_tier": {
+        "tier1_layout_and_cup": {
+          "passed": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "tier2_crash_and_reconciliation": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "tier3_appliance_and_redlines": {
+          "passed": 6,
+          "total": 6,
+          "rate": 1.0
+        },
+        "tier4_compound_faults": {
+          "passed": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "tier5_recorded_shadow": {
+          "passed": 4,
+          "total": 4,
+          "rate": 1.0
+        }
+      }
+    }
+  },
+  "paired_mcnemar_craft_vs": {
+    "strong_zeroshot": {
+      "craft_only": 23,
+      "baseline_only": 0,
+      "discordant": 23,
+      "p_value": 0.0,
+      "delta_pp": 76.67
+    },
+    "aspire_protocol": {
+      "craft_only": 7,
+      "baseline_only": 0,
+      "discordant": 7,
+      "p_value": 0.015625,
+      "delta_pp": 23.33
+    },
+    "capx_protocol": {
+      "craft_only": 7,
+      "baseline_only": 0,
+      "discordant": 7,
+      "p_value": 0.015625,
+      "delta_pp": 23.33
+    },
+    "simex_direct_repair": {
+      "craft_only": 9,
+      "baseline_only": 0,
+      "discordant": 9,
+      "p_value": 0.003906,
+      "delta_pp": 30.0
+    }
+  }
+}
