@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRAFT: Verifiable, Crash-Recoverable, and Ownership-Separated Code Policies for Commercial Fast-Food Robotics</title>
+  <meta name="description" content="CRAFT: Code-based Robotic Automation for Fast-Food Tasks — pure-Python-stdlib policy governance, crash reconciliation, zero-leakage active physical probing, closed-loop simulator calibration, and reproducible benchmarks." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+  <!-- Sticky Top Navigation -->
+  <nav class="top-nav">
+    <div class="nav-container">
+      <a href="#" class="nav-brand">CRAFT</a>
+      <ul class="nav-links">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#positioning">Why CRAFT</a></li>
+        <li><a href="#architecture">Method</a></li>
+        <li><a href="#benchmarks">Benchmarks</a></li>
+        <li><a href="#limitations">Evidence Scope</a></li>
+        <li><a href="#paper">Paper</a></li>
+        <li><a href="https://github.com/tiwater/craft" target="_blank" rel="noopener">Code</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-container">
+      <div class="hero-kicker">Tiwater Robotics Research · v0.3 Preprint &amp; Benchmark Release</div>
+      <h1 class="hero-title">
+        CRAFT: Verifiable, Crash-Recoverable, and Ownership-Separated Code Policies for Commercial Fast-Food Robotics
+      </h1>
+
+      <div class="authors-block">
+        <div class="authors-list">Tiwater</div>
+        <div class="authors-affiliation"><a href="mailto:research@tiwater.com">research@tiwater.com</a></div>
+      </div>
+
+      <div class="cta-buttons">
+        <a href="assets/papers/craft.pdf" class="btn-pill btn-dark" target="_blank" rel="noopener">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/></svg>
+          Paper (PDF)
+        </a>
+        <a href="https://github.com/tiwater/craft" class="btn-pill btn-outline" target="_blank" rel="noopener">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          Code
+        </a>
+        <a href="#benchmarks" class="btn-pill btn-outline">Benchmarks</a>
+        <a href="#citation" class="btn-pill btn-outline">BibTeX</a>
+      </div>
+
+      <!-- Clean 3-Panel MuJoCo PBR Workstation Teaser -->
+      <div class="teaser-box">
+        <div class="teaser-grid-3">
+          <img src="assets/figures/panda_pbr_overview.jpg" alt="MuJoCo 7-DOF Panda PBR Café Overview" class="zoomable-fig" />
+          <img src="assets/figures/panda_pbr_overhead.jpg" alt="MuJoCo 7-DOF Panda PBR Café Overhead" class="zoomable-fig" />
+          <img src="assets/figures/panda_pbr_spout.jpg" alt="MuJoCo 7-DOF Panda PBR Espresso Spout View" class="zoomable-fig" />
+        </div>
+        <p class="caption">
+          <strong>MuJoCo 3.3.0 7-DOF Franka Panda PBR Café Workstation</strong> <span class="ev-badge ev-sim">evidence: simulator</span>.
+          CRAFT separates perception ownership (e.g., <a href="https://tiwater.github.io/evidencescene/" target="_blank" rel="noopener">EvidenceScene</a>), deterministic AST-sandboxed policy execution with SQLite intent journaling, and host actuation interlocks. Online service executes frozen policies with <code>0</code> online LLM calls; offline evolution performs bounded public-SDK active probing, simulator parameter calibration, multi-hypothesis screening, and zero-actuation <code>recorded_data</code> shadow gating.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Section 1: Overview & Abstract -->
+  <section id="overview" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Overview</h2>
+        <p class="section-subtitle">Turning LLM-generated robot code into auditable, crash-recoverable, ownership-separated commercial operations</p>
+      </div>
+
+      <div class="abstract-box">
+        <p>
+          Recent agentic code-as-policies frameworks—including <strong>ASPIRE</strong>, <strong>CaP-X</strong>, <strong>SimEX</strong>, and <strong>RAX</strong>—demonstrate impressive program synthesis and iterative repair in single-arm research environments. However, deploying autonomous code policies in commercial fast-food cells (espresso preparation, bagel/oven heating, and shared-arm combo fulfillment) exposes five operational failure modes that research harnesses leave unresolved: non-idempotent appliance restarts, blurred authority between perception and safety interlocks, self-graded LLM repairs, multi-hour onboarding budgets or multi-second online LLM tails, and sequential single-appliance bottlenecks.
+        </p>
+        <p>
+          <strong>CRAFT</strong> (<em>Code-based Robotic Automation for Fast-Food Tasks</em>) addresses these constraints with a <strong>pure-Python-stdlib core</strong> that enforces strict three-owner separation (Perception Owner ↔ CRAFT Governance ↔ Host Actuation). Online, CRAFT runs SHA-256-frozen policies inside a restricted Python AST sandbox backed by an intent-before-dispatch SQLite journal with query-first reconciliation and zero online LLM calls. Offline, CRAFT runs task-agnostic public-SDK <em>Active Physical Probing</em> (zero hardcoded physics hints), closed-loop simulator calibration, multi-hypothesis <code>RepairScreener</code> with AST-guided selective subroutine repair, zero-actuation <code>recorded_data</code> shadow gating, decoupled independent acceptance, and contract-drift-aware executable skill toolboxes.
+        </p>
+      </div>
+
+      <div class="value-grid-3">
+        <div class="value-card">
+          <div class="value-metric">30/30 (100.0%)</div>
+          <h3>CafeBench v2 · 0 Duplicates · 2 LLM Calls</h3>
+          <p>
+            Beats adapted ASPIRE and CaP-X (<code>23/30</code>, <code>76.7%</code>, exact McNemar <code>p = 0.0156</code>) and SimEX-Direct (<code>21/30</code>, <code>p = 0.0039</code>) at <code>3×</code> lower LLM budget, with <code>0</code> duplicate brews and <code>0</code> false actuations across 26 MuJoCo + 4 <code>recorded_data</code> shadow scenarios.
+          </p>
+        </div>
+
+        <div class="value-card">
+          <div class="value-metric">19/20 (95.0%)</div>
+          <h3>≤5-Trial Sim-to-Sim Adaptation</h3>
+          <p>
+            Closed-loop simulator calibration + AST-preflighted <code>RepairScreener</code> transfers from a nominal MuJoCo sandbox to a sensor-noisy, domain-randomized target (<code>15/16</code> target + <code>4/4</code> shadow), outperforming adapted SimEX-Protocol (<code>16/20</code>) and Zero-Shot (<code>13/20</code>, <code>p = 0.0313</code>).
+          </p>
+        </div>
+
+        <div class="value-card">
+          <div class="value-metric">75.9 orders/hr (+62.5%)</div>
+          <h3>Shared-Arm Multi-Appliance Safety</h3>
+          <p>
+            On <code>CafeBench v3</code> (Coffee + Bagel/Oven with mid-order crashes and thermal/door interlocks), CRAFT Pipelined+Journal hits <code>12/12 (100%)</code> with <code>0</code> duplicate appliance starts and <code>0</code> interlock violations vs. <code>46.7 orders/hr</code> sequential stateless (<code>9/12</code>, 3 duplicates).
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Why Not Directly Drop In SimEX or RAX? -->
+  <section id="positioning" class="section alt-bg">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Why Commercial Fast-Food Cells Need CRAFT</h2>
+        <p class="section-subtitle">Architectural positioning against CaP, CaP-X, ASPIRE, SimEX (arXiv:2609.38982), and RAX (arXiv:2610.22496)</p>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="benchmark-table">
+          <thead>
+            <tr>
+              <th>Framework</th>
+              <th>Ownership Boundary</th>
+              <th>Non-Idempotent Journal</th>
+              <th>Decoupled Gate + Shadow</th>
+              <th>Online LLM Calls</th>
+              <th>Offline Budget</th>
+              <th>Multi-Appliance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>CaP / ProgPrompt</td>
+              <td>Coupled scripts</td>
+              <td>No</td>
+              <td>No</td>
+              <td>0 (single-shot)</td>
+              <td>1 call</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>CaP-X</td>
+              <td>Benchmark harness</td>
+              <td>No</td>
+              <td>Env reward only</td>
+              <td>Multi-turn (&gt;0)</td>
+              <td>Low–Med</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>ASPIRE</td>
+              <td>Skill library agent</td>
+              <td>No</td>
+              <td>Self-verified</td>
+              <td>0 (frozen skill)</td>
+              <td>Medium</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>SimEX (<code>2609.38982</code>)</td>
+              <td>Unified sim/real</td>
+              <td>No</td>
+              <td>Sim replay only</td>
+              <td>0 (frozen code)</td>
+              <td>~3,360 calls (21.6 h)</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>RAX (<code>2610.22496</code>)</td>
+              <td>Agent owns RGB-D</td>
+              <td>No</td>
+              <td>Env reward only</td>
+              <td>Online episodes</td>
+              <td>16–128 eps (4.9–14.2 h)</td>
+              <td>No</td>
+            </tr>
+            <tr class="highlight-row">
+              <td><strong>CRAFT (Ours)</strong></td>
+              <td><strong>Strict 3-Owner</strong></td>
+              <td><strong>SQLite Query-First</strong></td>
+              <td><strong>Indep. Gate + 0-Act</strong></td>
+              <td><strong>0 (Frozen AST)</strong></td>
+              <td><strong>2–12 calls (mins)</strong></td>
+              <td><strong>Pipelined + Locks</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="claim-callout">
+        <strong>Design principle:</strong> CRAFT absorbs the strongest compatible ideas from both recent paradigms—SimEX's closed-loop simulator calibration and paired code+experience library, and RAX's AST-guided selective subroutine repair and failed-attempt working memory—while preserving strict ownership boundaries, crash reconciliation, and pure-Python-stdlib runtime verifiability.
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Architecture & Method -->
+  <section id="architecture" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Architecture &amp; Core Mechanisms</h2>
+        <p class="section-subtitle">Strict separation of perception owner, pure-stdlib CRAFT governance core, and host actuation interlocks</p>
+      </div>
+
+      <div class="teaser-box" style="margin-bottom:1.25rem;">
+        <img src="assets/figures/craft_architecture.svg" alt="CRAFT Ownership-Separated Architecture Diagram" class="zoomable-fig" style="border:none;" />
+      </div>
+
+      <div class="abstract-box">
+        <p>
+          <strong>1. Frozen AST Sandbox &amp; SQLite Intent-Before-Dispatch Journal:</strong> Promoted policies are SHA-256-frozen bundles executed in a restricted Python AST interpreter (blocking imports, <code>exec</code>/<code>eval</code>, and leading-underscore access). Every non-idempotent appliance call (<code>start_coffee_machine</code>, <code>start_oven_heat</code>) persists an intent before dispatch and reconciles ambiguous crashes via host <code>query_action_status</code> rather than blindly retrying.
+        </p>
+        <p>
+          <strong>2. Zero-Leakage Active Physical Probing &amp; Closed-Loop Calibration:</strong> Automated tests enforce zero task-specific physics constants in prompts. When failures occur, CRAFT runs a budget-capped (<code>+1</code> sim reset) diagnostic probe strictly over public host SDKs to measure empirical grasp offsets or articulation compliance, and runs bounded simulator calibration when target failures do not reproduce in nominal simulation.
+        </p>
+        <p>
+          <strong>3. Multi-Hypothesis <code>RepairScreener</code> &amp; AST Selective Subroutine Repair:</strong> Candidate repairs are AST-preflighted, localized to failing policy subroutines via <code>analyze_policy_subroutines</code>, tracked with negative-attempt memory and adaptive stagnation escape, screened against accumulated <code>RegressionSuite</code> banks, and gated by zero-actuation <code>recorded_data</code> shadow replay plus decoupled independent acceptance.
+        </p>
+        <p>
+          <strong>4. Verified Executable Skill Toolbox:</strong> Approved skills store AST-validated helper snippets alongside empirical <code>measured_limits</code> and <code>regression_case_ids</code>, and are automatically invalidated whenever the host SDK contract SHA-256 drifts.
+        </p>
+      </div>
+
+<pre class="code-snippet">git clone https://github.com/tiwater/craft.git &amp;&amp; cd craft
+python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e ".[dev]"
+make test           # Run full unit &amp; regression suite (110 tests, pure stdlib core)
+make check-stdlib   # Verify zero third-party imports in src/craft/ core
+make demo           # Software fixture crash/lost-receipt reconciliation demo
+make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile craft.pdf</pre>
+    </div>
+  </section>
+
+  <!-- Section 4: Quantitative Benchmarks -->
+  <section id="benchmarks" class="section alt-bg">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Quantitative Benchmarks</h2>
+        <p class="section-subtitle">Matched real model backend (<code>gpt-6-astra</code>, <code>codex_cli</code>, <code>effort=medium</code>) with explicit <code>evidence_source</code> provenance, Wilson 95% CIs, and exact paired McNemar tests</p>
+      </div>
+
+      <!-- Visual Charts -->
+      <div class="teaser-box" style="margin-bottom:1.15rem;">
+        <img src="assets/figures/cafebench_sim2sim_comparison.svg" alt="CafeBench v2 and Sim-to-Sim Stage-2 Benchmark Comparison" class="zoomable-fig" style="border:none;" />
+        <p class="caption">
+          <strong>Figure 1:</strong> Held-out pass rates with Wilson 95% confidence intervals on <strong>CafeBench v2</strong> (left, <code>n=30</code>) and <strong>Sim-to-Sim Stage-2</strong> physics-mismatched transfer under <code>&le;5</code> target trials (right, <code>n=20</code>).
+        </p>
+      </div>
+
+      <div class="teaser-box" style="margin-bottom:1.5rem;">
+        <img src="assets/figures/robosuite_combo_comparison.svg" alt="Zero-Leakage Robosuite NutAssemblySquare Subroutine Fix and CafeBench v3 Combo" class="zoomable-fig" style="border:none;" />
+        <p class="caption">
+          <strong>Figure 2:</strong> (a) Zero-leakage Robosuite <code>NutAssemblySquare</code> after adding AST selective subroutine repair and adaptive stagnation escape: CRAFT jumps <code>3×</code> (<code>4/20 → 12/20</code>) with <code>0</code> online LLM calls and <code>24×</code> lower p95 latency than online-regenerating CaP-X. (b) <strong>CafeBench v3</strong> shared-arm Coffee+Bagel/Oven concurrent operations: <code>12/12</code>, <code>0</code> duplicates, <code>0</code> interlock violations, and <code>+62.5%</code> throughput.
+        </p>
+      </div>
+
+      <!-- Table 1: CafeBench v2 -->
+      <div class="table-block">
+        <h3>1. CafeBench v2 Held-Out Evaluation <span class="ev-badge ev-sim">simulator (26)</span> <span class="ev-badge ev-rec">recorded_data (4)</span></h3>
+        <div class="table-wrapper">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Held-Out (n=30)</th>
+                <th>Wilson 95% CI</th>
+                <th>Sim / Shadow</th>
+                <th>Dup / False Act</th>
+                <th>Dev LLM / Resets</th>
+                <th>Dev Wall (s)</th>
+                <th>McNemar p vs. CRAFT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-row">
+                <td><strong>CRAFT (RepairScreener + RegressionSuite + Journal)</strong></td>
+                <td><strong>30/30 (100.0%)</strong></td>
+                <td>[88.7%, 100.0%]</td>
+                <td><strong>26/26 · 4/4</strong></td>
+                <td><strong>0 / 0</strong></td>
+                <td><strong>2 / 12</strong></td>
+                <td><strong>102.3</strong></td>
+                <td>reference</td>
+              </tr>
+              <tr>
+                <td>ASPIRE-Protocol (Adapted)</td>
+                <td>23/30 (76.7%)</td>
+                <td>[59.1%, 88.2%]</td>
+                <td>19/26 · 4/4</td>
+                <td>0 / 0</td>
+                <td>6 / 36</td>
+                <td>326.2</td>
+                <td>+23.3 pp, <code>p = 0.0156</code></td>
+              </tr>
+              <tr>
+                <td>CaP-X-Protocol (Adapted)</td>
+                <td>23/30 (76.7%)</td>
+                <td>[59.1%, 88.2%]</td>
+                <td>19/26 · 4/4</td>
+                <td>0 / 0</td>
+                <td>6 / 36</td>
+                <td>257.0</td>
+                <td>+23.3 pp, <code>p = 0.0156</code></td>
+              </tr>
+              <tr>
+                <td>SimEX-Direct-Repair (Ablation)</td>
+                <td>21/30 (70.0%)</td>
+                <td>[52.1%, 83.3%]</td>
+                <td>19/26 · 2/4</td>
+                <td>0 / 0</td>
+                <td>6 / 36</td>
+                <td>310.8</td>
+                <td>+30.0 pp, <code>p = 0.0039</code></td>
+              </tr>
+              <tr>
+                <td>Strong Zero-Shot</td>
+                <td>7/30 (23.3%)</td>
+                <td>[11.8%, 40.9%]</td>
+                <td>3/26 · 4/4</td>
+                <td>0 / 0</td>
+                <td>1 / 0</td>
+                <td>55.4</td>
+                <td>+76.7 pp, <code>p &lt; 0.0001</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Table 2: Sim-to-Sim Stage-2 -->
+      <div class="table-block">
+        <h3>2. True Sim-to-Sim Stage-2 Adaptation (&le;5 Target Trials) <span class="ev-badge ev-sim">simulator (16)</span> <span class="ev-badge ev-rec">recorded_data (4)</span></h3>
+        <div class="table-wrapper">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Run 2 Overall (n=20)</th>
+                <th>Wilson 95% CI</th>
+                <th>Target / Shadow</th>
+                <th>Target Trials / Cal</th>
+                <th>LLM Calls</th>
+                <th>Run 1 (Preserved)</th>
+                <th>McNemar p vs. CRAFT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-row">
+                <td><strong>CRAFT (Calibrated Sim + Screener + Shadow + Journal)</strong></td>
+                <td><strong>19/20 (95.0%)</strong></td>
+                <td>[76.4%, 99.1%]</td>
+                <td><strong>15/16 · 4/4</strong></td>
+                <td>5 / 3</td>
+                <td>4</td>
+                <td>8/20 (pre-fix)</td>
+                <td>reference</td>
+              </tr>
+              <tr>
+                <td>SimEX-Protocol (Adapted, Calibrated Sim + Screening)</td>
+                <td>16/20 (80.0%)</td>
+                <td>[58.4%, 91.9%]</td>
+                <td>12/16 · 4/4</td>
+                <td>5 / 3</td>
+                <td>4</td>
+                <td>8/20 (pre-fix)</td>
+                <td>+15.0 pp, <code>p = 0.2500</code></td>
+              </tr>
+              <tr>
+                <td>Direct Target Repair</td>
+                <td>16/20 (80.0%)</td>
+                <td>[58.4%, 91.9%]</td>
+                <td>12/16 · 4/4</td>
+                <td>5 / 0</td>
+                <td>2</td>
+                <td>16/20</td>
+                <td>+15.0 pp, <code>p = 0.2500</code></td>
+              </tr>
+              <tr>
+                <td>Zero-Shot Sim2Sim</td>
+                <td>13/20 (65.0%)</td>
+                <td>[43.3%, 81.9%]</td>
+                <td>9/16 · 4/4</td>
+                <td>0 / 0</td>
+                <td>0</td>
+                <td>8/20</td>
+                <td>+30.0 pp, <code>p = 0.0313</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="caption">
+          <strong>Honest iteration log:</strong> Run 1 exposed missing AST sandbox rules and failed step traces in <code>RepairScreener.build_hypothesis_repair_prompt()</code> plus missing AST preflight validation. Fixing both lifted CRAFT from <code>8/20</code> to <code>19/20 (95.0%)</code>; Run 1 artifacts remain archived.
+        </p>
+      </div>
+
+      <!-- Table 3: CafeBench v3 Multi-Appliance Combo -->
+      <div class="table-block">
+        <h3>3. CafeBench v3 Shared-Arm Multi-Appliance Combo (Coffee + Bagel/Oven) <span class="ev-badge ev-sim">simulator (12)</span></h3>
+        <div class="table-wrapper">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Execution Policy</th>
+                <th>Completed (n=12)</th>
+                <th>Duplicate Appliance Starts</th>
+                <th>Interlock Violations</th>
+                <th>Mean Cycle (s)</th>
+                <th>Throughput (orders/hr)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-row">
+                <td><strong>CRAFT Pipelined + Dual-Appliance Journal</strong></td>
+                <td><strong>12/12 (100.0%)</strong></td>
+                <td><strong>0</strong></td>
+                <td><strong>0</strong></td>
+                <td><strong>47.45</strong></td>
+                <td><strong>75.9 (+62.5%)</strong></td>
+              </tr>
+              <tr>
+                <td>Pipelined Stateless</td>
+                <td>9/12 (75.0%)</td>
+                <td>3</td>
+                <td>6</td>
+                <td>47.45</td>
+                <td>75.9 (unsafe)</td>
+              </tr>
+              <tr>
+                <td>Sequential Stateless</td>
+                <td>9/12 (75.0%)</td>
+                <td>3</td>
+                <td>4</td>
+                <td>77.10</td>
+                <td>46.7</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Table 4: Zero-Leakage Robosuite v3 + Nut Subroutine Fix -->
+      <div class="table-block">
+        <h3>4. Zero-Leakage Robosuite Panda Benchmark &amp; Selective Subroutine Ablation <span class="ev-badge ev-sim">simulator (480 + 120 rollouts)</span></h3>
+        <div class="table-wrapper">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Full v3 (n=80)</th>
+                <th>Lift / Can / Door</th>
+                <th>Nut (Pre-Fix)</th>
+                <th>Nut (Subroutine Fix)</th>
+                <th>Eval LLM (Full / Nut)</th>
+                <th>P95 Wall (s)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-row">
+                <td><strong>CRAFT (ActiveProbe + RepairScreener + Skills)</strong></td>
+                <td><strong>64/80 (80.0%)</strong></td>
+                <td><strong>20 / 20 / 20</strong></td>
+                <td>4/20 (20%)</td>
+                <td><strong>12/20 (60.0%)</strong></td>
+                <td><strong>0 / 0</strong></td>
+                <td><strong>2.32 / 2.23</strong></td>
+              </tr>
+              <tr>
+                <td>CaP-X-Protocol (Online Eval Regeneration)</td>
+                <td>78/80 (97.5%)</td>
+                <td>20 / 20 / 20</td>
+                <td>18/20 (90%)</td>
+                <td>16/20 (12/20 Turn-1)</td>
+                <td>3 / 8</td>
+                <td>2.35 / 53.45</td>
+              </tr>
+              <tr>
+                <td>ASPIRE-Protocol (Adapted)</td>
+                <td>70/80 (87.5%)</td>
+                <td>20 / 20 / 19</td>
+                <td>11/20 (55%)</td>
+                <td>6/20 (30.0%)</td>
+                <td>0 / 0</td>
+                <td>2.35 / 2.12</td>
+              </tr>
+              <tr>
+                <td>SimEX-Protocol (Adapted)</td>
+                <td>62/80 (77.5%)</td>
+                <td>20 / 18 / 20</td>
+                <td>4/20 (20%)</td>
+                <td>0/20 (0.0%, <code>p=0.0005</code>)</td>
+                <td>0 / 0</td>
+                <td>2.70 / 2.13</td>
+              </tr>
+              <tr>
+                <td>SimEX-Direct-Repair (Ablation)</td>
+                <td>59/80 (73.8%)</td>
+                <td>20 / 19 / 20</td>
+                <td>0/20 (0%)</td>
+                <td>0/20 (0.0%, <code>p=0.0005</code>)</td>
+                <td>0 / 0</td>
+                <td>2.39 / 1.96</td>
+              </tr>
+              <tr>
+                <td>Strong Zero-Shot</td>
+                <td>40/80 (50.0%)</td>
+                <td>20 / 0 / 20</td>
+                <td>0/20 (0%)</td>
+                <td>0/20 (0.0%, <code>p=0.0005</code>)</td>
+                <td>0 / 0</td>
+                <td>1.79 / 1.56</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="caption">
+          <strong>Zero-leakage guarantee:</strong> Zero task-specific physics hints exist anywhere in prompts or attribution code (enforced by <code>test_zero_task_hint_leakage</code>). On <code>NutAssemblySquare</code>, adding RAX-inspired AST selective subroutine repair and stagnation escape tripled CRAFT's pass rate (<code>4/20 → 12/20</code>), tying CaP-X's frozen Turn-1 policy at <code>24×</code> lower p95 latency.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: Honest Evidence Boundaries -->
+  <section id="limitations" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Honest Evidence Boundaries &amp; Limitations</h2>
+        <p class="section-subtitle">Explicit four-tier provenance discipline — simulation passes are never claimed as physical safety approval</p>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="benchmark-table">
+          <thead>
+            <tr>
+              <th>Evidence Tier</th>
+              <th>What Is Verified Today</th>
+              <th>What Is Explicitly NOT Claimed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="ev-badge">fixture</span></td>
+              <td>Deterministic AST sandbox, SHA-256 bundles, SQLite journal reconciliation, 4-layer attribution, rollback drills, 110 passing tests.</td>
+              <td>Does not model physical contact, heat transfer, liquid dynamics, or hardware latency.</td>
+            </tr>
+            <tr>
+              <td><span class="ev-badge ev-sim">simulator</span></td>
+              <td>MuJoCo 3.3.0 7-DOF Panda café cell, Sim-to-Sim noise/DR transfer, multi-appliance combo locks, zero-leakage Robosuite Panda, optional LIBERO harness (<code>host_state_api</code>).</td>
+              <td>Not hardware qualification; LIBERO <code>host_state_api</code> results are not comparable to raw RGB-D RAX benchmarks.</td>
+            </tr>
+            <tr>
+              <td><span class="ev-badge ev-rec">recorded_data</span></td>
+              <td>Zero-actuation shadow gating on stale, low-confidence, dual-cup ambiguous, and distractor perception frames (<code>0</code> false actuations).</td>
+              <td>Does not exercise live actuator dynamics or physical closed-loop disturbance recovery.</td>
+            </tr>
+            <tr>
+              <td><span class="ev-badge ev-warn">physical_robot</span></td>
+              <td><code>0</code> hardware qualification runs completed in this release; host capability contracts documented for <code>ticos-edge</code> + EvidenceScene integration.</td>
+              <td>No physical coffee/bagel manipulation validation or safety certification claimed; local SQLite journal alone does not prove distributed exactly-once actuation without cooperative host keys.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: Paper & Citation -->
+  <section id="paper" class="section alt-bg">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Paper &amp; Citation</h2>
+        <p class="section-subtitle">IEEEtran preprint draft compiled directly from archived JSON benchmark receipts</p>
+      </div>
+
+      <div class="figure-card" style="max-width:880px;margin:0 auto 1.5rem;">
+        <h4>CRAFT: Verifiable, Crash-Recoverable, and Ownership-Separated Code Policies for Commercial Fast-Food Robotics</h4>
+        <p class="caption" style="margin-bottom:0.85rem;">
+          Preprint presenting the three-owner commercial workstation decomposition, restricted AST sandbox, intent-before-dispatch SQLite command journal, zero-leakage public-SDK active physical probing, closed-loop simulator calibration, AST selective subroutine repair, contract-drift-aware executable skill toolboxes, and five reproducible benchmark tracks.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:0.55rem;">
+          <a href="assets/papers/craft.pdf" class="btn-pill btn-dark" target="_blank" rel="noopener">Download Paper (PDF)</a>
+          <a href="https://github.com/tiwater/craft/tree/main/experiments" class="btn-pill btn-outline" target="_blank" rel="noopener">Archived JSON Receipts</a>
+        </div>
+      </div>
+
+      <div id="citation" class="bibtex-wrapper">
+        <button class="copy-btn" id="copy-bibtex-btn" onclick="copyBibtex()">Copy BibTeX</button>
+<pre id="bibtex-code">@article{tiwater2026craft,
+  title   = {{CRAFT}: Verifiable, Crash-Recoverable, and Ownership-Separated Code Policies for Commercial Fast-Food Robotics},
+  author  = {{Tiwater}},
+  journal = {arXiv preprint},
+  year    = {2026},
+  url     = {https://tiwater.github.io/craft/}
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightbox Modal -->
+  <div class="lightbox-modal" id="lightbox-modal" onclick="closeLightbox()">
+    <span class="lightbox-close">&times;</span>
+    <img id="lightbox-img" src="" alt="Enlarged figure" />
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>
+        <strong>CRAFT</strong> · <a href="mailto:research@tiwater.com">research@tiwater.com</a> · <a href="https://github.com/tiwater/craft" target="_blank" rel="noopener">Code</a> · <a href="assets/papers/craft.pdf" target="_blank" rel="noopener">Paper</a> · <a href="#benchmarks">Benchmarks</a> · Apache-2.0 License
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    function copyBibtex() {
+      const text = document.getElementById('bibtex-code').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-bibtex-btn');
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = 'Copy BibTeX'; }, 2000);
+      });
+    }
+
+    const lightboxModal = document.getElementById('lightbox-modal');
+    const lightboxImg = document.getElementById('lightbox-img');
+    document.querySelectorAll('.zoomable-fig').forEach((img) => {
+      img.addEventListener('click', () => {
+        lightboxImg.src = img.src;
+        lightboxImg.alt = img.alt;
+        lightboxModal.classList.add('open');
+      });
+    });
+
+    function closeLightbox() {
+      lightboxModal.classList.remove('open');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+  </script>
+</body>
+</html>

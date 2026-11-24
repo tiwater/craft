@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 296" width="980" height="296" role="img" aria-label="Zero-Leakage Robosuite Subroutine Repair and Multi-Appliance Combo Benchmarks">
+  <style>
+    .p-title { font-family: Inter, -apple-system, sans-serif; font-size: 13px; font-weight: 700; fill: #0f172a; }
+    .p-sub   { font-family: Inter, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }
+    .p-lbl   { font-family: Inter, -apple-system, sans-serif; font-size: 11px; fill: #334155; }
+    .p-lbl-hi{ font-family: Inter, -apple-system, sans-serif; font-size: 11px; font-weight: 700; fill: #0f172a; }
+    .p-axis  { font-family: "JetBrains Mono", monospace; font-size: 9.5px; fill: #64748b; }
+  </style>
+  <rect width="980" height="296" fill="#ffffff" rx="6"/>
+  <line x1="490" y1="16" x2="490" y2="280" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="22" y="30" class="p-title">(a) Zero-Leakage NutAssemblySquare (Selective Subroutine)</text>
+  <text x="22" y="46" class="p-sub">Robosuite Panda (n=20); CRAFT 3x jump (4-&gt;12/20), p=0.0005 vs SimEX</text>
+  <line x1="174.0" y1="60.0" x2="174.0" y2="268.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="174.0" y="282.0" text-anchor="middle" class="p-axis">0%</text>
+  <line x1="229.5" y1="60.0" x2="229.5" y2="268.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="229.5" y="282.0" text-anchor="middle" class="p-axis">25%</text>
+  <line x1="285.0" y1="60.0" x2="285.0" y2="268.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="285.0" y="282.0" text-anchor="middle" class="p-axis">50%</text>
+  <line x1="340.5" y1="60.0" x2="340.5" y2="268.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="340.5" y="282.0" text-anchor="middle" class="p-axis">75%</text>
+  <line x1="396.0" y1="60.0" x2="396.0" y2="268.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="396.0" y="282.0" text-anchor="middle" class="p-axis">100%</text>
+  <text x="166.0" y="80.0" text-anchor="end" class="p-lbl-hi">CRAFT (0 eval LLM)</text>
+  <rect x="174.0" y="68.0" width="133.2" height="18" rx="3" fill="#1d4ed8"/>
+  <line x1="259.8" y1="77.0" x2="347.4" y2="77.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="259.8" y1="73.0" x2="259.8" y2="81.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="347.4" y1="73.0" x2="347.4" y2="81.0" stroke="#0f172a" stroke-width="1.3"/>
+  <text x="404.0" y="80.0" class="p-lbl-hi">12/20 (60%)</text>
+  <text x="166.0" y="114.0" text-anchor="end" class="p-lbl">CaP-X Turn-1 Frozen</text>
+  <rect x="174.0" y="102.0" width="133.2" height="18" rx="3" fill="#94a3b8"/>
+  <text x="404.0" y="114.0" class="p-lbl">12/20 (60%)</text>
+  <text x="166.0" y="148.0" text-anchor="end" class="p-lbl">CaP-X (+8 eval LLM)</text>
+  <rect x="174.0" y="136.0" width="177.6" height="18" rx="3" fill="#94a3b8"/>
+  <line x1="303.6" y1="145.0" x2="378.1" y2="145.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="303.6" y1="141.0" x2="303.6" y2="149.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="378.1" y1="141.0" x2="378.1" y2="149.0" stroke="#0f172a" stroke-width="1.3"/>
+  <text x="404.0" y="148.0" class="p-lbl">16/20 (80%)</text>
+  <text x="166.0" y="182.0" text-anchor="end" class="p-lbl">ASPIRE (Adapted)</text>
+  <rect x="174.0" y="170.0" width="66.6" height="18" rx="3" fill="#94a3b8"/>
+  <line x1="206.3" y1="179.0" x2="289.2" y2="179.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="206.3" y1="175.0" x2="206.3" y2="183.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="289.2" y1="175.0" x2="289.2" y2="183.0" stroke="#0f172a" stroke-width="1.3"/>
+  <text x="404.0" y="182.0" class="p-lbl">6/20 (30%)</text>
+  <text x="166.0" y="216.0" text-anchor="end" class="p-lbl">SimEX-Protocol</text>
+  <rect x="174.0" y="204.0" width="1.5" height="18" rx="3" fill="#94a3b8"/>
+  <line x1="174.0" y1="213.0" x2="209.8" y2="213.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="174.0" y1="209.0" x2="174.0" y2="217.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="209.8" y1="209.0" x2="209.8" y2="217.0" stroke="#0f172a" stroke-width="1.3"/>
+  <text x="404.0" y="216.0" class="p-lbl">0/20 (0%)</text>
+  <text x="166.0" y="250.0" text-anchor="end" class="p-lbl">Zero-Shot</text>
+  <rect x="174.0" y="238.0" width="1.5" height="18" rx="3" fill="#94a3b8"/>
+  <line x1="174.0" y1="247.0" x2="209.8" y2="247.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="174.0" y1="243.0" x2="174.0" y2="251.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="209.8" y1="243.0" x2="209.8" y2="251.0" stroke="#0f172a" stroke-width="1.3"/>
+  <text x="404.0" y="250.0" class="p-lbl">0/20 (0%)</text>
+  <text x="506" y="30" class="p-title">(b) CafeBench v3 Multi-Appliance Combo (Coffee + Oven)</text>
+  <text x="506" y="46" class="p-sub">Shared arm + crash/interlock faults (n=12); +62.5% throughput, 0 dup</text>
+  <line x1="658.0" y1="60.0" x2="658.0" y2="166.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="658.0" y="180.0" text-anchor="middle" class="p-axis">0%</text>
+  <line x1="713.5" y1="60.0" x2="713.5" y2="166.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="713.5" y="180.0" text-anchor="middle" class="p-axis">25%</text>
+  <line x1="769.0" y1="60.0" x2="769.0" y2="166.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="769.0" y="180.0" text-anchor="middle" class="p-axis">50%</text>
+  <line x1="824.5" y1="60.0" x2="824.5" y2="166.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="824.5" y="180.0" text-anchor="middle" class="p-axis">75%</text>
+  <line x1="880.0" y1="60.0" x2="880.0" y2="166.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="880.0" y="180.0" text-anchor="middle" class="p-axis">100%</text>
+  <text x="650.0" y="80.0" text-anchor="end" class="p-lbl-hi">CRAFT Pipe+Journal</text>
+  <rect x="658.0" y="68.0" width="222.0" height="18" rx="3" fill="#1d4ed8"/>
+  <line x1="826.2" y1="77.0" x2="880.0" y2="77.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="826.2" y1="73.0" x2="826.2" y2="81.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="880.0" y1="73.0" x2="880.0" y2="81.0" stroke="#0f172a" stroke-width="1.3"/>
+  <text x="888.0" y="80.0" class="p-lbl-hi">12/12 | 75.9/hr</text>
+  <text x="650.0" y="114.0" text-anchor="end" class="p-lbl">Pipelined Stateless</text>
+  <rect x="658.0" y="102.0" width="166.5" height="18" rx="3" fill="#94a3b8"/>
+  <line x1="761.8" y1="111.0" x2="860.3" y2="111.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="761.8" y1="107.0" x2="761.8" y2="115.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="860.3" y1="107.0" x2="860.3" y2="115.0" stroke="#0f172a" stroke-width="1.3"/>
+  <text x="888.0" y="114.0" class="p-lbl">9/12 | 6 locks</text>
+  <text x="650.0" y="148.0" text-anchor="end" class="p-lbl">Sequential Stateless</text>
+  <rect x="658.0" y="136.0" width="166.5" height="18" rx="3" fill="#94a3b8"/>
+  <line x1="761.8" y1="145.0" x2="860.3" y2="145.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="761.8" y1="141.0" x2="761.8" y2="149.0" stroke="#0f172a" stroke-width="1.3"/>
+  <line x1="860.3" y1="141.0" x2="860.3" y2="149.0" stroke="#0f172a" stroke-width="1.3"/>
+  <text x="888.0" y="148.0" class="p-lbl">9/12 | 46.7/hr</text>
+  
+  <rect x="520" y="198" width="424" height="72" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="534" y="219" class="p-lbl-hi">Operational Safety &amp; Throughput Summary (Combo v3)</text>
+  <text x="534" y="238" class="p-sub">• CRAFT Pipelined + Journal: 100% pass, 0 dup brews/heats, 0 interlocks, 47.45 s/order</text>
+  <text x="534" y="256" class="p-sub">• Stateless baselines: 3 duplicate appliance starts, 4–6 interlock violations</text>
+
+</svg>

@@ -1,0 +1,543 @@
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --accent-blue: #1d4ed8;
+  --accent-blue-hover: #1e40af;
+  --accent-green: #15803d;
+  --accent-amber: #b45309;
+  --border-color: #e2e8f0;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --max-width: 980px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-blue-hover);
+  text-decoration: underline;
+}
+
+code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+  background: var(--bg-tertiary);
+  padding: 0.12rem 0.34rem;
+  border-radius: 4px;
+  color: #1e293b;
+}
+
+/* Sticky Top Navigation */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nav-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.65rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.nav-brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.nav-brand:hover {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.2rem;
+  list-style: none;
+  flex-wrap: wrap;
+}
+
+.nav-links a {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.nav-links a:hover {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+/* Hero Section (Restrained Academic Style) */
+.hero {
+  padding: 2.8rem 1.5rem 2.2rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.hero-container {
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+.hero-kicker {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.55rem;
+}
+
+.hero-title {
+  font-size: clamp(1.75rem, 3.2vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.24;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 0.85rem;
+}
+
+.authors-block {
+  margin-bottom: 1rem;
+}
+
+.authors-list {
+  font-size: 1.06rem;
+  font-weight: 500;
+  color: var(--accent-blue);
+}
+
+.authors-affiliation {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.cta-buttons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.1rem;
+  margin-bottom: 1.7rem;
+}
+
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.btn-pill:hover {
+  text-decoration: none;
+}
+
+.btn-dark {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.btn-dark:hover {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.btn-outline {
+  background: #ffffff;
+  color: var(--text-primary);
+  border-color: #cbd5e1;
+}
+
+.btn-outline:hover {
+  border-color: #64748b;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Sections */
+.section {
+  padding: 2.5rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section.alt-bg {
+  background-color: var(--bg-secondary);
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.section-header {
+  margin-bottom: 1.35rem;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 1.58rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  margin-bottom: 0.28rem;
+}
+
+.section-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+/* Teaser & Figures */
+.teaser-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+}
+
+.teaser-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.7rem;
+}
+
+.teaser-grid-3 img,
+.figure-card img,
+.teaser-box img {
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  display: block;
+}
+
+.zoomable-fig {
+  cursor: zoom-in;
+}
+
+.figures-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.1rem;
+  margin-top: 1.25rem;
+}
+
+.figure-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.9rem;
+}
+
+.figure-card h4 {
+  font-size: 0.94rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.caption {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  text-align: left;
+  margin-top: 0.55rem;
+}
+
+.caption strong {
+  color: var(--text-primary);
+}
+
+/* Abstract & Prose */
+.abstract-box {
+  max-width: 880px;
+  margin: 0 auto;
+  font-size: 0.97rem;
+  color: var(--text-secondary);
+  line-height: 1.72;
+  text-align: left;
+}
+
+.abstract-box p + p {
+  margin-top: 0.85rem;
+}
+
+/* Metric Summary Cards */
+.value-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.95rem;
+  margin-top: 1.35rem;
+}
+
+.value-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.05rem 1.15rem;
+  text-align: left;
+}
+
+.section.alt-bg .value-card {
+  background: #ffffff;
+}
+
+.value-metric {
+  font-size: 1.24rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  margin-bottom: 0.2rem;
+}
+
+.value-card h3 {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.value-card p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.52;
+}
+
+/* Evidence Badges */
+.ev-badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.1rem 0.42rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.ev-sim {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.ev-rec {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.ev-warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+/* Callouts */
+.claim-callout {
+  background: var(--bg-secondary);
+  border-left: 3px solid #64748b;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.section.alt-bg .claim-callout {
+  background: #ffffff;
+}
+
+/* Code & BibTeX */
+.code-snippet {
+  max-width: 880px;
+  margin: 1.1rem auto 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.81rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  overflow-x: auto;
+  text-align: left;
+}
+
+/* Booktabs-style Academic Tables */
+.table-block {
+  margin-top: 1.6rem;
+}
+
+.table-block h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 0.55rem;
+}
+
+table.benchmark-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  text-align: left;
+  border-top: 1.5px solid var(--text-primary);
+  border-bottom: 1.5px solid var(--text-primary);
+  background: #ffffff;
+}
+
+table.benchmark-table th {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid #94a3b8;
+  white-space: nowrap;
+}
+
+table.benchmark-table td {
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+table.benchmark-table tr.highlight-row td {
+  background: #f0fdf4;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* BibTeX */
+.bibtex-wrapper {
+  position: relative;
+  max-width: 880px;
+  margin: 0 auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.05rem 1.25rem;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.81rem;
+  line-height: 1.58;
+  overflow-x: auto;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  background: #ffffff;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.26rem 0.62rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.copy-btn:hover {
+  border-color: #64748b;
+  color: var(--text-primary);
+}
+
+/* Lightbox Modal */
+.lightbox-modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.88);
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.lightbox-modal.open {
+  display: flex;
+}
+
+.lightbox-modal img {
+  max-width: 94vw;
+  max-height: 88vh;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 0.4rem;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.75rem;
+  color: #ffffff;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+.footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 1.6rem 1.5rem;
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .value-grid-3,
+  .teaser-grid-3,
+  .figures-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
