@@ -1,0 +1,120 @@
+{
+  "robosuite-door-v3": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "ActiveProbe + RepairScreener frozen policy for Door (15/20 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "dev_llm_calls": 6,
+      "dev_pass_rate": 1.0,
+      "heldout_pass_rate": 0.75
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-door-v3",
+    "task_name": "Door",
+    "title": "Robosuite Door Verified Policy Skill",
+    "verification_report_id": "robosuite-v3-Door",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T17:49:22.243667+00:00"
+  },
+  "robosuite-lift-v3": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "ActiveProbe + RepairScreener frozen policy for Lift (20/20 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "dev_llm_calls": 1,
+      "dev_pass_rate": 1.0,
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-lift-v3",
+    "task_name": "Lift",
+    "title": "Robosuite Lift Verified Policy Skill",
+    "verification_report_id": "robosuite-v3-Lift",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T16:20:13.454383+00:00"
+  },
+  "robosuite-nutassemblysquare-v3": {
+    "applicability_notes": "",
+    "code_sha256": "6cac2355422de7e1476749e5e9a0f1c3732e9c39c979b692f7ff0cf32d2daa04",
+    "code_snippet": "def wrap_angle(angle):\n    return atan2(sin(angle), cos(angle))\n\ndef square_yaw_error(yaw):\n    return 0.25 * atan2(sin(-4.0 * yaw), cos(-4.0 * yaw))\n\ndef remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(400, state[\"max_steps\"]) - state[\"steps_used\"])",
+    "entry_functions": [
+      "wrap_angle",
+      "square_yaw_error",
+      "remaining_steps"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "ActiveProbe + RepairScreener frozen policy for NutAssemblySquare (17/20 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "dev_llm_calls": 3,
+      "dev_pass_rate": 1.0,
+      "heldout_pass_rate": 0.85
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-nutassemblysquare-v3",
+    "task_name": "NutAssemblySquare",
+    "title": "Robosuite NutAssemblySquare Verified Policy Skill",
+    "verification_report_id": "robosuite-v3-NutAssemblySquare",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T17:13:37.504575+00:00"
+  },
+  "robosuite-pickplacecan-v3": {
+    "applicability_notes": "",
+    "code_sha256": "167d549898058f8bce3d3f9cf3a94000f9cce80e294e3133df121c963f70a894",
+    "code_snippet": "def policy_distance(a, b):\n    return sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))\n\ndef policy_budget(sdk, requested, reserve=0):\n    state = sdk.get_state()\n    return max(0, min(requested, state[\"max_steps\"] - state[\"steps_used\"] - reserve))\n\ndef policy_move(sdk, position, yaw, gripper, steps, reserve=0, tol=0.008):\n    budget = policy_budget(sdk, steps, reserve)\n    if budget <= 0:\n        return False\n    result = sdk.move_to(\n        position, yaw=yaw, gripper=gripper, max_steps=budget, tol=tol\n    )\n    return result[\"reached\"]",
+    "entry_functions": [
+      "policy_distance",
+      "policy_budget",
+      "policy_move"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "ActiveProbe + RepairScreener frozen policy for PickPlaceCan (20/20 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "dev_llm_calls": 3,
+      "dev_pass_rate": 1.0,
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "robosuite-pickplacecan-v3",
+    "task_name": "PickPlaceCan",
+    "title": "Robosuite PickPlaceCan Verified Policy Skill",
+    "verification_report_id": "robosuite-v3-PickPlaceCan",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T16:34:07.897259+00:00"
+  }
+}

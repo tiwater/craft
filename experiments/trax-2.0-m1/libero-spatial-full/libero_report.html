@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>TRAX-LIBERO-v1.0</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0b1120; color: #e2e8f0; padding: 24px; }
+.wrap { max-width: 1100px; margin: 0 auto; }
+.card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { border-bottom: 1px solid #1f2937; padding: 8px 10px; text-align: left; }
+small { color: #94a3b8; }
+</style></head><body><div class="wrap">
+<div class="card">
+  <h1>TRAX-LIBERO-v1.0 — Official LIBERO Suite Benchmark</h1>
+  <small>suite=libero_spatial · tasks=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9] · observation_contract=host_state_api (NOT RGB-D) · model=gpt-6-astra</small>
+</div>
+<div class="card">
+  <table><thead><tr><th>Method</th><th>Held-Out Success</th><th>Budget</th><th>Mean / P95 Wall</th><th>McNemar vs TRAX</th></tr></thead>
+  <tbody><tr><td><strong>Strong Zero-Shot</strong></td><td><strong>0/100 (0.0%)</strong><br><small>CI [0.0%, 3.7%]</small></td><td>devLLM=10 / rst=0 / evalLLM=0</td><td>3.085s / 3.838s</td><td><small>p=0.0 (+97/-0)</small></td></tr><tr><td><strong>ASPIRE-Protocol (Adapted)</strong></td><td><strong>89/100 (89.0%)</strong><br><small>CI [81.4%, 93.8%]</small></td><td>devLLM=28 / rst=140 / evalLLM=0</td><td>3.997s / 5.181s</td><td><small>p=0.038574 (+10/-2)</small></td></tr><tr><td><strong>SimEX-Protocol (Adapted)</strong></td><td><strong>17/100 (17.0%)</strong><br><small>CI [10.9%, 25.6%]</small></td><td>devLLM=50 / rst=250 / evalLLM=0</td><td>3.879s / 5.315s</td><td><small>p=0.0 (+80/-0)</small></td></tr><tr><td><strong>TRAX (ActiveProbe + SubroutineRepair + Skills)</strong></td><td><strong>97/100 (97.0%)</strong><br><small>CI [91.5%, 99.0%]</small></td><td>devLLM=21 / rst=115 / evalLLM=0</td><td>3.796s / 5.058s</td><td><small>ref</small></td></tr></tbody></table>
+</div></div></body></html>

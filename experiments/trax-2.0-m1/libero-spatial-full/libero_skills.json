@@ -1,0 +1,281 @@
+{
+  "libero-libero_spatial_t0": {
+    "applicability_notes": "",
+    "code_sha256": "e232153b4275ed38e8ed284bdd03c867f74d3d99a163b8b70a06557a03d10065",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef move_pose(sdk, position, yaw, grip, steps, tolerance=0.01):\n    available = remaining_steps(sdk)\n    if available <= 0:\n        return False\n    result = sdk.move_to(\n        position,\n        yaw=yaw,\n        gripper=grip,\n        max_steps=min(steps, available),\n        tol=tolerance,\n    )\n    return result[\"reached\"]\n\ndef actuate(sdk, action, steps):\n    available = remaining_steps(sdk)\n    if available <= 0:\n        return False\n    sdk.set_gripper(action, steps=min(steps, available))\n    return True",
+    "entry_functions": [
+      "remaining_steps",
+      "move_pose",
+      "actuate"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl between the plate and the ramekin and place it on the plate' (10/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0622m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=4.712, gripper_yaw_rad=0.0 (jaw_rel_rad=1.571, clearance_m=0.1246, closed_width=0.0087m; 1/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t0",
+    "task_name": "libero_spatial_t0",
+    "title": "LIBERO libero_spatial_t0 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t0",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T21:01:10.983774+00:00"
+  },
+  "libero-libero_spatial_t1": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl next to the ramekin and place it on the plate' (10/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0595m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=1.571, gripper_yaw_rad=-1.571 (jaw_rel_rad=0.0, clearance_m=0.1631, closed_width=0.014m; 3/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t1",
+    "task_name": "libero_spatial_t1",
+    "title": "LIBERO libero_spatial_t1 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t1",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T21:14:38.545291+00:00"
+  },
+  "libero-libero_spatial_t2": {
+    "applicability_notes": "",
+    "code_sha256": "31526d0028de5adae980c9b6e3987cf742519a3372dd897c221db3aed324985a",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef distance_xy(a, b):\n    return hypot(a[0] - b[0], a[1] - b[1])\n\ndef distance_xyz(a, b):\n    return sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))",
+    "entry_functions": [
+      "remaining_steps",
+      "distance_xy",
+      "distance_xyz"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl from table center and place it on the plate' (8/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0699m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=6.283, gripper_yaw_rad=-0.0 (jaw_rel_rad=0.0, clearance_m=0.1319, closed_width=0.0271m; 2/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 0.8
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t2",
+    "task_name": "libero_spatial_t2",
+    "title": "LIBERO libero_spatial_t2 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t2",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T21:27:44.510165+00:00"
+  },
+  "libero-libero_spatial_t3": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl on the cookie box and place it on the plate' (10/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.052m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=4.712, gripper_yaw_rad=-0.0 (jaw_rel_rad=1.571, clearance_m=0.0402, closed_width=0.0091m; 1/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t3",
+    "task_name": "libero_spatial_t3",
+    "title": "LIBERO libero_spatial_t3 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t3",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T21:38:50.022625+00:00"
+  },
+  "libero-libero_spatial_t4": {
+    "applicability_notes": "",
+    "code_sha256": "3ebb57b13ace7b524599d80ab2ed2072768668de860c5fd7ae0bbef6b3f6b617",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef distance_xyz(a, b):\n    return sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))\n\ndef move(sdk, pos, yaw, grip, steps=35, tol=0.012):\n    budget = remaining_steps(sdk)\n    if budget <= 0:\n        return False\n    result = sdk.move_to(\n        pos, yaw=yaw, gripper=grip,\n        max_steps=min(steps, budget), tol=tol\n    )\n    return result[\"reached\"]",
+    "entry_functions": [
+      "remaining_steps",
+      "distance_xyz",
+      "move"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate' (9/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0581m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=0.0, gripper_yaw_rad=1.571 (jaw_rel_rad=1.571, clearance_m=0.1786, closed_width=0.0095m; 2/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 0.9
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t4",
+    "task_name": "libero_spatial_t4",
+    "title": "LIBERO libero_spatial_t4 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t4",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T21:56:35.535775+00:00"
+  },
+  "libero-libero_spatial_t5": {
+    "applicability_notes": "",
+    "code_sha256": "3ebb57b13ace7b524599d80ab2ed2072768668de860c5fd7ae0bbef6b3f6b617",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef distance_xyz(a, b):\n    return sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))\n\ndef move(sdk, pos, yaw, grip, steps=35, tol=0.012):\n    budget = remaining_steps(sdk)\n    if budget <= 0:\n        return False\n    result = sdk.move_to(\n        pos, yaw=yaw, gripper=grip,\n        max_steps=min(steps, budget), tol=tol\n    )\n    return result[\"reached\"]",
+    "entry_functions": [
+      "remaining_steps",
+      "distance_xyz",
+      "move"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl on the ramekin and place it on the plate' (10/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0677m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=3.142, gripper_yaw_rad=1.571 (jaw_rel_rad=1.571, clearance_m=0.0545, closed_width=0.0105m; 3/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t5",
+    "task_name": "libero_spatial_t5",
+    "title": "LIBERO libero_spatial_t5 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t5",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T22:08:56.231852+00:00"
+  },
+  "libero-libero_spatial_t6": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl next to the cookie box and place it on the plate' (10/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0566m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=8.639, gripper_yaw_rad=0.785 (jaw_rel_rad=1.571, clearance_m=0.0922, closed_width=0.0072m; 2/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t6",
+    "task_name": "libero_spatial_t6",
+    "title": "LIBERO libero_spatial_t6 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t6",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T22:22:57.680817+00:00"
+  },
+  "libero-libero_spatial_t7": {
+    "applicability_notes": "",
+    "code_sha256": "3ebb57b13ace7b524599d80ab2ed2072768668de860c5fd7ae0bbef6b3f6b617",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef distance_xyz(a, b):\n    return sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))\n\ndef move(sdk, pos, yaw, grip, steps=35, tol=0.012):\n    budget = remaining_steps(sdk)\n    if budget <= 0:\n        return False\n    result = sdk.move_to(\n        pos, yaw=yaw, gripper=grip,\n        max_steps=min(steps, budget), tol=tol\n    )\n    return result[\"reached\"]",
+    "entry_functions": [
+      "remaining_steps",
+      "distance_xyz",
+      "move"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl on the stove and place it on the plate' (10/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0579m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=0.0, gripper_yaw_rad=1.571 (jaw_rel_rad=1.571, clearance_m=0.3016, closed_width=0.0173m; 2/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t7",
+    "task_name": "libero_spatial_t7",
+    "title": "LIBERO libero_spatial_t7 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t7",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T22:33:42.693822+00:00"
+  },
+  "libero-libero_spatial_t8": {
+    "applicability_notes": "",
+    "code_sha256": "3ebb57b13ace7b524599d80ab2ed2072768668de860c5fd7ae0bbef6b3f6b617",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef distance_xyz(a, b):\n    return sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))\n\ndef move(sdk, pos, yaw, grip, steps=35, tol=0.012):\n    budget = remaining_steps(sdk)\n    if budget <= 0:\n        return False\n    result = sdk.move_to(\n        pos, yaw=yaw, gripper=grip,\n        max_steps=min(steps, budget), tol=tol\n    )\n    return result[\"reached\"]",
+    "entry_functions": [
+      "remaining_steps",
+      "distance_xyz",
+      "move"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl next to the plate and place it on the plate' (10/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0632m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=2.356, gripper_yaw_rad=0.785 (jaw_rel_rad=1.571, clearance_m=0.1573, closed_width=0.0079m; 2/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t8",
+    "task_name": "libero_spatial_t8",
+    "title": "LIBERO libero_spatial_t8 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t8",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T22:44:30.932719+00:00"
+  },
+  "libero-libero_spatial_t9": {
+    "applicability_notes": "",
+    "code_sha256": "3ebb57b13ace7b524599d80ab2ed2072768668de860c5fd7ae0bbef6b3f6b617",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef distance_xyz(a, b):\n    return sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))\n\ndef move(sdk, pos, yaw, grip, steps=35, tol=0.012):\n    budget = remaining_steps(sdk)\n    if budget <= 0:\n        return False\n    result = sdk.move_to(\n        pos, yaw=yaw, gripper=grip,\n        max_steps=min(steps, budget), tol=tol\n    )\n    return result[\"reached\"]",
+    "entry_functions": [
+      "remaining_steps",
+      "distance_xyz",
+      "move"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the black bowl on the wooden cabinet and place it on the plate' (10/10 held-out). ActiveProbe: Scanned 4 free-space radial/center grasps on `akita_black_bowl_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0547m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=4.712, gripper_yaw_rad=-0.0 (jaw_rel_rad=1.571, clearance_m=0.3336, closed_width=0.0085m; 1/4 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_spatial_t9",
+    "task_name": "libero_spatial_t9",
+    "title": "LIBERO libero_spatial_t9 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_spatial_t9",
+    "verified": true,
+    "verified_at_utc": "2026-11-24T22:57:42.747513+00:00"
+  }
+}
