@@ -368,8 +368,9 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
         width = rec["closed_width_m"]
         if lift >= 0.03 and width < 0.007:
             return -9.0
-        pen = 0.045 if (lift >= 0.03 and width > 0.055) else 0.0
-        return lift - pen
+        if lift < 0.03:
+            return lift
+        return min(lift, 0.06) + 0.25 * max(0.0, 0.06 - width)
 
     def nearest_jaw_yaw(desired, cur_yaw):
         return cur_yaw + 0.5 * atan2(sin(2.0 * (desired - cur_yaw)), cos(2.0 * (desired - cur_yaw)))
@@ -720,7 +721,8 @@ def _libero_craft_hypotheses(
             "H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment",
             "Ground grasp radius, z_offset_m, and jaw-to-radial alignment strictly in the Empirical Active-Probe Findings. "
             "Compute the radial grasp angle dynamically in WORLD coordinates maximizing clearance from ALL neighbor objects/fixtures "
-            "(NEVER rely on random object `yaw`), verify grasp via live object Z lift (>=0.03m), and retry alternate free-space angles if needed.",
+            "(NEVER rely on random object `yaw`), verify grasp purely via live object Z lift (>=0.03m) and EEF proximity "
+            "(never reject a successful lift on gripper_width alone), and retry alternate free-space angles if needed.",
         ),
         (
             "H-Ground2: Exact Spatial-Relation Grounding + Unblocked Approach",

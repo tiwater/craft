@@ -233,9 +233,10 @@ def parse_probe_telemetry(
                     # Reject empty-gripper collision bounces (width < 0.007m or object detached from EEF)
                     if retained is False or (lift >= 0.03 and width < 0.007):
                         return -1.0
-                    # Penalize fragile near-open outer-chord grasps (>0.055m) when secure inner pinches exist
-                    chord_pen = 0.045 if (lift >= 0.03 and width > 0.055) else 0.0
-                    return lift - chord_pen
+                    if lift < 0.03:
+                        return lift
+                    # Among verified lifts (>=0.03m), saturate lift at 0.06m and favor secure closing margin
+                    return min(lift, 0.06) + 0.25 * max(0.0, 0.06 - width)
 
                 best = max(samples, key=_grasp_quality)
                 lifted = [
@@ -249,12 +250,11 @@ def parse_probe_telemetry(
                 if is_world_radial:
                     summary = (
                         f"Scanned {len(samples)} free-space radial/center grasps on `{out.get('target', 'object')}` "
-                        f"(frame={frame}, NOT random object yaw); best secure lift={best.get('lift_delta_m')}m "
+                        f"(frame={frame}, NOT random object yaw); best empirical lift={best.get('lift_delta_m')}m "
                         f"at radius_m={best.get('local_offset_m')}, z_offset_m={best.get('z_offset_m')}, "
                         f"world_angle_rad={best.get('approach_angle_rad')}, gripper_yaw_rad={best.get('gripper_yaw_rad')} "
                         f"(jaw_rel_rad={best.get('jaw_rel_angle_rad')}, clearance_m={best.get('clearance_m')}, "
-                        f"closed_width={best.get('closed_width_m')}m; {len(lifted)}/{len(samples)} samples lifted >=0.03m). "
-                        f"Prefer secure narrow pinch (closed_width<0.05m) over fragile wide outer-chord grasp."
+                        f"closed_width={best.get('closed_width_m')}m; {len(lifted)}/{len(samples)} samples lifted >=0.03m)."
                     )
                 else:
                     summary = (
