@@ -26,6 +26,7 @@ from .benchmark import (
 from .coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
 from .config import SceneConfig
 from .host_driver import SceneHostDriver
+from .operations import run_continuous_shift
 from .portability import check_policy_portability
 from .profiler import aggregate_trial_profiles
 from .regression import RegressionSuite
@@ -460,17 +461,28 @@ STUDIO_HTML = r"""<!DOCTYPE html>
 
     <div class="two-col">
       <div class="card">
-        <div class="card-title"><span>已验证技能经验与发布历史</span></div>
+        <div class="card-title">
+          <span>白天连续排班（Day Shift）与夜间修复预筛（RepairScreener）</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="runStudioShift()">▶ 运行连续 6 单班次（含崩溃重启）</button>
+            <a class="badge" href="cafebench_v2_report.html" target="_blank">CafeBench v2 报告 ↗</a>
+            <a class="badge" href="robosuite_v2_report.html" target="_blank">Robosuite v2 报告 ↗</a>
+          </div>
+        </div>
+        <div id="ops-shift-panel" style="font-size:13px;color:var(--muted)">暂无班次与预筛记录，可点击上方按钮运行。</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>已验证技能经验（含实测边界）与发布回退</span></div>
         <div id="skills-and-history"></div>
       </div>
+    </div>
 
-      <div class="card">
-        <div class="card-title">
-          <span>冻结策略源码只读查看</span>
-          <select id="code-policy-select" style="width:auto" onchange="loadCodeTabPolicy()"></select>
-        </div>
-        <pre id="policy-code-view">加载中...</pre>
+    <div class="card">
+      <div class="card-title">
+        <span>冻结策略源码只读查看</span>
+        <select id="code-policy-select" style="width:auto" onchange="loadCodeTabPolicy()"></select>
       </div>
+      <pre id="policy-code-view">加载中...</pre>
     </div>
   </div>
 </div>
@@ -1008,13 +1020,45 @@ function renderGovTab(st) {
     <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:6px">已验证技能经验</div>
     ${skills.length ? skills.map(s => `<div class="scen-card" style="margin-bottom:8px">
       <div class="scen-title">${s.title} <span class="badge ok">${s.evidence_source}</span></div>
-      <p class="scen-desc">${s.guidance}<br><small>验收来源：${s.verification_report_id}</small></p>
+      <p class="scen-desc">${s.guidance}<br><small>验收来源：${s.verification_report_id}${s.measured_limits && Object.keys(s.measured_limits).length ? ' · 实测边界：' + JSON.stringify(s.measured_limits) : ''}${s.known_failure_modes && s.known_failure_modes.length ? ' · 已知失效：' + s.known_failure_modes.join(', ') : ''}</small></p>
     </div>`).join('') : '<div style="font-size:12px;color:var(--muted)">暂无已验证技能</div>'}
     <div style="font-size:12px;font-weight:600;color:var(--blue);margin:12px 0 6px">发布与回退审计记录</div>
     ${hist.length ? hist.map(h => `<div style="font-size:12px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border)">
       <strong>${h.event}</strong> → <code>${h.version}</code> (${h.deployment_scope || '-'}) · ${h.at_utc || ''}
     </div>`).join('') : '<div style="font-size:12px;color:var(--muted)">暂无发布记录</div>'}
   `;
+
+  const opsEl = document.getElementById('ops-shift-panel');
+  if (opsEl) {
+    const sh = st.latest_shift_report;
+    const scs = st.screening_sessions || [];
+    const shiftHtml = sh
+      ? `<div class="scen-card" style="margin-bottom:8px">
+          <div class="scen-title">班次 ${sh.shift_id} <span class="badge ${sh.passed_orders === sh.total_orders && sh.duplicate_non_idempotent_orders === 0 ? 'ok' : 'warn'}">${sh.passed_orders}/${sh.total_orders} 通过</span></div>
+          <p class="scen-desc">非幂等重复：<strong>${sh.duplicate_non_idempotent_orders}</strong> · 误触发：<strong>${sh.false_actuation_orders}</strong> · 吞吐：<strong>${sh.throughput_orders_per_hour} 单/时</strong> · 证据：<code>${sh.evidence_source}</code></p>
+        </div>`
+      : '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">尚未执行连续排班</div>';
+    const scrHtml = scs.length
+      ? scs.slice(-3).map(s => `<div class="scen-card" style="margin-bottom:6px">
+          <div class="scen-title">${s.screening_id} <span class="badge">${s.status}</span></div>
+          <p class="scen-desc">候选数：${(s.candidates || []).length} · 推荐：<code>${s.recommended_candidate_id || '无'}</code> · 需独立验收：${s.requires_independent_acceptance ? '是' : '否'}</p>
+        </div>`).join('')
+      : '<div style="font-size:12px;color:var(--muted)">暂无夜间修复预筛会话</div>';
+    opsEl.innerHTML = shiftHtml + scrHtml;
+  }
+}
+
+async function runStudioShift() {
+  const pid = document.getElementById('policy-select').value;
+  try {
+    await api('api/shift/run', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({policy_id: pid}),
+    });
+    await refreshState();
+  } catch (e) {
+    alert('班次运行失败: ' + e.message);
+  }
 }
 
 async function refreshState() {
@@ -1375,6 +1419,14 @@ class CraftStudioApp:
                 target_stage="physical_live",
             )
 
+        scr_sessions: list[dict[str, Any]] = []
+        scr_root = self.workspace_dir / "screening"
+        if scr_root.is_dir():
+            for p in sorted(scr_root.glob("*/session.json")):
+                item = _read_optional_json(p)
+                if item is not None:
+                    scr_sessions.append(item)
+
         return {
             "driver": self.driver.driver_name,
             "evidence_source": self.driver.evidence_source,
@@ -1401,6 +1453,9 @@ class CraftStudioApp:
             "regression_cases": reg_cases,
             "portability_checks": portability,
             "autonomy_physical_gate": promo_gate,
+            "latest_shift_report": _read_optional_json(self.workspace_dir / "latest_shift_report.json"),
+            "latest_nightly_evolution": _read_optional_json(self.workspace_dir / "latest_nightly_evolution.json"),
+            "screening_sessions": scr_sessions,
         }
 
     def get_policy(self, policy_id: str) -> dict[str, Any]:
@@ -1486,6 +1541,21 @@ class CraftStudioApp:
         threading.Thread(target=_worker, daemon=True).start()
         return {"status": "started", "label": label}
 
+    def run_studio_shift(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        pol_id = str(body.get("policy_id") or "craft_reference")
+        pol = self._policies[pol_id]
+        reg_suite = RegressionSuite(self.workspace_dir / "regression_suite.json")
+        with self._lock:
+            return run_continuous_shift(
+                self.driver,
+                self.config,
+                self.workspace_dir,
+                policy_source=pol.source,
+                orders=body.get("orders"),
+                regression_suite=reg_suite,
+                enable_journal_proxy=bool(body.get("enable_journal_proxy", True)),
+            )
+
     def start_benchmark_async(self, repeats: int = 1) -> dict[str, Any]:
         if self._bench_running:
             return {"status": "already_running"}
@@ -1553,6 +1623,36 @@ def create_studio_server(
                 return
             if path == "/api/live":
                 self._send_json(app.get_live())
+                return
+            def _find_report(*rel_candidates: str) -> Path | None:
+                roots = [app.workspace_dir, app.workspace_dir.parent / "goal-v2-20261122", app.workspace_dir.parent / "goal-v3-simex-parity"]
+                for root in roots:
+                    for rel in rel_candidates:
+                        p = root / rel
+                        if p.is_file():
+                            return p
+                return None
+
+            if path == "/robosuite_v2_report.html":
+                rb2_html = _find_report("robosuite-parity-v3/robosuite_prior_work_report.html", "robosuite-parity-v2/robosuite_prior_work_report.html")
+                if rb2_html is not None:
+                    self._send_bytes(rb2_html.read_bytes(), "text/html; charset=utf-8")
+                else:
+                    self._send_bytes(b"<h3>No Robosuite Parity report generated yet.</h3>", "text/html; charset=utf-8", 404)
+                return
+            if path == "/cafebench_v2_report.html":
+                cb2_html = _find_report("cafebench-v2/cafebench_v2_report.html")
+                if cb2_html is not None:
+                    self._send_bytes(cb2_html.read_bytes(), "text/html; charset=utf-8")
+                else:
+                    self._send_bytes(b"<h3>No CafeBench v2 report generated yet.</h3>", "text/html; charset=utf-8", 404)
+                return
+            if path == "/sim2sim_report.html":
+                s2s_html = _find_report("sim2sim-stage2/sim2sim_report.html", "sim2sim_report.html")
+                if s2s_html is not None:
+                    self._send_bytes(s2s_html.read_bytes(), "text/html; charset=utf-8")
+                else:
+                    self._send_bytes(b"<h3>No Sim2Sim Stage-2 report generated yet.</h3>", "text/html; charset=utf-8", 404)
                 return
             if path == "/robosuite_report.html":
                 rb_html = app.workspace_dir / "robosuite-parity-v1" / "robosuite_prior_work_report.html"
@@ -1623,6 +1723,9 @@ def create_studio_server(
                     return
                 if path == "/api/benchmark/start":
                     self._send_json(app.start_benchmark_async(int(body.get("repeats", 1))))
+                    return
+                if path == "/api/shift/run":
+                    self._send_json(app.run_studio_shift(body))
                     return
                 self._send_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
             except Exception as exc:  # noqa: BLE001

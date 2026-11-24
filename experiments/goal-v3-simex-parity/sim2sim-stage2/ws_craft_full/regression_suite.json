@@ -1,0 +1,57 @@
+{
+  "cases": {
+    "3b042a9d76f88eb3": {
+      "attribution_code": "escalated_to_human",
+      "attribution_layer": "policy",
+      "captured_at_utc": "2026-11-24T03:59:26.688922+00:00",
+      "case_id": "reg_001_3b042a",
+      "evidence_source": "simulator",
+      "fingerprint": "3b042a9d76f88eb3",
+      "hit_count": 1,
+      "last_seen_utc": "2026-11-24T03:59:26.688922+00:00",
+      "notes": "Trial did not meet acceptance criteria (escalated_to_human)",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": null,
+        "label": "Target Adapt-1: Sensor Noise + DR + Unseen Slip (36,-12mm)",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_001_3b042a",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "craft_full-adapt-1-att1"
+    },
+    "ab6fc2dc4de36e82": {
+      "attribution_code": "unreconciled_unknown_ack",
+      "attribution_layer": "policy",
+      "captured_at_utc": "2026-11-24T04:00:37.095630+00:00",
+      "case_id": "reg_002_ab6fc2",
+      "evidence_source": "simulator",
+      "fingerprint": "ab6fc2dc4de36e82",
+      "hit_count": 1,
+      "last_seen_utc": "2026-11-24T04:00:37.095630+00:00",
+      "notes": "Policy failed to call query_command_status after an unknown acknowledgement",
+      "scenario": {
+        "category": "regression",
+        "cup_a_xy": null,
+        "cup_b_xy": null,
+        "expect_status": "completed",
+        "fault_inject_slip_xy_m": null,
+        "label": "Target Adapt-3: Sensor Noise + DR + Mid-Brew Host Crash/Restart",
+        "max_delivery_error_mm": 15.0,
+        "order_id": "A042",
+        "preset": "default",
+        "scenario_id": "reg_002_ab6fc2",
+        "simulate_timeout": false,
+        "target_slot": "$SLOT_PICKUP_1"
+      },
+      "source_trial_id": "craft_full-adapt-3-att2"
+    }
+  },
+  "schema_version": 1
+}

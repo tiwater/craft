@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>CRAFT-Sim2Sim-Stage2-v1.0</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0b1120; color: #e2e8f0; margin: 0; padding: 24px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+  h1, h2 { margin: 0 0 10px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border-bottom: 1px solid #1f2937; padding: 8px 10px; text-align: left; }
+  th { color: #94a3b8; }
+  small { color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>CRAFT-Sim2Sim-Stage2-v1.0 — Sim-to-Sim 5-Trial Adaptation Benchmark</h1>
+    <small>sandbox=mujoco_cafe -> target=mujoco_cafe (sensor_noise=True, domain_randomization=True) · model=gpt-6-astra · git=4b535cb89a2e</small>
+  </div>
+  <div class="card">
+    <h2>Held-Out Physics-Mismatched Target &amp; Recorded-Shadow Results (Strict &le;5 Target Adaptation Trials)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Overall Held-Out (Target + Shadow)</th>
+          <th>Target Sim (Noisy+DR)</th>
+          <th>Recorded Shadow</th>
+          <th>Dup Non-Idem / False Act</th>
+          <th>Adaptation Budget</th>
+          <th>McNemar vs CRAFT</th>
+        </tr>
+      </thead>
+      <tbody><tr><td><strong>Zero-Shot Sim2Sim</strong><br><small>baseline_control</small></td><td><strong>8/20 (40.0%)</strong><br><small>CI [21.9%, 61.3%]</small></td><td>4/16</td><td>4/4</td><td>0 / 0</td><td>target=0/5 · cal=0 · llm=0</td><td><small>p=1.0 (+0/-0)</small></td></tr><tr><td><strong>Direct Target Repair</strong><br><small>ablation_direct_repair</small></td><td><strong>16/20 (80.0%)</strong><br><small>CI [58.4%, 91.9%]</small></td><td>12/16</td><td>4/4</td><td>0 / 0</td><td>target=5/5 · cal=0 · llm=2</td><td><small>p=0.007812 (+0/-8)</small></td></tr><tr><td><strong>SimEX-Protocol (Adapted, Calibrated Sim + Screening)</strong><br><small>protocol_adapted_from_simex_2609_38982</small></td><td><strong>8/20 (40.0%)</strong><br><small>CI [21.9%, 61.3%]</small></td><td>4/16</td><td>4/4</td><td>0 / 0</td><td>target=5/5 · cal=0 · llm=8</td><td><small>p=1.0 (+0/-0)</small></td></tr><tr><td><strong>CRAFT (Calibrated Sim + RepairScreener + Shadow + Journal)</strong><br><small>craft_proposed_system</small></td><td><strong>8/20 (40.0%)</strong><br><small>CI [21.9%, 61.3%]</small></td><td>4/16</td><td>4/4</td><td>0 / 0</td><td>target=5/5 · cal=0 · llm=8</td><td><small>ref</small></td></tr></tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>

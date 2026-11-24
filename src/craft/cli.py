@@ -163,6 +163,36 @@ def main() -> None:
     rb.add_argument("--max-dev-calls", type=int, default=4)
     rb.add_argument("--no-online-regen", action="store_true", help="Disable CaP-X online Turn-2 regen during eval")
 
+    cb2 = sub.add_parser(
+        "cafebench-v2",
+        help="Run CafeBench v2 commercial operations resilience benchmark (5 methods x 30 held-out scenarios)",
+    )
+    cb2.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
+    cb2.add_argument("--driver", default="mujoco_cafe", help="Host driver name (mujoco_cafe, fixture, http)")
+    cb2.add_argument("--output", required=True, help="Output directory for CafeBench v2 artifacts, JSON & HTML report")
+    cb2.add_argument("--provider", default="codex_cli", choices=["codex_cli", "openai_api"])
+    cb2.add_argument("--model", default="gpt-6-astra")
+    cb2.add_argument("--effort", default="medium", choices=["low", "medium", "high", "xhigh"])
+    cb2.add_argument("--max-dev-calls", type=int, default=6)
+
+    s2s = sub.add_parser(
+        "sim2sim-bench",
+        help="Run true Sim-to-Sim 5-trial adaptation benchmark (nominal sandbox -> noisy/DR target)",
+    )
+    s2s.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
+    s2s.add_argument("--output", required=True, help="Output directory for Sim2Sim report & policies")
+    s2s.add_argument("--driver", default="mujoco_cafe", help="Base simulator driver (mujoco_cafe or fixture)")
+    s2s.add_argument("--provider", default="codex_cli", choices=["codex_cli", "openai_api"])
+    s2s.add_argument("--model", default="gpt-6-astra")
+    s2s.add_argument("--effort", default="medium", choices=["low", "medium", "high", "xhigh"])
+    s2s.add_argument("--max-candidates", type=int, default=2)
+
+    cmb = sub.add_parser(
+        "combo-bench",
+        help="Run CafeBench v3 multi-appliance Coffee + Bagel/Oven concurrent operations benchmark",
+    )
+    cmb.add_argument("--output", required=True, help="Output directory for Combo operations report")
+
     studio = sub.add_parser("studio", help="Launch standalone interactive CRAFT Studio Web Demo")
     studio.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
     studio.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or craft.drivers plugin)")
@@ -195,6 +225,15 @@ def main() -> None:
     simhost.add_argument("--host", default="127.0.0.1", help="Bind host (default 127.0.0.1)")
     simhost.add_argument("--port", type=int, default=8880, help="Bind port (default 8880)")
     simhost.add_argument("--realtime-pacing", action="store_true", help="Enable smooth real-time arm motion pacing")
+    simhost.add_argument("--sensor-noise", action="store_true", help="Enable realistic RGB CMOS + 3D pose estimation noise")
+    simhost.add_argument("--domain-randomization", action="store_true", help="Enable per-episode mass/friction/placement randomization")
+
+    gzexp = sub.add_parser(
+        "gazebo-export",
+        help="Export portable Gazebo Fortress (OGRE2 PBR + DART 500Hz + 7-DOF Panda + ROS 2 Humble) bundle",
+    )
+    gzexp.add_argument("--output", default="sim/gazebo", help="Output directory for SDF 1.9, meshes, textures & ROS 2 bridge config")
+    gzexp.add_argument("--no-assets", action="store_true", help="Skip copying local Panda STL meshes and PBR PNG textures")
 
     args = parser.parse_args()
 
@@ -411,6 +450,51 @@ def main() -> None:
         )
         return
 
+    if args.command == "cafebench-v2":
+        from .cafebench_v2 import run_cafebench_v2_comparison
+        from .prior_work_bench import make_live_llm_fn
+
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            provider=args.provider,
+            model=args.model,
+            effort=args.effort,
+            allow_actuation=True,
+            allow_sim_reset=True,
+            scope="fixture" if args.driver == "fixture" else "simulator",
+        )
+        driver = create_host_driver(args.driver, cfg)
+        llm_fn = make_live_llm_fn(
+            provider=args.provider,
+            model=args.model,
+            reasoning_effort=args.effort,
+        )
+        try:
+            report = run_cafebench_v2_comparison(
+                driver,
+                cfg,
+                llm_fn=llm_fn,
+                output_dir=args.output,
+                model=args.model,
+                reasoning_effort=args.effort,
+                max_dev_llm_calls=args.max_dev_calls,
+                progress_cb=lambda msg: print(msg, flush=True),
+            )
+            print(
+                json.dumps(
+                    {
+                        "benchmark_version": report["benchmark_version"],
+                        "summary_by_method": report["summary_by_method"],
+                        "paired_mcnemar_craft_vs": report["paired_mcnemar_craft_vs"],
+                    },
+                    indent=2,
+                )
+            )
+        finally:
+            if hasattr(driver, "close"):
+                driver.close()
+        return
+
     if args.command == "robosuite-bench":
         from .prior_work_bench import make_live_llm_fn
         from .robosuite_bench import run_robosuite_parity_benchmark
@@ -513,6 +597,12 @@ def main() -> None:
         driver = create_host_driver(args.driver, cfg)
         if args.realtime_pacing and hasattr(driver, "_realtime_pacing"):
             driver._realtime_pacing = True
+        if getattr(args, "sensor_noise", False) and hasattr(driver, "_default_sensor_noise"):
+            driver._default_sensor_noise = True
+            driver._sensor_noise_active = True
+        if getattr(args, "domain_randomization", False) and hasattr(driver, "_default_domain_randomization"):
+            driver._default_domain_randomization = True
+            driver._domain_randomization_active = True
         app = StandaloneSimHostApp(driver)
         server = create_sim_host_server(app, host=args.host, port=args.port)
         print(
@@ -524,6 +614,81 @@ def main() -> None:
             server.serve_forever()
         except KeyboardInterrupt:
             server.shutdown()
+        return
+
+    if args.command == "gazebo-export":
+        from .gazebo_cafe_driver import export_gazebo_cafe_bundle, probe_gazebo_runtime
+
+        manifest = export_gazebo_cafe_bundle(args.output, copy_local_assets=not args.no_assets)
+        print(json.dumps({"manifest": manifest, "runtime_probe": probe_gazebo_runtime()}, indent=2))
+        return
+
+    if args.command == "sim2sim-bench":
+        from .prior_work_bench import make_live_llm_fn
+        from .sim2sim_bench import run_sim2sim_adaptation_benchmark
+
+        cfg = _override_config(
+            SceneConfig.from_file(args.config),
+            provider=args.provider,
+            model=args.model,
+            effort=args.effort,
+            allow_actuation=True,
+            allow_sim_reset=True,
+            scope="fixture" if args.driver == "fixture" else "simulator",
+        )
+        sandbox_driver = create_host_driver(args.driver, cfg)
+        target_driver = create_host_driver(args.driver, cfg)
+        if hasattr(target_driver, "_default_sensor_noise"):
+            target_driver._default_sensor_noise = True
+            target_driver._sensor_noise_active = True
+        if hasattr(target_driver, "_default_domain_randomization"):
+            target_driver._default_domain_randomization = True
+            target_driver._domain_randomization_active = True
+        llm_fn = make_live_llm_fn(provider=args.provider, model=args.model, reasoning_effort=args.effort)
+        try:
+            report = run_sim2sim_adaptation_benchmark(
+                sandbox_driver,
+                target_driver,
+                cfg,
+                llm_fn=llm_fn,
+                output_dir=args.output,
+                model=args.model,
+                reasoning_effort=args.effort,
+                max_candidates_per_failure=args.max_candidates,
+                progress_cb=lambda msg: print(msg, flush=True),
+            )
+            print(
+                json.dumps(
+                    {
+                        "benchmark_version": report["benchmark_version"],
+                        "summary_by_method": report["summary_by_method"],
+                        "paired_mcnemar_craft_vs": report["paired_mcnemar_craft_vs"],
+                    },
+                    indent=2,
+                )
+            )
+        finally:
+            if hasattr(sandbox_driver, "close"):
+                sandbox_driver.close()
+            if hasattr(target_driver, "close"):
+                target_driver.close()
+        return
+
+    if args.command == "combo-bench":
+        from .combo_bench import run_combo_operations_benchmark
+
+        report = run_combo_operations_benchmark(args.output)
+        print(
+            json.dumps(
+                {
+                    "benchmark_version": report["benchmark_version"],
+                    "summary_by_method": report["summary_by_method"],
+                    "paired_mcnemar_craft_vs": report["paired_mcnemar_craft_vs"],
+                },
+                indent=2,
+            )
+        )
+        return
 
 
 if __name__ == "__main__":

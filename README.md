@@ -8,10 +8,8 @@
 CRAFT studies reusable, verifiable and recoverable code policies for beverage and
 light-food preparation: coffee service, bagel heating and combined orders.
 
-**Status: v0.1.0 research baseline.** This release contains working software
-contracts and deterministic fault-injection fixtures. It does **not** claim
-validated physical coffee/bagel manipulation, a completed benchmark, or a paper.
-It has not replaced the live ticos-edge CaP runtime.
+**Status: v0.3 research platform (Phase 4 — zero-leakage SimEX-parity & multi-appliance operations).**
+CRAFT provides a pure-Python-stdlib core orchestration engine, host-independent drivers (`fixture`, `http`, `recorded`, optional `mujoco_cafe` & `gazebo_cafe`), closed-loop simulator calibration + multi-hypothesis repair screening, public-SDK active physical probing, AST-verified executable skill toolboxes, and reproducible benchmarks. It does **not** claim validated physical coffee/bagel manipulation or hardware safety certification. It has not replaced the live `ticos-edge` CaP runtime.
 
 ## Product direction and reuse boundary (2026-11-20)
 
@@ -52,16 +50,21 @@ heat transfer, collision, grasp, timing, food quality or hardware behavior.
 
 ## Implemented
 
-- Frozen policy bundles with source/deployment/capability content hashes.
-- An explicitly limited Python AST interpreter: no `exec`, `eval`, imports,
-  loops, arbitrary Python calls or access to host objects.
-- SQLite intent-before-dispatch journal. A pending or uncertain command is
-  queried on resume; it is never blindly dispatched again.
-- Task completion requires adapter verification of the **host-specified goal**.
-- Explicit Codex CLI / OpenAI Responses API generation transports, with no
-  automatic provider fallback; generated output is a syntax-checked draft.
-- Coffee, bagel and combined-order fixtures, including lost-receipt recovery.
-- A versioned [literature catalog and BibTeX](references/README.md).
+- **Core Governance (pure Python stdlib):**
+  - Frozen policy bundles (`PolicyBundle` / `ReleaseRegistry`) with source/config/SDK-contract/criteria SHA-256 hashes and version rollback.
+  - Restricted Python AST sandbox checker & interpreter: no `exec`, `eval`, imports, arbitrary Python calls, or leading-underscore access.
+  - SQLite intent-before-dispatch `Journal` with query-first reconciliation for non-idempotent actions (`start_coffee_machine`, `start_oven_heat`).
+  - Independent acceptance gating (`evaluate_acceptance`) strictly separated from policy generation.
+  - Four-layer failure attribution (`perception` / `control` / `device` / `policy`) preventing policy hacks from papering over host defects.
+- **Closed-Loop Evolution & SimEX-Parity Mechanisms:**
+  - **Active Physical Probing** (`src/craft/probing.py`): task-agnostic, budget-capped diagnostic probes strictly over public host SDKs (zero task-specific prompt hints).
+  - **Closed-Loop Simulator Calibration + Multi-Hypothesis Screening** (`src/craft/repair_screener.py`): bounded sandbox parameter alignment when initial replay yields `not_reproduced_in_sim`, followed by multi-hypothesis candidate screening against accumulated `RegressionSuite` capability banks.
+  - **Verified Executable Skill Toolbox** (`src/craft/skills.py`): AST-validated reusable helper snippets paired with `measured_limits`, `known_failure_modes`, `regression_case_ids`, and automatic invalidation on host SDK contract drift.
+  - **Commercial Operations Loop** (`src/craft/operations.py`): Day-Shift continuous execution → Nightly Evolution (`RepairScreener` → zero-actuation `recorded_data` shadow check → independent acceptance → release → verified skill).
+- **Host-Independent Drivers & Reproducible Benchmarks:**
+  - Built-in `fixture`, `http`, `recorded` drivers plus optional native MuJoCo (`mujoco_cafe` with 7-DOF Panda PBR, optional `--sensor-noise` & `--domain-randomization`), standalone HTTP sim host (`craft serve-sim-host`), and portable Gazebo Fortress exporter (`craft gazebo-export`).
+  - Benchmarks: `cafebench-v2`, `sim2sim-bench` (5-trial physics-mismatched Sim-to-Sim adaptation), `robosuite-bench` (zero-leakage 6-method parity including adapted `SimEX-Protocol`), and `combo-bench` (Coffee + Bagel/Oven shared-arm concurrent operations).
+  - Versioned [literature catalog and BibTeX](references/README.md) with honest reading-depth provenance.
 
 ## Policy example
 

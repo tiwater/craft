@@ -1,0 +1,155 @@
+Write only Python defining def run_policy(sdk, params).
+Implement the specific repair described in assigned_hypothesis to fix target_case without regressing any case in regression_cases_to_preserve.
+Use only allowed_host_methods on sdk. Never invent capabilities or scene coordinates.
+For non-idempotent methods (e.g. start_coffee_machine), never blindly reissue after an unknown receipt—always call sdk.query_command_status(command_id).
+Generated code is an unapproved draft subject to simulation screening and independent acceptance.
+Baseline policy source:
+```python
+def run_policy(sdk, params):
+    order_id = params["order_id"]
+    prefix = params["command_prefix"]
+
+    def escalate(reason):
+        sdk.retract_safe_pose(command_id=prefix + ":retract")
+        sdk.escalate_to_human_operator(
+            order_id, reason, command_id=prefix + ":escalate"
+        )
+        return {"status": "escalated_to_human", "reason": reason}
+
+    def ready(scene):
+        return scene.get("control_ready") is True
+
+    def pause(reason, candidates):
+        sdk.request_operator_confirmation(reason, candidates)
+        return {"status": "paused_for_operator"}
+
+    order = sdk.get_order(order_id)
+    if not order:
+        return escalate("Order not found")
+
+    target_slot = params.get("target_slot") or order["destination_slot"]
+    if order.get("special_request"):
+        return escalate("Order requires manual preparation")
+
+    if not target_slot:
+        return escalate("Missing pickup destination")
+
+    target_upper = target_slot.upper()
+    if "NOGO" in target_upper or "STEAM" in target_upper:
+        return escalate("Forbidden destination")
+
+    slot_prefix = "$SLOT_PICKUP_"
+    if not target_slot.startswith(slot_prefix):
+        return escalate("Invalid pickup destination")
+
+    slot_number = target_slot[len(slot_prefix):]
+    if not slot_number or any(
+        character not in "0123456789" for character in slot_number
+    ):
+        return escalate("Invalid pickup destination")
+    if int(slot_number) < 1:
+        return escalate("Invalid pickup destination")
+
+    scene = sdk.observe_scene()
+    if not ready(scene):
+        return {"status": "rejected_observation_not_ready"}
+
+    candidates = [
+        obj for obj in scene["objects"]
+        if obj["cup_type"] != "flexible_bag"
+        and obj["confidence"] >= scene["confidence_threshold"]
+    ]
+    confirmed_id = scene.get("operator_confirmed_cup_id")
+
+    if confirmed_id:
+        matches = [
+            obj for obj in candidates if obj["id"] == confirmed_id
+        ]
+        if len(matches) != 1:
+            return pause("Confirmed cup is not reliably visible", candidates)
+        cup = matches[0]
+    elif len(candidates) == 1:
+        cup = candidates[0]
+    else:
+        return pause("Cup identity is missing or ambiguous", candidates)
+
+    cup_id = cup["id"]
+    machine = scene["coffee_machine"]
+    if machine["status"] == "fault":
+        return escalate("Coffee machine fault")
+    if machine["status"] != "idle" or machine["cup_filled"]:
+        return escalate("Machine is not ready for a fresh single-cup brew")
+
+    if scene["l2_pouring_safety"].get("safe_to_pour") is not True:
+        return escalate("Pouring safety is violated")
+
+    start_id = prefix + ":start"
+    prior = sdk.query_command_status(start_id).get("receipt")
+    if prior != "unknown":
+        return escalate("Brew command already exists; refusing a duplicate brew")
+
+    placed = sdk.place_cup_under_machine(
+        cup_id, command_id=prefix + ":place"
+    )
+    if placed.get("receipt") != "done":
+        return escalate("Cup placement was rejected")
+
+    scene = sdk.observe_scene()
+    if not ready(scene):
+        sdk.retract_safe_pose(command_id=prefix + ":retract")
+        return {"status": "rejected_observation_not_ready"}
+
+    if scene["coffee_machine"]["status"] != "idle":
+        return escalate("Machine state changed before brewing")
+    if scene["coffee_machine"]["cup_filled"]:
+        return escalate("Unexpected filled cup before brewing")
+    if scene["l2_pouring_safety"].get("safe_to_pour") is not True:
+        return escalate("Pouring safety is violated after placement")
+
+    receipt = sdk.start_coffee_machine(
+        command_id=start_id
+    ).get("receipt")
+
+    if receipt == "unknown":
+        for attempt in range(3):
+            receipt = sdk.query_command_status(start_id).get("receipt")
+            if receipt != "unknown":
+                break
+
+    if receipt not in ("running", "done", "completed"):
+        return escalate("Brew receipt is rejected or unresolved")
+
+    waited = sdk.wait_for_coffee_ready(
+        command_id=prefix + ":wait"
+    )
+    if waited.get("receipt") != "done":
+        return escalate("Coffee readiness could not be confirmed")
+
+    scene = sdk.observe_scene()
+    if not ready(scene):
+        sdk.retract_safe_pose(command_id=prefix + ":retract")
+        return {"status": "rejected_observation_not_ready"}
+    if scene["coffee_machine"]["status"] not in ("idle", "completed"):
+        return escalate("Machine is not ready for cup retrieval")
+    if scene["coffee_machine"]["cup_filled"] is not True:
+        return escalate("Filled cup could not be confirmed")
+
+    delivered = sdk.retrieve_and_deliver_cup(
+        cup_id, target_slot, command_id=prefix + ":deliver"
+    )
+    if delivered.get("receipt") != "done":
+        return escalate("Cup delivery was rejected")
+
+    completed = sdk.complete_order_delivery(
+        order_id,
+        cup_id,
+        target_slot,
+        command_id=prefix + ":complete",
+    )
+    if completed.get("receipt") != "done":
+        return escalate("Delivery registration was rejected")
+
+    return {"status": "completed"}
+```
+Repair context (JSON):
+{"allowed_host_methods":["get_order","observe_scene","query_command_status","place_cup_under_machine","recenter_cup_under_spout","start_coffee_machine","wait_for_coffee_ready","retrieve_and_deliver_cup","complete_order_delivery","retract_safe_pose","escalate_to_human_operator"],"assigned_hypothesis":{"diagnosis":"Policy failed with attribution code 'escalated_to_human' on scenario 'Target Adapt-4: Store Shift (+28,-22mm) + Ceramic Mug + Slip'.","hypothesis_id":"hyp_targeted_patch","proposed_strategy":"Fix the failing control-flow branch while preserving all existing safety checks, L2 pouring guards, and non-idempotent command reconciliation.","target_layer":"policy","title":"Targeted policy branch fix"},"non_idempotent_methods":["start_coffee_machine"],"regression_cases_to_preserve":[{"attribution_code":"escalated_to_human","case_id":"reg_001_3b042a","label":"Target Adapt-1: Sensor Noise + DR + Unseen Slip (36,-12mm)","preset":"default"}],"replay_alignment":{"baseline_attribution":{"auto_repair_eligible":true,"code":"escalated_to_human","layer":"policy","recommended_owner":"craft_policy","summary":"Trial did not meet acceptance criteria (escalated_to_human)"},"baseline_detail":"MuJoCo host runtime finished with status=escalated_to_human","baseline_status":"escalated_to_human","reproduction_status":"reproduced_exact"},"target_case":{"attribution_code":"escalated_to_human","attribution_layer":"policy","case_id":"reg_002_3aeacb","label":"Target Adapt-4: Store Shift (+28,-22mm) + Ceramic Mug + Slip","scenario":{"category":"regression","cup_a_xy":null,"cup_b_xy":null,"expect_status":"completed","fault_inject_slip_xy_m":null,"label":"Target Adapt-4: Store Shift (+28,-22mm) + Ceramic Mug + Slip","max_delivery_error_mm":15.0,"order_id":"A043","preset":"default","scenario_id":"reg_002_3aeacb","simulate_timeout":false,"target_slot":"$SLOT_PICKUP_2"}},"task_name":"single_cup_coffee","verified_skill_hints":[]}

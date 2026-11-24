@@ -1,0 +1,53 @@
+{
+  "simex-door-v3": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Capability-bank screened policy for Door (0/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {},
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "simex-door-v3",
+    "task_name": "Door",
+    "title": "SimEX Door Toolbox Entry",
+    "verification_report_id": "simex-v3-Door",
+    "verified": false,
+    "verified_at_utc": "2026-11-24T04:03:13.330010+00:00"
+  },
+  "simex-nutassemblysquare-v3": {
+    "applicability_notes": "",
+    "code_sha256": "54817876ec5caad5e23a814e2690a0ebb301e8a0da304ca18f63931778aa45a6",
+    "code_snippet": "def wrap_angle(angle):\n    return atan2(sin(angle), cos(angle))\n\ndef square_yaw_error(angle):\n    return 0.25 * atan2(sin(4.0 * angle), cos(4.0 * angle))\n\ndef remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(400, state[\"max_steps\"]) - state[\"steps_used\"])",
+    "entry_functions": [
+      "wrap_angle",
+      "square_yaw_error",
+      "remaining_steps"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Capability-bank screened policy for NutAssemblySquare (0/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {},
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper",
+      "step_raw"
+    ],
+    "sdk_contract_sha256": "86ed9bc380f7af9300450d8f00b69fe069a16d741713fd4149f4d586e0eeeee5",
+    "skill_id": "simex-nutassemblysquare-v3",
+    "task_name": "NutAssemblySquare",
+    "title": "SimEX NutAssemblySquare Toolbox Entry",
+    "verification_report_id": "simex-v3-NutAssemblySquare",
+    "verified": false,
+    "verified_at_utc": "2026-11-24T04:29:32.554908+00:00"
+  }
+}

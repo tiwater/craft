@@ -53,6 +53,36 @@ def test_robosuite_ast_and_attribution() -> None:
     )
     assert a2["code"] == "latch_not_unlatched"
 
+    a3 = attribute_robosuite_failure(
+        {
+            "success": False,
+            "min_eef_to_obj_m": 0.01,
+            "obj_lift_delta_m": 0.14,
+            "ever_closed_gripper": True,
+            "min_obj_to_goal_m": 0.005,
+            "steps_used": 372,
+            "final_state": {
+                "goal_pos": [0.23, 0.10, 0.85],
+                "objects": {"nut": {"pos": [0.2305, 0.1002, 0.953]}},
+            },
+        },
+        "NutAssemblySquare",
+    )
+    assert a3["code"] == "insertion_too_high_or_step_exhausted"
+
+    a4 = attribute_robosuite_failure(
+        {
+            "success": False,
+            "min_eef_to_obj_m": 0.012,
+            "obj_lift_delta_m": 0.0,
+            "ever_closed_gripper": False,
+            "steps_used": 180,
+            "policy_return": "{'status': 'failed', 'reason': 'Could not establish a stable grasp'}",
+        },
+        "PickPlaceCan",
+    )
+    assert a4["code"] == "never_closed_gripper_early_abort"
+
 
 def test_robosuite_real_mujoco_lift_rollout_succeeds() -> None:
     rec = run_robosuite_rollout("Lift", seed=101, source=WORKING_LIFT_POLICY, horizon=260)
@@ -86,3 +116,25 @@ def test_robosuite_parity_benchmark_end_to_end(tmp_path: Path) -> None:
     assert (tmp_path / "rb_out" / "robosuite_prior_work_report.html").is_file()
     assert rep["summary_by_method"]["craft_full"]["passed"] == 2
     assert rep["summary_by_method"]["craft_full"]["eval_llm_calls"] == 0
+
+    # Verify resumable per-task checkpointing skips already-completed tasks with 0 extra LLM calls
+    calls_on_resume = {"n": 0}
+
+    def counting_llm(prompt: str) -> dict[str, Any]:
+        calls_on_resume["n"] += 1
+        return mock_llm(prompt)
+
+    rep2 = run_robosuite_parity_benchmark(
+        llm_fn=counting_llm,
+        output_dir=tmp_path / "rb_out",
+        tasks=("Lift",),
+        dev_seeds=(101,),
+        eval_seeds=(1, 2),
+        model="mock",
+        max_dev_llm_calls=2,
+        enable_capx_online_regen=False,
+        horizon=260,
+        resume=True,
+    )
+    assert calls_on_resume["n"] == 0
+    assert rep2["summary_by_method"]["craft_full"]["passed"] == 2

@@ -1,0 +1,92 @@
+{
+  "acceptance": {
+    "max_delivery_error_mm": 15.0,
+    "max_duplicate_non_idempotent": 0,
+    "max_human_interventions": 0,
+    "max_unknown_outcomes": 0,
+    "min_completion_rate": 1.0,
+    "min_heldout_trials": 4,
+    "slow_step_threshold_s": 36.0,
+    "target_wall_s": 60.0
+  },
+  "budget": {
+    "allow_live_actuation": false,
+    "allow_sim_reset": false,
+    "deployment_scope": "simulator",
+    "max_model_calls": 6,
+    "max_trials": 12,
+    "max_wall_s": 600.0
+  },
+  "capabilities": {
+    "expected_sdk_contract_sha256": null,
+    "non_idempotent_methods": [
+      "start_coffee_machine",
+      "start_oven_heat"
+    ],
+    "required_methods": [
+      "get_order",
+      "observe_scene",
+      "query_command_status",
+      "place_cup_under_machine",
+      "recenter_cup_under_spout",
+      "start_coffee_machine",
+      "wait_for_coffee_ready",
+      "retrieve_and_deliver_cup",
+      "open_oven_door",
+      "load_bagel",
+      "close_oven_door",
+      "start_oven_heat",
+      "query_oven_status",
+      "wait_for_oven_ready",
+      "unload_bagel",
+      "deliver_bagel",
+      "complete_order_delivery",
+      "retract_safe_pose",
+      "escalate_to_human_operator"
+    ]
+  },
+  "generation": {
+    "model": "",
+    "provider": "codex_cli",
+    "reasoning_effort": "medium",
+    "timeout_s": 180.0
+  },
+  "host": {
+    "cap_execute_path": "/cap/execute",
+    "cap_reset_path": "/cap/reset",
+    "cap_state_path": "/cap/state",
+    "edge_base_url": "http://127.0.0.1:8080",
+    "execute_timeout_s": 180.0,
+    "max_evidence_age_ms": 2000.0,
+    "scene_path": "/edge-scene",
+    "sim_base_url": "http://127.0.0.1:8090",
+    "timeout_s": 10.0
+  },
+  "metadata": {
+    "description": "Opt-in multi-appliance Coffee + Bagel/Oven simulation configuration with explicit host interlock contracts.",
+    "evidence_boundary": "Simulator contract only; physical oven deployment requires hardware thermal/door interlock verification."
+  },
+  "objects": [
+    {
+      "allow_ambiguous": false,
+      "min_confidence": 0.5,
+      "name": "coffee_cup",
+      "required_count": 1,
+      "semantic_classes": [
+        "dine_in_red",
+        "takeout_green"
+      ]
+    },
+    {
+      "allow_ambiguous": false,
+      "min_confidence": 0.5,
+      "name": "bagel",
+      "required_count": 1,
+      "semantic_classes": [
+        "plain_bagel"
+      ]
+    }
+  ],
+  "scene_id": "cafe-combo-coffee-bagel-sim",
+  "task_name": "combo_coffee_bagel"
+}

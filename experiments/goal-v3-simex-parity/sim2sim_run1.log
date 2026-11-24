@@ -1,0 +1,118 @@
+[Sim2Sim] Generating shared nominal sandbox baseline policy (it=0)...
+[Sim2Sim] Adapting method: zeroshot_sim2sim (max 5 target trials)...
+[Sim2Sim] Adapting method: direct_repair (max 5 target trials)...
+[Sim2Sim] Adapting method: simex_protocol (max 5 target trials)...
+[Sim2Sim] Adapting method: craft_full (max 5 target trials)...
+[Sim2Sim][EVAL] zeroshot_sim2sim -> 8/20 (40.0%) [target=4/16, shadow=4/4, dup=0]
+[Sim2Sim][EVAL] direct_repair    -> 16/20 (80.0%) [target=12/16, shadow=4/4, dup=0]
+[Sim2Sim][EVAL] simex_protocol   -> 8/20 (40.0%) [target=4/16, shadow=4/4, dup=0]
+[Sim2Sim][EVAL] craft_full       -> 8/20 (40.0%) [target=4/16, shadow=4/4, dup=0]
+{
+  "benchmark_version": "CRAFT-Sim2Sim-Stage2-v1.0",
+  "summary_by_method": {
+    "zeroshot_sim2sim": {
+      "method_id": "zeroshot_sim2sim",
+      "label": "Zero-Shot Sim2Sim",
+      "provenance": "baseline_control",
+      "passed": 8,
+      "total_trials": 20,
+      "pass_rate": 0.4,
+      "wilson_95_ci": [
+        0.2188,
+        0.6134
+      ],
+      "target_passed": 4,
+      "target_total": 16,
+      "shadow_passed": 4,
+      "shadow_total": 4,
+      "duplicate_non_idempotent": 0,
+      "false_actuations": 0,
+      "adapt_target_trials": 0,
+      "adapt_calibration_trials": 0,
+      "adapt_llm_calls": 0
+    },
+    "direct_repair": {
+      "method_id": "direct_repair",
+      "label": "Direct Target Repair",
+      "provenance": "ablation_direct_repair",
+      "passed": 16,
+      "total_trials": 20,
+      "pass_rate": 0.8,
+      "wilson_95_ci": [
+        0.584,
+        0.9193
+      ],
+      "target_passed": 12,
+      "target_total": 16,
+      "shadow_passed": 4,
+      "shadow_total": 4,
+      "duplicate_non_idempotent": 0,
+      "false_actuations": 0,
+      "adapt_target_trials": 5,
+      "adapt_calibration_trials": 0,
+      "adapt_llm_calls": 2
+    },
+    "simex_protocol": {
+      "method_id": "simex_protocol",
+      "label": "SimEX-Protocol (Adapted, Calibrated Sim + Screening)",
+      "provenance": "protocol_adapted_from_simex_2609_38982",
+      "passed": 8,
+      "total_trials": 20,
+      "pass_rate": 0.4,
+      "wilson_95_ci": [
+        0.2188,
+        0.6134
+      ],
+      "target_passed": 4,
+      "target_total": 16,
+      "shadow_passed": 4,
+      "shadow_total": 4,
+      "duplicate_non_idempotent": 0,
+      "false_actuations": 0,
+      "adapt_target_trials": 5,
+      "adapt_calibration_trials": 0,
+      "adapt_llm_calls": 8
+    },
+    "craft_full": {
+      "method_id": "craft_full",
+      "label": "CRAFT (Calibrated Sim + RepairScreener + Shadow + Journal)",
+      "provenance": "craft_proposed_system",
+      "passed": 8,
+      "total_trials": 20,
+      "pass_rate": 0.4,
+      "wilson_95_ci": [
+        0.2188,
+        0.6134
+      ],
+      "target_passed": 4,
+      "target_total": 16,
+      "shadow_passed": 4,
+      "shadow_total": 4,
+      "duplicate_non_idempotent": 0,
+      "false_actuations": 0,
+      "adapt_target_trials": 5,
+      "adapt_calibration_trials": 0,
+      "adapt_llm_calls": 8
+    }
+  },
+  "paired_mcnemar_craft_vs": {
+    "zeroshot_sim2sim": {
+      "n_a_only": 0,
+      "n_b_only": 0,
+      "discordant": 0,
+      "p_value": 1.0
+    },
+    "direct_repair": {
+      "n_a_only": 0,
+      "n_b_only": 8,
+      "discordant": 8,
+      "p_value": 0.007812
+    },
+    "simex_protocol": {
+      "n_a_only": 0,
+      "n_b_only": 0,
+      "discordant": 0,
+      "p_value": 1.0
+    }
+  }
+}

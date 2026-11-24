@@ -1,0 +1,569 @@
+{
+  "alignment": {
+    "alignment_method": "calibrated_sim_search",
+    "attribution_matched": true,
+    "baseline_attribution": {
+      "auto_repair_eligible": true,
+      "code": "escalated_to_human",
+      "layer": "policy",
+      "recommended_owner": "craft_policy",
+      "summary": "Trial did not meet acceptance criteria (escalated_to_human)"
+    },
+    "baseline_sha256": "cb6b9d3f91089f6222433c89f7d823c16c74b501e143d8de6c45cfe40fe817ed",
+    "baseline_trial": {
+      "command_id": "cal-reg_001_3b042a-1-1795492766708391574-att1",
+      "crashed_mid_brew": false,
+      "detail": "MuJoCo host runtime finished with status=escalated_to_human",
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "expect_status": "completed",
+      "fault_injection": true,
+      "host_runtime_status": "escalated_to_human",
+      "human_interventions": 1,
+      "methods": [
+        "get_order",
+        "observe_scene",
+        "place_cup_under_machine",
+        "observe_scene",
+        "retract_safe_pose",
+        "escalate_to_human_operator"
+      ],
+      "non_idempotent_counts": {
+        "start_coffee_machine": 0
+      },
+      "oracle_post_run": {
+        "cup_filled": false,
+        "cup_tilt_deg": 0.037,
+        "delivery_error_mm": 187.515
+      },
+      "queried_after_unknown": true,
+      "reconciled_after_unknown": true,
+      "sandbox_mode": "mujoco_ast_sandbox",
+      "simulator_engine": "mujoco",
+      "status": "failed",
+      "step_records": [
+        {
+          "details": {
+            "order": {
+              "cup_preference": "dine_in_red",
+              "destination_slot": "$SLOT_PICKUP_1",
+              "drink": "hot_americano",
+              "order_id": "A042",
+              "special_request": null,
+              "status": "pending"
+            },
+            "orderId": "A042"
+          },
+          "method": "get_order",
+          "receipt": "done",
+          "stepIndex": 0,
+          "timestampMs": 1795492766710
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.12173,
+            "safeToPour": false
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 1,
+          "timestampMs": 1795492766710
+        },
+        {
+          "details": {
+            "commandId": "cal-reg_001_3b042a-1-1795492766708391574-att1:place",
+            "cupId": "obj-cup-a"
+          },
+          "method": "place_cup_under_machine",
+          "receipt": "done",
+          "stepIndex": 2,
+          "timestampMs": 1795492766718
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.0334,
+            "safeToPour": false
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 3,
+          "timestampMs": 1795492766718
+        },
+        {
+          "details": {
+            "commandId": "cal-reg_001_3b042a-1-1795492766708391574-att1:retract"
+          },
+          "method": "retract_safe_pose",
+          "receipt": "done",
+          "stepIndex": 4,
+          "timestampMs": 1795492766719
+        },
+        {
+          "details": {
+            "commandId": "cal-reg_001_3b042a-1-1795492766708391574-att1:escalate",
+            "orderId": "A042",
+            "reason": "Pouring safety check failed"
+          },
+          "method": "escalate_to_human_operator",
+          "receipt": "escalated_to_human",
+          "stepIndex": 5,
+          "timestampMs": 1795492766719
+        }
+      ],
+      "task_passed": false,
+      "unknown_events_observed": 0,
+      "wall_s": 0.011
+    },
+    "calibrated_scenario": {
+      "category": "regression",
+      "cup_a_xy": null,
+      "cup_b_xy": null,
+      "expect_status": "completed",
+      "fault_inject_slip_xy_m": [
+        0.034,
+        -0.012
+      ],
+      "label": "Target Adapt-1: Sensor Noise + DR + Unseen Slip (36,-12mm)",
+      "max_delivery_error_mm": 15.0,
+      "order_id": "A042",
+      "preset": "default",
+      "scenario_id": "reg_001_3b042a",
+      "simulate_timeout": false,
+      "target_slot": "$SLOT_PICKUP_1"
+    },
+    "calibration_trials_used": 1,
+    "case_id": "reg_001_3b042a",
+    "checked_at_utc": "2026-11-24T03:59:26.719953+00:00",
+    "driver_name": "mujoco_cafe",
+    "evidence_source": "simulator",
+    "original_attribution_code": "escalated_to_human",
+    "original_attribution_layer": "policy",
+    "reproduced": true,
+    "reproduction_status": "reproduced_exact",
+    "sim_trust_notes": "Calibrated sandbox parameters ({\"fault_inject_slip_xy_m\": [0.034, -0.012]}) reproduced exact attribution 'escalated_to_human' (policy) on mujoco_cafe (simulator) after 1 calibration trial(s). Screening evidence is informative for pre-filtering only; independent acceptance remains mandatory."
+  },
+  "approved": false,
+  "baseline_sha256": "cb6b9d3f91089f6222433c89f7d823c16c74b501e143d8de6c45cfe40fe817ed",
+  "budget_used": {
+    "model_calls": 2,
+    "trials": 4
+  },
+  "candidates": [
+    {
+      "approved": false,
+      "candidate_id": "scr_01_hyp_targeted_patch",
+      "duplicate_non_idempotent": false,
+      "eligible_for_acceptance": true,
+      "evidence_source": "simulator",
+      "hypothesis_id": "hyp_targeted_patch",
+      "hypothesis_title": "Targeted policy branch fix",
+      "mean_wall_s": 0.033,
+      "regression_failed_ids": [],
+      "regression_passed": 0,
+      "regression_total": 0,
+      "rejection_reasons": [],
+      "screened_at_utc": "2026-11-24T03:59:59.320577+00:00",
+      "source_path": "candidates/scr_01_hyp_targeted_patch.py",
+      "source_sha256": "110fb480143bbcfed90d9339114be5d3772bcbe5937c47bf51a1107c43329251",
+      "syntax_valid": true,
+      "target_fixed": true,
+      "target_trial": {
+        "command_id": "scr-target-scr_01_hyp_targeted_patch-1795492799285427863-att1",
+        "crashed_mid_brew": false,
+        "detail": "MuJoCo host runtime finished with status=completed",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "expect_status": "completed",
+        "fault_injection": true,
+        "host_runtime_status": "completed",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "place_cup_under_machine",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "observe_scene",
+          "start_coffee_machine",
+          "wait_for_coffee_ready",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "complete_order_delivery"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "oracle_post_run": {
+          "cup_filled": true,
+          "cup_tilt_deg": 0.023,
+          "delivery_error_mm": 0.057
+        },
+        "queried_after_unknown": true,
+        "reconciled_after_unknown": true,
+        "sandbox_mode": "mujoco_ast_sandbox",
+        "simulator_engine": "mujoco",
+        "status": "completed",
+        "step_records": [
+          {
+            "details": {
+              "order": {
+                "cup_preference": "dine_in_red",
+                "destination_slot": "$SLOT_PICKUP_1",
+                "drink": "hot_americano",
+                "order_id": "A042",
+                "special_request": null,
+                "status": "pending"
+              },
+              "orderId": "A042"
+            },
+            "method": "get_order",
+            "receipt": "done",
+            "stepIndex": 0,
+            "timestampMs": 1795492799287
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "idle",
+              "objectCount": 2,
+              "radialOffsetM": 0.12173,
+              "safeToPour": false
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 1,
+            "timestampMs": 1795492799288
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_01_hyp_targeted_patch-1795492799285427863-att1:place",
+              "cupId": "obj-cup-a"
+            },
+            "method": "place_cup_under_machine",
+            "receipt": "done",
+            "stepIndex": 2,
+            "timestampMs": 1795492799296
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "idle",
+              "objectCount": 2,
+              "radialOffsetM": 0.0334,
+              "safeToPour": false
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 3,
+            "timestampMs": 1795492799297
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_01_hyp_targeted_patch-1795492799285427863-att1:recenter",
+              "cupId": "obj-cup-a"
+            },
+            "method": "recenter_cup_under_spout",
+            "receipt": "done",
+            "stepIndex": 4,
+            "timestampMs": 1795492799305
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "idle",
+              "objectCount": 2,
+              "radialOffsetM": 0.00405,
+              "safeToPour": true
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 5,
+            "timestampMs": 1795492799305
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_01_hyp_targeted_patch-1795492799285427863-att1:brew"
+            },
+            "method": "start_coffee_machine",
+            "receipt": "running",
+            "stepIndex": 6,
+            "timestampMs": 1795492799306
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_01_hyp_targeted_patch-1795492799285427863-att1:wait",
+              "cupFilled": true
+            },
+            "method": "wait_for_coffee_ready",
+            "receipt": "done",
+            "stepIndex": 7,
+            "timestampMs": 1795492799308
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "completed",
+              "objectCount": 2,
+              "radialOffsetM": 0.00411,
+              "safeToPour": true
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 8,
+            "timestampMs": 1795492799309
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_01_hyp_targeted_patch-1795492799285427863-att1:deliver",
+              "targetSlot": "$SLOT_PICKUP_1"
+            },
+            "method": "retrieve_and_deliver_cup",
+            "receipt": "done",
+            "stepIndex": 9,
+            "timestampMs": 1795492799318
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_01_hyp_targeted_patch-1795492799285427863-att1:complete",
+              "orderId": "A042"
+            },
+            "method": "complete_order_delivery",
+            "receipt": "done",
+            "stepIndex": 10,
+            "timestampMs": 1795492799319
+          }
+        ],
+        "task_passed": true,
+        "unknown_events_observed": 0,
+        "wall_s": 0.033
+      },
+      "unreconciled_unknown_ack": false,
+      "validation_error": ""
+    },
+    {
+      "approved": false,
+      "candidate_id": "scr_02_hyp_defensive_state_checks",
+      "duplicate_non_idempotent": false,
+      "eligible_for_acceptance": true,
+      "evidence_source": "simulator",
+      "hypothesis_id": "hyp_defensive_state_checks",
+      "hypothesis_title": "Defensive pre-action observation & fail-closed guards",
+      "mean_wall_s": 0.035,
+      "regression_failed_ids": [],
+      "regression_passed": 0,
+      "regression_total": 0,
+      "rejection_reasons": [],
+      "screened_at_utc": "2026-11-24T04:00:37.047922+00:00",
+      "source_path": "candidates/scr_02_hyp_defensive_state_checks.py",
+      "source_sha256": "0ba012aeec4772a2b399b71b71973d19c6b32fcb08e1257bc0752acac9dc5f51",
+      "syntax_valid": true,
+      "target_fixed": true,
+      "target_trial": {
+        "command_id": "scr-target-scr_02_hyp_defensive_state_checks-1795492837011288372-att1",
+        "crashed_mid_brew": false,
+        "detail": "MuJoCo host runtime finished with status=completed",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "expect_status": "completed",
+        "fault_injection": true,
+        "host_runtime_status": "completed",
+        "human_interventions": 0,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "place_cup_under_machine",
+          "observe_scene",
+          "recenter_cup_under_spout",
+          "observe_scene",
+          "start_coffee_machine",
+          "wait_for_coffee_ready",
+          "observe_scene",
+          "retrieve_and_deliver_cup",
+          "complete_order_delivery"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 1
+        },
+        "oracle_post_run": {
+          "cup_filled": true,
+          "cup_tilt_deg": 0.023,
+          "delivery_error_mm": 0.057
+        },
+        "queried_after_unknown": true,
+        "reconciled_after_unknown": true,
+        "sandbox_mode": "mujoco_ast_sandbox",
+        "simulator_engine": "mujoco",
+        "status": "completed",
+        "step_records": [
+          {
+            "details": {
+              "order": {
+                "cup_preference": "dine_in_red",
+                "destination_slot": "$SLOT_PICKUP_1",
+                "drink": "hot_americano",
+                "order_id": "A042",
+                "special_request": null,
+                "status": "pending"
+              },
+              "orderId": "A042"
+            },
+            "method": "get_order",
+            "receipt": "done",
+            "stepIndex": 0,
+            "timestampMs": 1795492837014
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "idle",
+              "objectCount": 2,
+              "radialOffsetM": 0.12173,
+              "safeToPour": false
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 1,
+            "timestampMs": 1795492837014
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_02_hyp_defensive_state_checks-1795492837011288372-att1:place",
+              "cupId": "obj-cup-a"
+            },
+            "method": "place_cup_under_machine",
+            "receipt": "done",
+            "stepIndex": 2,
+            "timestampMs": 1795492837022
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "idle",
+              "objectCount": 2,
+              "radialOffsetM": 0.0334,
+              "safeToPour": false
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 3,
+            "timestampMs": 1795492837023
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_02_hyp_defensive_state_checks-1795492837011288372-att1:recenter",
+              "cupId": "obj-cup-a"
+            },
+            "method": "recenter_cup_under_spout",
+            "receipt": "done",
+            "stepIndex": 4,
+            "timestampMs": 1795492837031
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "idle",
+              "objectCount": 2,
+              "radialOffsetM": 0.00405,
+              "safeToPour": true
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 5,
+            "timestampMs": 1795492837032
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_02_hyp_defensive_state_checks-1795492837011288372-att1:brew"
+            },
+            "method": "start_coffee_machine",
+            "receipt": "running",
+            "stepIndex": 6,
+            "timestampMs": 1795492837033
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_02_hyp_defensive_state_checks-1795492837011288372-att1:wait",
+              "cupFilled": true
+            },
+            "method": "wait_for_coffee_ready",
+            "receipt": "done",
+            "stepIndex": 7,
+            "timestampMs": 1795492837035
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "completed",
+              "objectCount": 2,
+              "radialOffsetM": 0.00411,
+              "safeToPour": true
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 8,
+            "timestampMs": 1795492837035
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_02_hyp_defensive_state_checks-1795492837011288372-att1:deliver",
+              "targetSlot": "$SLOT_PICKUP_1"
+            },
+            "method": "retrieve_and_deliver_cup",
+            "receipt": "done",
+            "stepIndex": 9,
+            "timestampMs": 1795492837045
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_02_hyp_defensive_state_checks-1795492837011288372-att1:complete",
+              "orderId": "A042"
+            },
+            "method": "complete_order_delivery",
+            "receipt": "done",
+            "stepIndex": 10,
+            "timestampMs": 1795492837046
+          }
+        ],
+        "task_passed": true,
+        "unknown_events_observed": 0,
+        "wall_s": 0.035
+      },
+      "unreconciled_unknown_ack": false,
+      "validation_error": ""
+    }
+  ],
+  "case_id": "reg_001_3b042a",
+  "config_sha256": "87d74e0960be247dc51127c3ec43965bbd0fe269b8296a89554178109e69d3f5",
+  "created_at_utc": "2026-11-24T03:59:26.689170+00:00",
+  "driver_name": "mujoco_cafe",
+  "evidence_source": "simulator",
+  "hypotheses": [
+    {
+      "diagnosis": "Policy failed with attribution code 'escalated_to_human' on scenario 'Target Adapt-1: Sensor Noise + DR + Unseen Slip (36,-12mm)'.",
+      "hypothesis_id": "hyp_targeted_patch",
+      "proposed_strategy": "Fix the failing control-flow branch while preserving all existing safety checks, L2 pouring guards, and non-idempotent command reconciliation.",
+      "target_layer": "policy",
+      "title": "Targeted policy branch fix"
+    },
+    {
+      "diagnosis": "Policy lacked defensive observation or receipt validation for 'escalated_to_human'.",
+      "hypothesis_id": "hyp_defensive_state_checks",
+      "proposed_strategy": "Check observe_scene() readiness, object ambiguity, L2 safety, and every action receipt explicitly, escalating cleanly whenever preconditions are not satisfied.",
+      "target_layer": "policy",
+      "title": "Defensive pre-action observation & fail-closed guards"
+    }
+  ],
+  "recommended_candidate_id": "scr_01_hyp_targeted_patch",
+  "recommended_source_sha256": "110fb480143bbcfed90d9339114be5d3772bcbe5937c47bf51a1107c43329251",
+  "requires_independent_acceptance": true,
+  "schema_version": 1,
+  "screening_id": "craft_full-t1-reg_001_3b042a",
+  "status": "completed_with_recommendation",
+  "updated_at_utc": "2026-11-24T04:00:37.048365+00:00"
+}

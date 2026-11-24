@@ -1,0 +1,312 @@
+{
+  "alignment": {
+    "alignment_method": "direct_replay",
+    "attribution_matched": true,
+    "baseline_attribution": {
+      "auto_repair_eligible": true,
+      "code": "escalated_to_human",
+      "layer": "policy",
+      "recommended_owner": "craft_policy",
+      "summary": "Trial did not meet acceptance criteria (escalated_to_human)"
+    },
+    "baseline_sha256": "e066bafd4f86692f81b3ed0de609295818bc8983a041b5d81999fa7996ed491a",
+    "baseline_trial": {
+      "command_id": "align-reg_002_3aeacb-1795492057149038884-att1",
+      "crashed_mid_brew": false,
+      "detail": "MuJoCo host runtime finished with status=escalated_to_human",
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "expect_status": "completed",
+      "fault_injection": false,
+      "host_runtime_status": "escalated_to_human",
+      "human_interventions": 1,
+      "methods": [
+        "get_order",
+        "observe_scene",
+        "retract_safe_pose",
+        "escalate_to_human_operator"
+      ],
+      "non_idempotent_counts": {
+        "start_coffee_machine": 0
+      },
+      "oracle_post_run": {
+        "cup_filled": false,
+        "cup_tilt_deg": 0.07,
+        "delivery_error_mm": 196.417
+      },
+      "queried_after_unknown": true,
+      "reconciled_after_unknown": true,
+      "sandbox_mode": "mujoco_ast_sandbox",
+      "simulator_engine": "mujoco",
+      "status": "failed",
+      "step_records": [
+        {
+          "details": {
+            "order": {
+              "cup_preference": "takeout_green",
+              "destination_slot": "$SLOT_PICKUP_2",
+              "drink": "takeout_americano",
+              "order_id": "A043",
+              "special_request": null,
+              "status": "pending"
+            },
+            "orderId": "A043"
+          },
+          "method": "get_order",
+          "receipt": "done",
+          "stepIndex": 0,
+          "timestampMs": 1795492057151
+        },
+        {
+          "details": {
+            "controlReady": true,
+            "machineStatus": "idle",
+            "objectCount": 2,
+            "radialOffsetM": 0.12173,
+            "safeToPour": false
+          },
+          "method": "observe_scene",
+          "receipt": "done",
+          "stepIndex": 1,
+          "timestampMs": 1795492057151
+        },
+        {
+          "details": {
+            "commandId": "align-reg_002_3aeacb-1795492057149038884-att1:retract"
+          },
+          "method": "retract_safe_pose",
+          "receipt": "done",
+          "stepIndex": 2,
+          "timestampMs": 1795492057152
+        },
+        {
+          "details": {
+            "commandId": "align-reg_002_3aeacb-1795492057149038884-att1:escalate",
+            "orderId": "A043",
+            "reason": "Pouring safety is violated"
+          },
+          "method": "escalate_to_human_operator",
+          "receipt": "escalated_to_human",
+          "stepIndex": 3,
+          "timestampMs": 1795492057152
+        }
+      ],
+      "task_passed": false,
+      "unknown_events_observed": 0,
+      "wall_s": 0.002
+    },
+    "calibrated_scenario": {},
+    "calibration_trials_used": 0,
+    "case_id": "reg_002_3aeacb",
+    "checked_at_utc": "2026-11-24T03:47:37.152556+00:00",
+    "driver_name": "mujoco_cafe",
+    "evidence_source": "simulator",
+    "original_attribution_code": "escalated_to_human",
+    "original_attribution_layer": "policy",
+    "reproduced": true,
+    "reproduction_status": "reproduced_exact",
+    "sim_trust_notes": "Reproduced exact attribution 'escalated_to_human' (policy) on mujoco_cafe (simulator). Screening evidence is informative for pre-filtering, but still requires independent acceptance."
+  },
+  "approved": false,
+  "baseline_sha256": "e066bafd4f86692f81b3ed0de609295818bc8983a041b5d81999fa7996ed491a",
+  "budget_used": {
+    "model_calls": 2,
+    "trials": 5
+  },
+  "candidates": [
+    {
+      "approved": false,
+      "candidate_id": "scr_01_hyp_targeted_patch",
+      "duplicate_non_idempotent": false,
+      "eligible_for_acceptance": false,
+      "evidence_source": "simulator",
+      "hypothesis_id": "hyp_targeted_patch",
+      "hypothesis_title": "Targeted policy branch fix",
+      "mean_wall_s": 0.003,
+      "regression_failed_ids": [
+        "reg_001_3b042a"
+      ],
+      "regression_passed": 0,
+      "regression_total": 1,
+      "rejection_reasons": [
+        "target_failure_not_fixed",
+        "regression_failed"
+      ],
+      "screened_at_utc": "2026-11-24T03:48:13.286696+00:00",
+      "source_path": "candidates/scr_01_hyp_targeted_patch.py",
+      "source_sha256": "3747c86002178caa8d2128918d15e4d03cbc40a5922c85c76106eb0a7ea85083",
+      "syntax_valid": true,
+      "target_fixed": false,
+      "target_trial": {
+        "command_id": "scr-target-scr_01_hyp_targeted_patch-1795492093278331861-att1",
+        "crashed_mid_brew": false,
+        "detail": "MuJoCo host runtime finished with status=escalated_to_human",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "expect_status": "completed",
+        "fault_injection": false,
+        "host_runtime_status": "escalated_to_human",
+        "human_interventions": 1,
+        "methods": [
+          "get_order",
+          "observe_scene",
+          "retract_safe_pose",
+          "escalate_to_human_operator"
+        ],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 0
+        },
+        "oracle_post_run": {
+          "cup_filled": false,
+          "cup_tilt_deg": 0.07,
+          "delivery_error_mm": 196.417
+        },
+        "queried_after_unknown": true,
+        "reconciled_after_unknown": true,
+        "sandbox_mode": "mujoco_ast_sandbox",
+        "simulator_engine": "mujoco",
+        "status": "failed",
+        "step_records": [
+          {
+            "details": {
+              "order": {
+                "cup_preference": "takeout_green",
+                "destination_slot": "$SLOT_PICKUP_2",
+                "drink": "takeout_americano",
+                "order_id": "A043",
+                "special_request": null,
+                "status": "pending"
+              },
+              "orderId": "A043"
+            },
+            "method": "get_order",
+            "receipt": "done",
+            "stepIndex": 0,
+            "timestampMs": 1795492093281
+          },
+          {
+            "details": {
+              "controlReady": true,
+              "machineStatus": "idle",
+              "objectCount": 2,
+              "radialOffsetM": 0.12173,
+              "safeToPour": false
+            },
+            "method": "observe_scene",
+            "receipt": "done",
+            "stepIndex": 1,
+            "timestampMs": 1795492093281
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_01_hyp_targeted_patch-1795492093278331861-att1:retract"
+            },
+            "method": "retract_safe_pose",
+            "receipt": "done",
+            "stepIndex": 2,
+            "timestampMs": 1795492093282
+          },
+          {
+            "details": {
+              "commandId": "scr-target-scr_01_hyp_targeted_patch-1795492093278331861-att1:escalate",
+              "orderId": "A043",
+              "reason": "Pouring safety is violated"
+            },
+            "method": "escalate_to_human_operator",
+            "receipt": "escalated_to_human",
+            "stepIndex": 3,
+            "timestampMs": 1795492093282
+          }
+        ],
+        "task_passed": false,
+        "unknown_events_observed": 0,
+        "wall_s": 0.003
+      },
+      "unreconciled_unknown_ack": false,
+      "validation_error": ""
+    },
+    {
+      "approved": false,
+      "candidate_id": "scr_02_hyp_defensive_state_checks",
+      "duplicate_non_idempotent": false,
+      "eligible_for_acceptance": false,
+      "evidence_source": "simulator",
+      "hypothesis_id": "hyp_defensive_state_checks",
+      "hypothesis_title": "Defensive pre-action observation & fail-closed guards",
+      "mean_wall_s": 0.0015,
+      "regression_failed_ids": [
+        "reg_001_3b042a"
+      ],
+      "regression_passed": 0,
+      "regression_total": 1,
+      "rejection_reasons": [
+        "target_failure_not_fixed",
+        "regression_failed"
+      ],
+      "screened_at_utc": "2026-11-24T03:48:55.417778+00:00",
+      "source_path": "candidates/scr_02_hyp_defensive_state_checks.py",
+      "source_sha256": "d5d88600eeff55ad5ffc754d879de5b5c0327706ebce73554dee3eee05c4fa16",
+      "syntax_valid": true,
+      "target_fixed": false,
+      "target_trial": {
+        "command_id": "scr-target-scr_02_hyp_defensive_state_checks-1795492135411750628-att1",
+        "crashed_mid_brew": false,
+        "detail": "Host AST sandbox rejected policy: Line 8: identifier `_` starts with `_`",
+        "duplicate_non_idempotent": false,
+        "evidence_source": "simulator",
+        "expect_status": "completed",
+        "fault_injection": false,
+        "host_runtime_status": "rejected",
+        "human_interventions": 0,
+        "methods": [],
+        "non_idempotent_counts": {
+          "start_coffee_machine": 0
+        },
+        "oracle_post_run": {
+          "cup_filled": false,
+          "cup_tilt_deg": 0.089,
+          "delivery_error_mm": 196.473
+        },
+        "queried_after_unknown": true,
+        "reconciled_after_unknown": true,
+        "sandbox_mode": "mujoco_ast_sandbox",
+        "simulator_engine": "mujoco",
+        "status": "failed",
+        "step_records": [],
+        "task_passed": false,
+        "unknown_events_observed": 0,
+        "wall_s": 0.002
+      },
+      "unreconciled_unknown_ack": false,
+      "validation_error": ""
+    }
+  ],
+  "case_id": "reg_002_3aeacb",
+  "config_sha256": "87d74e0960be247dc51127c3ec43965bbd0fe269b8296a89554178109e69d3f5",
+  "created_at_utc": "2026-11-24T03:47:37.148952+00:00",
+  "driver_name": "mujoco_cafe",
+  "evidence_source": "simulator",
+  "hypotheses": [
+    {
+      "diagnosis": "Policy failed with attribution code 'escalated_to_human' on scenario 'Target Adapt-4: Store Shift (+28,-22mm) + Ceramic Mug + Slip'.",
+      "hypothesis_id": "hyp_targeted_patch",
+      "proposed_strategy": "Fix the failing control-flow branch while preserving all existing safety checks, L2 pouring guards, and non-idempotent command reconciliation.",
+      "target_layer": "policy",
+      "title": "Targeted policy branch fix"
+    },
+    {
+      "diagnosis": "Policy lacked defensive observation or receipt validation for 'escalated_to_human'.",
+      "hypothesis_id": "hyp_defensive_state_checks",
+      "proposed_strategy": "Check observe_scene() readiness, object ambiguity, L2 safety, and every action receipt explicitly, escalating cleanly whenever preconditions are not satisfied.",
+      "target_layer": "policy",
+      "title": "Defensive pre-action observation & fail-closed guards"
+    }
+  ],
+  "recommended_candidate_id": null,
+  "recommended_source_sha256": null,
+  "requires_independent_acceptance": true,
+  "schema_version": 1,
+  "screening_id": "simex_protocol-t4-reg_002_3aeacb",
+  "status": "completed_no_eligible_candidate",
+  "updated_at_utc": "2026-11-24T03:48:55.418081+00:00"
+}

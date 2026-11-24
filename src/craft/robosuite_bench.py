@@ -42,9 +42,16 @@ from .prior_work_bench import (
     make_live_llm_fn,
     mcnemar_exact_p,
 )
+from .probing import (
+    ProbeReport,
+    build_articulated_sweep_probe_source,
+    build_grasp_offset_scan_probe_source,
+    parse_probe_telemetry,
+)
+from .skills import SkillExperience, SkillExperienceStore, validate_skill_code_snippet
 
 
-ROBOSUITE_BENCH_VERSION = "CRAFT-Robosuite-Parity-v1.0"
+ROBOSUITE_BENCH_VERSION = "CRAFT-Robosuite-Parity-v3.0"
 DEFAULT_ROBOSUITE_TASKS: tuple[str, ...] = ("Lift", "PickPlaceCan", "NutAssemblySquare", "Door")
 DEFAULT_DEV_SEEDS: tuple[int, ...] = (101, 102, 103, 104, 105)
 DEFAULT_EVAL_SEEDS: tuple[int, ...] = tuple(range(1, 21))
@@ -76,28 +83,20 @@ def _wrap_angle(rad: float) -> float:
 
 ROBOSUITE_TASK_DESCRIPTIONS: dict[str, str] = {
     "Lift": (
-        "Task: Robosuite `Lift` (Panda 7-DoF arm). Grasp the red cube (`state['objects']['cube']['pos']`, "
-        "approx 4cm cube) and lift it vertically at least 6cm above the table (`z >= cube_z + 0.08`)."
+        "Task: Robosuite `Lift` (Panda 7-DoF arm). Grasp the cube (`state['objects']['cube']`) "
+        "and lift it clearly above the table using live observations from `sdk.get_state()`."
     ),
     "PickPlaceCan": (
-        "Task: Robosuite `PickPlaceCan` (Panda 7-DoF arm). Grasp the cylindrical red soda can "
-        "(`state['objects']['can']['pos']`, approx 10cm tall) from the source bin, lift cleanly over "
-        "the bin divider (`z >= 1.04`), move above `state['goal_pos']`, lower inside the target bin, and release."
+        "Task: Robosuite `PickPlaceCan` (Panda 7-DoF arm). Grasp the soda can (`state['objects']['can']`), "
+        "transport it cleanly into the target bin at `state['goal_pos']`, and release it."
     ),
     "NutAssemblySquare": (
         "Task: Robosuite `NutAssemblySquare` (Panda 7-DoF arm). Grasp the square nut (`state['objects']['nut']`) "
-        "by its protruding handle (NOTE: the square nut center `pos` is the HOLE center; the handle extends "
-        "~0.055m along the nut's local axis determined by `yaw`, so grasping the center hole misses the solid rim! "
-        "Use `cos(yaw), sin(yaw)` to compute the handle grasp offset from `pos`, verify grasp width/lift, "
-        "align the nut hole directly above `state['goal_pos']` — the square peg — adjusting for the handle-to-hole "
-        "offset and matching peg yaw, lower straight down onto the peg, and release)."
+        "and insert its center hole cleanly onto the square peg at `state['goal_pos']` using live poses and yaw from `sdk.get_state()`."
     ),
     "Door": (
-        "Task: Robosuite `Door` (Panda 7-DoF arm). Open the latched door (`state['objects']['handle']['pos']`, "
-        "`state['objects']['door']['pos']`, `state['handle_qpos']`, `state['hinge_qpos']`). "
-        "To open the door, the latch handle must be rotated/pushed downward to unlatch (`handle_qpos` increases) "
-        "while pulling the door open (`hinge_qpos > 0.30`). Approach the handle from the front (`-y` side), "
-        "hook or grasp the handle, press downward (`-z`) while pulling backward (`-y` / `-x` along the door swing arc)."
+        "Task: Robosuite `Door` (Panda 7-DoF arm). Unlatch and open the hinged door (`state['objects']['handle']`, "
+        "`state['objects']['door']`, `state['handle_qpos']`, `state['hinge_qpos']`) until `hinge_qpos > 0.30`."
     ),
 }
 
@@ -438,7 +437,11 @@ class RobosuitePolicySDK:
 # ---------------------------------------------------------------------------
 
 def attribute_robosuite_failure(rollout: Mapping[str, Any], task_name: str) -> dict[str, str]:
-    """Classify a failed Robosuite rollout into a structured 4-layer causal diagnosis."""
+    """Classify a failed Robosuite rollout into a structured, zero-leakage 4-layer causal diagnosis.
+
+    Strictly factual and telemetry-driven: never injects hardcoded task-specific physics
+    constants (e.g. latch angles, handle offsets, or exact seat heights) into prescriptions.
+    """
     if rollout.get("success"):
         return {"layer": "none", "code": "passed", "summary": "Rollout succeeded", "prescription": "None"}
     err = str(rollout.get("error") or "")
@@ -447,7 +450,7 @@ def attribute_robosuite_failure(rollout: Mapping[str, Any], task_name: str) -> d
             "layer": "policy",
             "code": "sandbox_or_runtime_exception",
             "summary": f"Policy raised exception or failed AST sandbox: {err}",
-            "prescription": "Fix AST/syntax/runtime error without using forbidden constructs.",
+            "prescription": "Fix AST/syntax/runtime error using only allowed sandbox constructs.",
         }
 
     min_eef_obj = float(rollout.get("min_eef_to_obj_m", 9.99))
@@ -455,29 +458,42 @@ def attribute_robosuite_failure(rollout: Mapping[str, Any], task_name: str) -> d
     min_obj_goal = float(rollout.get("min_obj_to_goal_m", 9.99))
     ever_closed = bool(rollout.get("ever_closed_gripper", False))
     closed_w_max = float(rollout.get("closed_gripper_width_max", 0.0))
+    fs = rollout.get("final_state") or {}
+    has_articulated = (
+        task_name == "Door"
+        or fs.get("handle_qpos") is not None
+        or fs.get("hinge_qpos") is not None
+        or ("handle" in (fs.get("objects") or {}))
+    )
 
-    if task_name == "Door":
+    if has_articulated:
         max_handle = float(rollout.get("max_handle_qpos", 0.0))
         max_hinge = float(rollout.get("max_hinge_qpos", 0.0))
         if min_eef_obj > 0.08:
             return {
                 "layer": "control",
                 "code": "handle_approach_missed",
-                "summary": f"EEF never approached door handle closely (min_dist={min_eef_obj:.3f}m).",
-                "prescription": "Approach handle_pos cleanly from front (-y offset ~0.06m) before engaging handle.",
+                "summary": f"EEF did not closely approach articulated handle (min_dist={min_eef_obj:.3f}m).",
+                "prescription": "Verify approach direction and trajectory from live EEF and handle coordinates before contact.",
             }
-        if max_handle < 0.15:
+        if max_hinge < 0.05:
             return {
                 "layer": "control",
                 "code": "latch_not_unlatched",
-                "summary": f"Reached handle (min_dist={min_eef_obj:.3f}m) but handle_qpos stayed {max_handle:.3f} (latch stayed locked).",
-                "prescription": "Engage the door handle and push firmly downward (-z) to rotate the latch (increase handle_qpos) BEFORE pulling backward.",
+                "summary": (
+                    f"Reached handle vicinity (min_dist={min_eef_obj:.3f}m) and actuated handle to "
+                    f"max_handle_qpos={max_handle:.3f} rad, but hinge barely moved (max_hinge_qpos={max_hinge:.3f} rad)."
+                ),
+                "prescription": (
+                    "Hinge remained near zero despite contact; use observed telemetry or active-probe measurements "
+                    "to check whether deeper handle actuation or a different pull vector is required to release the mechanism."
+                ),
             }
         return {
             "layer": "control",
             "code": "door_pull_arc_incomplete",
-            "summary": f"Unlatched handle (max_handle_qpos={max_handle:.3f}) but hinge opened only to {max_hinge:.3f} rad.",
-            "prescription": "After pressing handle down to unlatch, pull smoothly backward (-y and slightly -x) to swing hinge past 0.35 rad.",
+            "summary": f"Hinge began moving (max_handle_qpos={max_handle:.3f} rad, max_hinge_qpos={max_hinge:.3f} rad) but did not reach target threshold.",
+            "prescription": "Maintain contact and continue tracking the live handle trajectory through the full motion arc within the step budget.",
         }
 
     if min_eef_obj > 0.08:
@@ -485,18 +501,32 @@ def attribute_robosuite_failure(rollout: Mapping[str, Any], task_name: str) -> d
             "layer": "control",
             "code": "approach_missed_object",
             "summary": f"EEF never reached target object (min_eef_to_obj={min_eef_obj:.3f}m).",
-            "prescription": "Read live object pos from sdk.get_state(), approach directly above, and descend accurately to grasp height.",
+            "prescription": "Read live object coordinates from sdk.get_state(), approach safely, and verify reachability.",
         }
-    if (not ever_closed) or lift_delta < 0.04:
+    if not ever_closed:
+        return {
+            "layer": "policy",
+            "code": "never_closed_gripper_early_abort",
+            "summary": (
+                f"Reached object vicinity (min_dist={min_eef_obj:.3f}m) but NEVER called set_gripper('close') "
+                f"(policy_return={rollout.get('policy_return', '')!r}, steps_used={rollout.get('steps_used', 0)}/400)."
+            ),
+            "prescription": (
+                "An overly strict pre-grasp convergence guard aborted before closing the gripper. "
+                "Relax intermediate waypoint checks so gripper closing executes once positioned near the target."
+            ),
+        }
+    if lift_delta < 0.04:
         return {
             "layer": "control",
             "code": "grasp_missed_or_slip",
-            "summary": f"Reached object vicinity (min_dist={min_eef_obj:.3f}m) but failed to lift (lift_delta={lift_delta:.3f}m, closed_width={closed_w_max:.4f}m).",
+            "summary": (
+                f"Reached object vicinity (min_dist={min_eef_obj:.3f}m) and closed gripper "
+                f"(closed_width={closed_w_max:.4f}m), but object did not lift (lift_delta={lift_delta:.3f}m)."
+            ),
             "prescription": (
-                "Compute exact grasp point (for NutAssemblySquare, grasp the HANDLE offset ~0.055m from nut hole center using cos(yaw)/sin(yaw), "
-                "orient gripper perpendicular to handle, descend to exact object z, close gripper for >=18 steps, then verify lift)."
-                if task_name == "NutAssemblySquare"
-                else "Ensure gripper is fully open before descending to exact object center z, close gripper for >=18 steps, and lift vertically."
+                "Inspect closed gripper width, object geometry/yaw, and any empirical grasp-offset probe findings "
+                "to ensure the fingers engage a graspable feature before lifting."
             ),
         }
     if min_obj_goal > 0.06:
@@ -505,17 +535,39 @@ def attribute_robosuite_failure(rollout: Mapping[str, Any], task_name: str) -> d
             "code": "transport_or_goal_alignment_error",
             "summary": f"Object lifted (lift_delta={lift_delta:.3f}m) but did not align above goal (min_obj_to_goal={min_obj_goal:.3f}m).",
             "prescription": (
-                "Lift high enough to clear obstacles/peg (z >= 1.05), transport the NUT HOLE (compensating for the handle grasp offset!) "
-                "directly above goal_pos, lower vertically onto peg, then open gripper."
-                if task_name == "NutAssemblySquare"
-                else "Lift over bin divider (z >= 1.06), move directly over goal_pos, descend gently, and open gripper."
+                "Lift clear of workspace obstacles, compensate for any grasp-point-to-object-center offset when "
+                "centering the object over live goal_pos, and verify alignment before lowering."
             ),
         }
+    goal = fs.get("goal_pos")
+    objs = fs.get("objects") or {}
+    p_obj = next((v for k, v in sorted(objs.items()) if k != "door"), {})
+    p_pos = p_obj.get("pos") if isinstance(p_obj, Mapping) else None
+    steps_used = int(rollout.get("steps_used", 0))
+    if goal is not None and p_pos is not None:
+        final_xy = math.hypot(float(p_pos[0]) - float(goal[0]), float(p_pos[1]) - float(goal[1]))
+        final_dz = float(p_pos[2]) - float(goal[2])
+        if final_xy < 0.030 and final_dz > 0.045:
+            return {
+                "layer": "control",
+                "code": "insertion_too_high_or_step_exhausted",
+                "summary": (
+                    f"Object reached close XY alignment over goal (final_xy={final_xy:.4f}m, min_xy={min_obj_goal:.4f}m) "
+                    f"but remained dz=+{final_dz:.3f}m above goal_pos[2] (steps_used={steps_used}/400)."
+                ),
+                "prescription": (
+                    "Preserve the working grasp and XY alignment; tighten step efficiency in earlier phases and "
+                    "complete smooth vertical descent with orientation alignment before releasing."
+                ),
+            }
     return {
         "layer": "control",
         "code": "insertion_or_release_precision_error",
-        "summary": f"Object reached goal vicinity (min_obj_to_goal={min_obj_goal:.3f}m) and lifted ({lift_delta:.3f}m), but final placement/insertion did not satisfy task success.",
-        "prescription": "Align yaw and xy tightly (tol<=0.008m) above goal_pos, descend slowly straight down before releasing gripper, and verify final state.",
+        "summary": (
+            f"Object lifted ({lift_delta:.3f}m) and reached goal vicinity (min_obj_to_goal={min_obj_goal:.3f}m), "
+            f"but final placement/release did not satisfy success (steps_used={steps_used}/400)."
+        ),
+        "prescription": "Preserve working grasp, refine final XY/yaw alignment and vertical seating onto goal_pos before opening the gripper.",
     }
 
 
@@ -542,20 +594,87 @@ def _make_robosuite_env(task_name: str, seed: int, *, horizon: int = 400) -> Any
     return env, obs
 
 
-def _execute_source_on_sdk(source: str, sdk: RobosuitePolicySDK) -> tuple[bool, str]:
+def _execute_source_with_raw_return(source: str, sdk: RobosuitePolicySDK) -> tuple[bool, str, str, Any]:
     chk = check_robosuite_ast_compliance(source)
     if not chk["compliant"]:
-        return False, "AST sandbox rejected: " + "; ".join(chk["issues"][:3])
+        return False, "AST sandbox rejected: " + "; ".join(chk["issues"][:3]), "", None
     ns = dict(_ROBO_SAFE_GLOBALS)
     try:
         exec(compile(source, "<craft-robosuite-policy>", "exec"), ns, ns)  # noqa: S102
         fn = ns.get("run_policy")
         if not callable(fn):
-            return False, "Missing callable run_policy(sdk)"
-        fn(sdk)
-        return True, ""
+            return False, "Missing callable run_policy(sdk)", "", None
+        ret = fn(sdk)
+        return True, "", (repr(ret)[:180] if ret is not None else ""), ret
     except Exception as exc:  # noqa: BLE001
-        return False, f"{type(exc).__name__}: {exc}"
+        return False, f"{type(exc).__name__}: {exc}", "", None
+
+
+def _execute_source_on_sdk(source: str, sdk: RobosuitePolicySDK) -> tuple[bool, str, str]:
+    ok, err, rep, _raw = _execute_source_with_raw_return(source, sdk)
+    return ok, err, rep
+
+
+def run_robosuite_active_probe(
+    task_name: str,
+    seed: int,
+    dev_runs: Sequence[Mapping[str, Any]],
+    *,
+    horizon: int = 400,
+) -> ProbeReport | None:
+    """Execute 1 task-agnostic public-SDK diagnostic probe when development is stuck (0 dev passes).
+
+    Decides probe family strictly from observed public state schema (``handle`` presence vs
+    object-grasp failure), never from hardcoded task names or physics constants.
+    """
+    if any(r.get("success") for r in dev_runs):
+        return None
+    sample_fs = (dev_runs[0].get("final_state") or {}) if dev_runs else {}
+    objs = sample_fs.get("objects") or {}
+    codes = {str((r.get("attribution") or {}).get("code", "")) for r in dev_runs}
+
+    if "handle" in objs or sample_fs.get("handle_qpos") is not None:
+        probe_src = build_articulated_sweep_probe_source()
+    elif "grasp_missed_or_slip" in codes or "approach_missed_object" in codes:
+        probe_src = build_grasp_offset_scan_probe_source()
+    else:
+        return None
+
+    t0 = time.monotonic()
+    env, obs = _make_robosuite_env(task_name, seed, horizon=horizon)
+    try:
+        sdk = RobosuitePolicySDK(env, task_name, max_steps=horizon)
+        sdk.bind_initial_obs(obs)
+        ok, _err, _rep, raw = _execute_source_with_raw_return(probe_src, sdk)
+        wall_s = time.monotonic() - t0
+        if not ok or not isinstance(raw, Mapping):
+            return None
+        return parse_probe_telemetry(
+            task_name,
+            [raw],
+            evidence_source="simulator",
+            sim_resets_used=1,
+            wall_s=wall_s,
+        )
+    finally:
+        env.close()
+
+
+def _extract_verified_helper_snippet(policy_source: str) -> str:
+    """Extract AST-safe non-`run_policy` helper functions from a verified policy for cross-task Skill Toolbox reuse."""
+    try:
+        tree = ast.parse(policy_source)
+    except SyntaxError:
+        return ""
+    lines = policy_source.splitlines()
+    blocks: list[str] = []
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name != "run_policy" and not node.name.startswith("_"):
+            if node.lineno is not None and node.end_lineno is not None:
+                chunk = "\n".join(lines[node.lineno - 1 : node.end_lineno])
+                if validate_skill_code_snippet(chunk)["valid"]:
+                    blocks.append(chunk)
+    return "\n\n".join(blocks[:3])
 
 
 def run_robosuite_rollout(
@@ -572,7 +691,7 @@ def run_robosuite_rollout(
     try:
         sdk = RobosuitePolicySDK(env, task_name, max_steps=horizon)
         sdk.bind_initial_obs(obs)
-        ok_exec, err_msg = _execute_source_on_sdk(source, sdk)
+        ok_exec, err_msg, policy_ret = _execute_source_on_sdk(source, sdk)
         turn1_success = bool(env._check_success())
         eval_llm_calls = 0
         eval_llm_wall_s = 0.0
@@ -594,7 +713,9 @@ def run_robosuite_rollout(
             eval_llm_wall_s = float(regen.get("wall_s", 0.0))
             repaired = str(regen.get("source", ""))
             if repaired:
-                ok_exec2, err_msg2 = _execute_source_on_sdk(repaired, sdk)
+                ok_exec2, err_msg2, policy_ret2 = _execute_source_on_sdk(repaired, sdk)
+                if policy_ret2:
+                    policy_ret = policy_ret2
                 if not ok_exec2:
                     err_msg = err_msg2
 
@@ -611,6 +732,7 @@ def run_robosuite_rollout(
             "turn1_success": turn1_success,
             "program_ok": ok_exec,
             "error": err_msg,
+            "policy_return": policy_ret,
             "steps_used": sdk._steps_used,
             "wall_s": wall_s,
             "eval_llm_calls": eval_llm_calls,
@@ -718,6 +840,180 @@ def _robo_capx_prompt(
     )
 
 
+def _robo_simex_direct_prompt(task_name: str, prev_src: str, failed_run: Mapping[str, Any], it: int) -> str:
+    return "\n".join(
+        [
+            f"Direct Failure Repair for `{task_name}` (iteration {it}, single-rollout feedback without hypothesis screening):",
+            "Edit the policy below to resolve the observed rollout failure.",
+            "",
+            ROBOSUITE_TASK_DESCRIPTIONS[task_name],
+            "",
+            SHARED_ROBOSUITE_SDK_CONTRACT,
+            "",
+            "Previous Policy:",
+            "```python",
+            prev_src,
+            "```",
+            "",
+            f"Failed Rollout: seed={failed_run.get('seed')} steps={failed_run.get('steps_used')} err={failed_run.get('error')!r} "
+            f"final_eef={failed_run.get('final_state', {}).get('eef_pos')} "
+            f"handle_qpos={failed_run.get('max_handle_qpos')} hinge_qpos={failed_run.get('max_hinge_qpos')}",
+            "",
+            "Return ONLY the revised Python code defining `run_policy(sdk)`.",
+        ]
+    )
+
+
+def _robo_simex_protocol_prompt(
+    task_name: str,
+    prev_src: str,
+    dev_runs: Sequence[Mapping[str, Any]],
+    passed_ever: set[int],
+    hypothesis_slot: int,
+    toolbox_notes: Sequence[str],
+    it: int,
+) -> str:
+    """Matched-budget SimEX-Protocol (Adapted) prompt: multi-hypothesis repair + capability bank + paired toolbox."""
+    hyp_angles = (
+        "Hypothesis A (Primary Physical Mechanics): Re-examine object/mechanism contact geometry, grasp point, or actuation depth from the failed rollout traces and propose a distinct physical strategy.",
+        "Hypothesis B (Closed-Loop Servoing & Timing): Use tighter closed-loop live state feedback (`sdk.get_state()` + `move_delta`/`step_raw`) and trim wasted steps so every stage completes reliably within horizon.",
+        "Hypothesis C (Regression-Safe Recovery Branch): Preserve the core trajectory that works on passing seeds and add a verified local recovery/retry branch when intermediate progress checks fail.",
+    )
+    angle = hyp_angles[hypothesis_slot % len(hyp_angles)]
+    logs = [
+        f"- seed={r['seed']} success={r['success']} steps={r['steps_used']} err={r['error']!r} "
+        f"final_eef={r['final_state']['eef_pos']} objs={r['final_state']['objects']} "
+        f"goal={r['final_state']['goal_pos']} handle_qpos={r['final_state']['handle_qpos']} hinge_qpos={r['final_state']['hinge_qpos']}"
+        for r in dev_runs
+    ]
+    tb_block = (
+        ["Paired Toolbox & Skill Notes (SimEX persistent memory):", *[f"- {t}" for t in toolbox_notes], ""]
+        if toolbox_notes
+        else []
+    )
+    return "\n".join(
+        [
+            f"SimEX-Protocol (Adapted) Multi-Hypothesis Candidate {hypothesis_slot + 1} for `{task_name}` (iteration {it}):",
+            angle,
+            "Screen requirement: preserve all previously passing seeds in the capability bank while fixing failing seeds.",
+            "",
+            *tb_block,
+            ROBOSUITE_TASK_DESCRIPTIONS[task_name],
+            "",
+            SHARED_ROBOSUITE_SDK_CONTRACT,
+            "",
+            "Current Best Policy:",
+            "```python",
+            prev_src,
+            "```",
+            "",
+            f"Capability-Bank Passing Seeds to Preserve: {sorted(passed_ever)}",
+            "Dev Rollout Traces:",
+            *logs,
+            "",
+            "Return ONLY the complete revised Python code defining `run_policy(sdk)`.",
+        ]
+    )
+
+
+def _robo_craft_hypotheses(task_name: str, dev_runs: Sequence[Mapping[str, Any]]) -> list[tuple[str, str]]:
+    """Formulate 100% task-agnostic, zero-leakage repair hypotheses from factual telemetry.
+
+    Mode-switching RepairScreener (strictly zero task-specific hardcoded physics constants):
+    - When ``passed > 0``: localized regression-safe refinement preserving working trajectories.
+    - When ``passed == 0``: generic mechanistic hypotheses grounded strictly in telemetry codes
+      and any empirically measured Active Physical Probe findings.
+    """
+    _ = task_name  # Explicitly unused: hypotheses must NEVER branch on task name!
+    passed_cnt = sum(1 for r in dev_runs if r.get("success"))
+    codes = [str((r.get("attribution") or {}).get("code", "")) for r in dev_runs if not r.get("success")]
+    code_set = set(codes)
+
+    if passed_cnt > 0:
+        return [
+            (
+                f"H-Polish1: Localized Fix for Remaining {len(codes)} Failing Seed(s) Only (0 Regressions)",
+                "Your baseline already passes multiple dev seeds. Keep the working architecture intact, inspect the "
+                "factual telemetry/policy_return of only the failing seeds, and apply the smallest targeted fix "
+                "(e.g., step margin, alignment tolerance, or orientation/descent precision) with zero regressions.",
+            ),
+            (
+                "H-Polish2: Preserve Primary Path + Add Targeted Failure Recovery Branch",
+                "Keep the primary execution path unchanged for passing seeds, and add a compact retry/recovery branch "
+                "triggered only when live state verification detects grasp, actuation, or placement failure.",
+            ),
+        ]
+
+    if "never_closed_gripper_early_abort" in code_set:
+        return [
+            (
+                "H-Unblock1: Remove Strict Early-Abort Guards Before Gripper Actuation",
+                "Telemetry shows the policy never closed the gripper because a strict intermediate convergence check "
+                "aborted early. Relax intermediate waypoint gating so gripper actuation executes once near the object.",
+            ),
+            (
+                "H-Unblock2: Simplified Direct Closed-Loop Sequence",
+                "Replace multi-stage brittle gating with a clean direct open -> approach -> contact -> actuate -> "
+                "verify sequence using live coordinates from sdk.get_state().",
+            ),
+        ]
+
+    if "latch_not_unlatched" in code_set or "door_pull_arc_incomplete" in code_set or "handle_approach_missed" in code_set:
+        return [
+            (
+                "H-Artic1: Probe-Guided Articulated Engagement & Full-Stroke Actuation",
+                "Ground approach direction, actuation stroke, and pull vector strictly in the Empirical Active-Probe "
+                "Findings and live handle/hinge telemetry. Ensure the mechanism releases before and during the pull arc.",
+            ),
+            (
+                "H-Artic2: Continuous Closed-Loop Servoing Along Live Mechanism Trajectory",
+                "Use compact closed-loop incremental moves (`move_delta` / `step_raw`) continuously re-reading live "
+                "handle/hinge state so the end-effector tracks the articulated arc without slipping off.",
+            ),
+            (
+                "H-Artic3: Alternative Contact Geometry + Step-Budget Reallocation",
+                "Test an alternative contact/grasp posture on the handle (e.g., firm grip vs top-contact press) and "
+                "reallocate steps so sufficient budget remains for the full opening stroke.",
+            ),
+        ]
+
+    if "insertion_too_high_or_step_exhausted" in code_set or "insertion_or_release_precision_error" in code_set:
+        return [
+            (
+                "H-Place1: Preserve Working Grasp + Tighten Alignment & Full Vertical Seating",
+                "Keep the working grasp intact, remove premature release/abort checks, compensate for any grasp-to-center "
+                "offset, align orientation cleanly over live goal_pos, and descend smoothly until seated before releasing.",
+            ),
+            (
+                "H-Place2: Closed-Loop 6D Servoing via step_raw + Step-Budget Optimization",
+                "Trim unnecessary hover/approach steps so ample budget remains for final seating, and use closed-loop "
+                "6D orientation-stabilized control (`step_raw`) to maintain level posture during final descent.",
+            ),
+            (
+                "H-Place3: Guided Micro-Correction Descent on Stall Detection",
+                "During final descent over goal_pos, monitor live object Z progress; if vertical descent stalls above "
+                "goal height, apply small closed-loop XY/yaw micro-adjustments before opening the gripper.",
+            ),
+        ]
+
+    return [
+        (
+            f"H-Gen1: Probe-Grounded Contact & Grasp Strategy ({','.join(sorted(code_set)) or 'general'})",
+            "Use the Empirical Active-Probe Findings (if present) and live object pose/yaw to select a verified grasp "
+            "point, orient the gripper cleanly, verify lift via live Z delta, and compensate for any grasp offset at goal.",
+        ),
+        (
+            "H-Gen2: High-Clearance Transport & Closed-Loop Goal Verification",
+            "Verify grasp before transport, lift cleanly above workspace obstacles, servo tightly over live goal_pos "
+            "using closed-loop feedback, and verify final object pose before releasing.",
+        ),
+        (
+            "H-Gen3: Compact Budget + Re-Grasp Recovery Within Horizon",
+            "Keep nominal approach compact and add one clean re-grasp fallback if live vertical lift verification fails.",
+        ),
+    ]
+
+
 def _robo_craft_prompt(
     task_name: str,
     prev_src: str,
@@ -725,44 +1021,120 @@ def _robo_craft_prompt(
     static_issues: Sequence[str],
     reg_seeds: Sequence[int],
     it: int,
+    *,
+    hypothesis_title: str = "",
+    hypothesis_strategy: str = "",
+    skill_hints: Sequence[str] = (),
+    probe_report: ProbeReport | None = None,
 ) -> str:
-    diag_lines = []
+    diag_lines: list[str] = []
+    passed_seeds = [int(r["seed"]) for r in dev_runs if r.get("success")]
+    failed_runs = [r for r in dev_runs if not r.get("success")]
+    seen_prescriptions: dict[str, str] = {}
+
     for r in dev_runs:
+        fs = r.get("final_state") or {}
         if r["success"]:
-            diag_lines.append(f"- seed={r['seed']}: PASS (steps={r['steps_used']})")
+            diag_lines.append(
+                f"- seed={r['seed']}: PASS (steps={r['steps_used']}, max_handle={r['max_handle_qpos']}, max_hinge={r['max_hinge_qpos']})"
+            )
         else:
             a = r["attribution"]
+            seen_prescriptions.setdefault(f"[{a['layer']}:{a['code']}]", a["prescription"])
+            goal = fs.get("goal_pos")
+            objs = fs.get("objects") or {}
+            p_obj = objs.get("nut") or objs.get("can") or objs.get("cube") or {}
+            p_pos = p_obj.get("pos")
+            dz_str = f" final_dz={float(p_pos[2]) - float(goal[2]):+.3f}m" if (goal and p_pos) else ""
+            ret_str = f" ret={r.get('policy_return')}" if r.get("policy_return") else ""
+            err_str = f" err={r.get('error')!r}" if r.get("error") else ""
             diag_lines.append(
-                f"- seed={r['seed']}: FAIL [{a['layer']}:{a['code']}] {a['summary']} "
-                f"| Prescription: {a['prescription']} "
-                f"| metrics(min_eef_obj={r['min_eef_to_obj_m']}, lift_delta={r['obj_lift_delta_m']}, "
-                f"min_obj_goal={r['min_obj_to_goal_m']}, max_handle={r['max_handle_qpos']}, max_hinge={r['max_hinge_qpos']})"
+                f"- seed={r['seed']}: FAIL [{a['code']}] steps={r['steps_used']} "
+                f"min_eef_obj={r['min_eef_to_obj_m']} closed={r.get('ever_closed_gripper')} "
+                f"closed_w={r['closed_gripper_width_max']} lift={r['obj_lift_delta_m']} "
+                f"min_obj_goal={r['min_obj_to_goal_m']}{dz_str} "
+                f"max_handle={r['max_handle_qpos']} max_hinge={r['max_hinge_qpos']}{err_str}{ret_str}\n"
+                f"    final_eef={fs.get('eef_pos')} objs={fs.get('objects')} goal={fs.get('goal_pos')}"
             )
+
+    rx_lines = [f"- {code}: {rx}" for code, rx in seen_prescriptions.items()]
+    first_trace = (
+        [f"Sample Trace Tail (seed={failed_runs[0]['seed']}): {json.dumps(failed_runs[0].get('trace_tail') or [])}"]
+        if failed_runs
+        else []
+    )
+    skill_block = (
+        ["Verified Panda SDK SkillExperience (from earlier verified tasks):", *[f"- {s}" for s in skill_hints], ""]
+        if skill_hints
+        else []
+    )
+    hyp_block = (
+        [f"RepairScreener Focus ({hypothesis_title}): {hypothesis_strategy}", ""]
+        if hypothesis_title
+        else []
+    )
+    probe_block = (
+        [probe_report.render_prompt_block(), ""]
+        if (probe_report is not None and probe_report.findings)
+        else []
+    )
     return "\n".join(
         [
-            f"CRAFT Structured Evolution for `{task_name}` (iteration {it}):",
-            "Resolve the four-layer attributed control/policy defects below while keeping ALL passing regression seeds green.",
+            f"CRAFT RepairScreener Evolution for `{task_name}` (iteration {it}):",
+            "Fix the attributed failure below while preserving ALL passing dev seeds.",
             "",
+            *hyp_block,
+            *probe_block,
+            *skill_block,
             ROBOSUITE_TASK_DESCRIPTIONS[task_name],
             "",
             SHARED_ROBOSUITE_SDK_CONTRACT,
             "",
-            "Previous Candidate Code:",
+            "Best Baseline Candidate Code:",
             "```python",
             prev_src,
             "```",
             "",
-            "Static Preflight Gate (AST Sandbox):",
-            *(static_issues if static_issues else ["  PASS"]),
-            "",
-            "Four-Layer Manipulation Failure Attribution:",
+            *(["Static Preflight Issues:", *static_issues, ""] if static_issues else []),
+            "Dev Rollout Telemetry:",
             *diag_lines,
             "",
-            f"Active Permanent Regression Seeds (must all pass): {list(reg_seeds)}",
+            "Deduplicated Four-Layer Causal Diagnosis:",
+            *(rx_lines if rx_lines else ["- None"]),
+            *first_trace,
             "",
+            f"Passing Seeds to Preserve (0 regressions): {passed_seeds} | Active Regression Seeds: {list(reg_seeds)}",
             "Return ONLY the complete revised Python code defining `run_policy(sdk)`.",
         ]
     )
+
+
+def _robo_candidate_score(task_name: str, runs: Sequence[Mapping[str, Any]], passed_ever: set[int]) -> tuple[int, int, float]:
+    """Reliability-first screening score: (dev_passed, -regressions, physical_progress_margin)."""
+    passed = sum(1 for r in runs if r["success"])
+    cur_ok = {int(r["seed"]) for r in runs if r["success"]}
+    regs = len(passed_ever - cur_ok)
+    if task_name == "Door":
+        progress = sum(float(r.get("max_hinge_qpos", 0.0)) + 0.1 * float(r.get("max_handle_qpos", 0.0)) for r in runs) / max(1, len(runs))
+    elif task_name in {"PickPlaceCan", "NutAssemblySquare"}:
+        vals = []
+        for r in runs:
+            lift = float(r.get("obj_lift_delta_m", 0.0))
+            xy_d = float(r.get("min_obj_to_goal_m", 1.0))
+            dz_pen = 0.0
+            if lift >= 0.04 and xy_d < 0.06:
+                fs = r.get("final_state") or {}
+                goal = fs.get("goal_pos")
+                objs = fs.get("objects") or {}
+                p_obj = objs.get("nut") or objs.get("can") or {}
+                p_pos = p_obj.get("pos")
+                if goal and p_pos:
+                    dz_pen = max(0.0, float(p_pos[2]) - float(goal[2]))
+            vals.append(lift - xy_d - 0.5 * dz_pen)
+        progress = sum(vals) / max(1, len(vals))
+    else:
+        progress = sum(float(r.get("obj_lift_delta_m", 0.0)) - float(r.get("min_eef_to_obj_m", 1.0)) for r in runs) / max(1, len(runs))
+    return (passed, -regs, round(progress, 5))
 
 
 # ---------------------------------------------------------------------------
@@ -776,6 +1148,9 @@ def _develop_task_methods(
     *,
     max_dev_llm_calls: int = 4,
     horizon: int = 400,
+    skill_hints: Sequence[str] = (),
+    simex_toolbox_notes: Sequence[str] = (),
+    enable_active_probing: bool = True,
     log_cb: Callable[[str], None] | None = None,
 ) -> dict[str, dict[str, Any]]:
     def _log(msg: str) -> None:
@@ -784,11 +1159,14 @@ def _develop_task_methods(
 
     artifacts: dict[str, dict[str, Any]] = {}
 
-    # 1. Strong Zero-Shot (1 call, 0 dev rollouts)
-    _log(f"[{task_name}] Dev 1/4: Strong Zero-Shot...")
+    # 1. Shared Paired Initial Draft = Strong Zero-Shot (1 call, 0 dev rollouts)
+    # All iterative methods start from this EXACT same it=1 draft so protocol differences
+    # are measured cleanly without stochastic initialization lottery variance.
+    _log(f"[{task_name}] Dev 1/5: Strong Zero-Shot (shared paired it=1 draft)...")
     t0 = time.monotonic()
     g_zs = llm_fn(_robo_initial_prompt(task_name))
     src_zs = str(g_zs["source"])
+    zs_wall = round(time.monotonic() - t0, 3)
     artifacts["strong_zeroshot"] = {
         "method_id": "strong_zeroshot",
         "label": "Strong Zero-Shot",
@@ -798,20 +1176,28 @@ def _develop_task_methods(
         "sha256": digest(src_zs),
         "dev_llm_calls": 1,
         "dev_sim_resets": 0,
-        "dev_wall_s": round(time.monotonic() - t0, 3),
+        "dev_wall_s": zs_wall,
         "dev_passed": 0,
         "dev_total": 0,
         "history": [],
     }
+    # Evaluate shared it=1 draft once on dev_seeds for all iterative methods
+    init_dev_runs = [run_robosuite_rollout(task_name, s, src_zs, horizon=horizon) for s in dev_seeds]
+    init_dev_passed = sum(1 for r in init_dev_runs if r["success"])
+    _log(f"  [{task_name}][Shared it=1] dev={init_dev_passed}/{len(dev_seeds)}")
 
     # 2. ASPIRE-Protocol (iterative raw-trace debugging on dev_seeds)
-    _log(f"[{task_name}] Dev 2/4: ASPIRE-Protocol (dev seeds {list(dev_seeds)})...")
+    _log(f"[{task_name}] Dev 2/5: ASPIRE-Protocol (dev seeds {list(dev_seeds)})...")
     t0 = time.monotonic()
-    best_src, best_pass, resets, calls = "", -1, 0, 0
-    hist: list[dict[str, Any]] = []
-    cur_src, last_runs = "", []
-    for it in range(1, max_dev_llm_calls + 1):
-        prompt = _robo_initial_prompt(task_name) if it == 1 else _robo_aspire_prompt(task_name, cur_src, last_runs, it)
+    best_src, best_pass, resets, calls = src_zs, init_dev_passed, len(dev_seeds), 1
+    hist: list[dict[str, Any]] = [
+        {"iter": 1, "dev_passed": init_dev_passed, "dev_total": len(dev_seeds), "sha": digest(src_zs)[:12]}
+    ]
+    cur_src, last_runs = src_zs, list(init_dev_runs)
+    for it in range(2, max_dev_llm_calls + 1):
+        if best_pass == len(dev_seeds):
+            break
+        prompt = _robo_aspire_prompt(task_name, cur_src, last_runs, it)
         gen = llm_fn(prompt)
         calls += 1
         cur_src = str(gen["source"])
@@ -834,28 +1220,35 @@ def _develop_task_methods(
         "sha256": digest(best_src),
         "dev_llm_calls": calls,
         "dev_sim_resets": resets,
-        "dev_wall_s": round(time.monotonic() - t0, 3),
+        "dev_wall_s": round(zs_wall + (time.monotonic() - t0), 3),
         "dev_passed": max(0, best_pass),
         "dev_total": len(dev_seeds),
         "history": hist,
     }
 
     # 3. CaP-X-Protocol (execution feedback + SkillLibrary + online regen)
-    _log(f"[{task_name}] Dev 3/4: CaP-X-Protocol (dev seeds {list(dev_seeds)})...")
+    _log(f"[{task_name}] Dev 3/5: CaP-X-Protocol (dev seeds {list(dev_seeds)})...")
     t0 = time.monotonic()
     skill_lib = CapXSkillLibrary()
-    best_src, best_pass, resets, calls = "", -1, 0, 0
-    hist = []
-    cur_src, last_fail = "", {}
-    for it in range(1, max_dev_llm_calls + 1):
-        prompt = (
-            _robo_initial_prompt(
-                task_name,
-                "Structure reusable geometric/control helper functions (names NOT starting with `_`) for skill library extraction.",
-            )
-            if it == 1
-            else _robo_capx_prompt(task_name, cur_src, last_fail, skill_lib.render_docs(), online_turn=False)
-        )
+    for r in init_dev_runs:
+        if r["success"]:
+            skill_lib.extract_from_code(src_zs, task_name=f"{task_name}_s{r['seed']}")
+    init_failed = [r for r in init_dev_runs if not r["success"]]
+    best_src, best_pass, resets, calls = src_zs, init_dev_passed, len(dev_seeds), 1
+    hist = [
+        {
+            "iter": 1,
+            "dev_passed": init_dev_passed,
+            "dev_total": len(dev_seeds),
+            "promoted_skills": [k for k, v in skill_lib.skills.items() if v.get("promoted")],
+            "sha": digest(src_zs)[:12],
+        }
+    ]
+    cur_src, last_fail = src_zs, (init_failed[0] if init_failed else init_dev_runs[0])
+    for it in range(2, max_dev_llm_calls + 1):
+        if best_pass == len(dev_seeds):
+            break
+        prompt = _robo_capx_prompt(task_name, cur_src, last_fail, skill_lib.render_docs(), online_turn=False)
         gen = llm_fn(prompt)
         calls += 1
         cur_src = str(gen["source"])
@@ -891,24 +1284,174 @@ def _develop_task_methods(
         "skill_library": skill_lib.to_dict(),
         "dev_llm_calls": calls,
         "dev_sim_resets": resets,
-        "dev_wall_s": round(time.monotonic() - t0, 3),
+        "dev_wall_s": round(zs_wall + (time.monotonic() - t0), 3),
         "dev_passed": max(0, best_pass),
         "dev_total": len(dev_seeds),
         "history": hist,
     }
 
-    # 4. CRAFT Full Engine (Static AST preflight + 4-layer attribution + Regression Gate)
-    _log(f"[{task_name}] Dev 4/4: CRAFT Full Engine (dev seeds {list(dev_seeds)})...")
+    # 4. SimEX-Direct-Repair (single-rollout direct repair without hypothesis screening / regression bank)
+    _log(f"[{task_name}] Dev 4/5: SimEX-Direct-Repair (dev seeds {list(dev_seeds)})...")
     t0 = time.monotonic()
-    best_src, best_pass, resets, calls = "", -1, 0, 0
-    hist = []
-    reg_seeds: set[int] = set()
-    cur_src, last_runs, last_static = "", [], []
-    for it in range(1, max_dev_llm_calls + 1):
-        prompt = (
-            _robo_initial_prompt(task_name)
-            if it == 1
-            else _robo_craft_prompt(task_name, cur_src, last_runs, last_static, sorted(reg_seeds), it)
+    best_src, best_pass, resets, calls = src_zs, init_dev_passed, len(dev_seeds), 1
+    hist = [
+        {"iter": 1, "dev_passed": init_dev_passed, "dev_total": len(dev_seeds), "sha": digest(src_zs)[:12]}
+    ]
+    cur_src, last_fail = src_zs, (init_failed[0] if init_failed else init_dev_runs[0])
+    for it in range(2, max_dev_llm_calls + 1):
+        if best_pass == len(dev_seeds):
+            break
+        prompt = _robo_simex_direct_prompt(task_name, cur_src, last_fail, it)
+        gen = llm_fn(prompt)
+        calls += 1
+        cur_src = str(gen["source"])
+        runs = [run_robosuite_rollout(task_name, s, cur_src, horizon=horizon) for s in dev_seeds]
+        resets += len(dev_seeds)
+        passed = sum(1 for r in runs if r["success"])
+        failed = [r for r in runs if not r["success"]]
+        last_fail = failed[0] if failed else runs[0]
+        hist.append({"iter": it, "dev_passed": passed, "dev_total": len(dev_seeds), "sha": digest(cur_src)[:12]})
+        _log(f"  [{task_name}][SimEX-Direct it={it}] dev={passed}/{len(dev_seeds)}")
+        # Direct repair commits latest revision without global regression bank screening
+        best_src, best_pass = cur_src, passed
+        if passed == len(dev_seeds):
+            break
+    artifacts["simex_direct_repair"] = {
+        "method_id": "simex_direct_repair",
+        "label": "SimEX-Direct-Repair (Ablation)",
+        "provenance": "ablation_protocol_from_simex_2609_38982",
+        "online_mode": "frozen",
+        "source": best_src,
+        "sha256": digest(best_src),
+        "dev_llm_calls": calls,
+        "dev_sim_resets": resets,
+        "dev_wall_s": round(zs_wall + (time.monotonic() - t0), 3),
+        "dev_passed": max(0, best_pass),
+        "dev_total": len(dev_seeds),
+        "history": hist,
+    }
+
+    # 5. SimEX-Protocol (Adapted): multi-hypothesis repair + capability-bank regression replay + paired toolbox
+    _log(f"[{task_name}] Dev 5/6: SimEX-Protocol (Adapted, multi-hypothesis + capability bank)...")
+    t0 = time.monotonic()
+    sx_passed_ever: set[int] = {int(r["seed"]) for r in init_dev_runs if r["success"]}
+    sx_best_src, sx_best_pass, sx_best_regs = src_zs, init_dev_passed, 0
+    sx_best_runs: list[dict[str, Any]] = list(init_dev_runs)
+    resets, calls = len(dev_seeds), 1
+    hist = [
+        {
+            "iter": 1,
+            "hypothesis_slot": 0,
+            "dev_passed": init_dev_passed,
+            "dev_total": len(dev_seeds),
+            "regressions": 0,
+            "sha": digest(src_zs)[:12],
+        }
+    ]
+    for it in range(2, max_dev_llm_calls + 1):
+        if sx_best_pass == len(dev_seeds):
+            break
+        h_slot = it - 2
+        prompt = _robo_simex_protocol_prompt(
+            task_name,
+            sx_best_src,
+            sx_best_runs,
+            sx_passed_ever,
+            h_slot,
+            simex_toolbox_notes,
+            it,
+        )
+        gen = llm_fn(prompt)
+        calls += 1
+        cur_src = str(gen["source"])
+        runs = [run_robosuite_rollout(task_name, s, cur_src, horizon=horizon) for s in dev_seeds]
+        resets += len(dev_seeds)
+        passed = sum(1 for r in runs if r["success"])
+        cur_ok = {int(r["seed"]) for r in runs if r["success"]}
+        regs = len(sx_passed_ever - cur_ok)
+        sx_passed_ever.update(cur_ok)
+        hist.append(
+            {
+                "iter": it,
+                "hypothesis_slot": h_slot,
+                "dev_passed": passed,
+                "dev_total": len(dev_seeds),
+                "regressions": regs,
+                "sha": digest(cur_src)[:12],
+            }
+        )
+        _log(f"  [{task_name}][SimEX-Protocol it={it}] dev={passed}/{len(dev_seeds)} regs={regs}")
+        if (passed, -regs) >= (sx_best_pass, -sx_best_regs):
+            sx_best_pass, sx_best_regs, sx_best_src, sx_best_runs = passed, regs, cur_src, runs
+        if passed == len(dev_seeds):
+            break
+    artifacts["simex_protocol"] = {
+        "method_id": "simex_protocol",
+        "label": "SimEX-Protocol (Adapted)",
+        "provenance": "protocol_adapted_from_simex_2609_38982",
+        "online_mode": "frozen",
+        "source": sx_best_src,
+        "sha256": digest(sx_best_src),
+        "dev_llm_calls": calls,
+        "dev_sim_resets": resets,
+        "dev_wall_s": round(zs_wall + (time.monotonic() - t0), 3),
+        "dev_passed": max(0, sx_best_pass),
+        "dev_total": len(dev_seeds),
+        "history": hist,
+    }
+
+    # 6. CRAFT Full Engine (Zero-Leakage Active Probing + AST preflight + 4-layer attribution + RepairScreener + Regression Gate)
+    _log(f"[{task_name}] Dev 6/6: CRAFT Full Engine (Active Probing + RepairScreener + Zero-Leakage)...")
+    t0 = time.monotonic()
+    reg_seeds: set[int] = {int(r["seed"]) for r in init_dev_runs if not r["success"]}
+    passed_ever: set[int] = {int(r["seed"]) for r in init_dev_runs if r["success"]}
+    init_score = _robo_candidate_score(task_name, init_dev_runs, passed_ever)
+    best_src, best_score, best_pass, resets, calls = src_zs, init_score, init_dev_passed, len(dev_seeds), 1
+    best_runs: list[dict[str, Any]] = list(init_dev_runs)
+
+    probe_report: ProbeReport | None = None
+    if enable_active_probing and init_dev_passed == 0 and dev_seeds:
+        probe_report = run_robosuite_active_probe(task_name, int(dev_seeds[0]), init_dev_runs, horizon=horizon)
+        if probe_report is not None:
+            resets += probe_report.sim_resets_used
+            _log(
+                f"  [{task_name}][CRAFT ActiveProbe] +{probe_report.sim_resets_used} sim reset -> "
+                f"{[f.summary for f in probe_report.findings]}"
+            )
+
+    hist = [
+        {
+            "iter": 1,
+            "hypothesis": "Shared Initial Policy",
+            "static_preflight_passed": check_robosuite_ast_compliance(src_zs)["compliant"],
+            "dev_passed": init_dev_passed,
+            "dev_total": len(dev_seeds),
+            "progress_score": init_score[2],
+            "attributions": [r["attribution"]["code"] for r in init_dev_runs if not r["success"]],
+            "regression_seeds": sorted(reg_seeds),
+            "probe_report": probe_report.to_dict() if probe_report else None,
+            "sha": digest(src_zs)[:12],
+        }
+    ]
+    cur_src, last_static = src_zs, []
+    hyp_idx_by_parent: dict[str, int] = {}
+    for it in range(2, max_dev_llm_calls + 1):
+        if best_pass == len(dev_seeds):
+            break
+        hyps = _robo_craft_hypotheses(task_name, best_runs)
+        h_idx = (it - 2) % len(hyps)
+        ht, hs = hyps[h_idx]
+        prompt = _robo_craft_prompt(
+            task_name,
+            best_src or cur_src,
+            best_runs,
+            last_static,
+            sorted(reg_seeds),
+            it,
+            hypothesis_title=ht,
+            hypothesis_strategy=hs,
+            skill_hints=skill_hints,
+            probe_report=probe_report,
         )
         gen = llm_fn(prompt)
         calls += 1
@@ -916,48 +1459,54 @@ def _develop_task_methods(
         ast_chk = check_robosuite_ast_compliance(cur_src)
         if not ast_chk["compliant"]:
             last_static = list(ast_chk["issues"])
-            last_runs = []
-            hist.append({"iter": it, "static_preflight_passed": False, "issues": last_static, "dev_passed": 0})
+            hist.append({"iter": it, "hypothesis": ht, "static_preflight_passed": False, "issues": last_static, "dev_passed": 0})
             _log(f"  [{task_name}][CRAFT it={it}] AST preflight blocked (0 sim resets wasted)")
-            if best_pass < 0:
-                best_src = cur_src
             continue
         last_static = []
         runs = [run_robosuite_rollout(task_name, s, cur_src, horizon=horizon) for s in dev_seeds]
         resets += len(dev_seeds)
-        last_runs = runs
         passed = sum(1 for r in runs if r["success"])
         for r in runs:
             if not r["success"]:
                 reg_seeds.add(int(r["seed"]))
+            else:
+                passed_ever.add(int(r["seed"]))
+        score = _robo_candidate_score(task_name, runs, passed_ever)
         hist.append(
             {
                 "iter": it,
+                "hypothesis": ht,
                 "static_preflight_passed": True,
                 "dev_passed": passed,
                 "dev_total": len(dev_seeds),
+                "progress_score": score[2],
                 "attributions": [r["attribution"]["code"] for r in runs if not r["success"]],
                 "regression_seeds": sorted(reg_seeds),
                 "sha": digest(cur_src)[:12],
             }
         )
-        _log(f"  [{task_name}][CRAFT it={it}] dev={passed}/{len(dev_seeds)} attr={[r['attribution']['code'] for r in runs if not r['success']]}")
-        if passed >= best_pass:
-            best_pass, best_src = passed, cur_src
+        _log(
+            f"  [{task_name}][CRAFT it={it}] ({ht}) dev={passed}/{len(dev_seeds)} "
+            f"prog={score[2]:.3f} attr={[r['attribution']['code'] for r in runs if not r['success']]}"
+        )
+        if score >= best_score:
+            best_score, best_pass, best_src, best_runs = score, passed, cur_src, runs
         if passed == len(dev_seeds):
             break
     artifacts["craft_full"] = {
         "method_id": "craft_full",
-        "label": "CRAFT (Full Engine)",
+        "label": "CRAFT (ActiveProbe + RepairScreener + Skills)",
         "provenance": "craft_proposed_system",
         "online_mode": "frozen",
         "source": best_src,
         "sha256": digest(best_src),
         "dev_llm_calls": calls,
         "dev_sim_resets": resets,
-        "dev_wall_s": round(time.monotonic() - t0, 3),
+        "dev_wall_s": round(zs_wall + (time.monotonic() - t0), 3),
         "dev_passed": max(0, best_pass),
         "dev_total": len(dev_seeds),
+        "probe_report": probe_report.to_dict() if probe_report else None,
+        "known_failure_modes": sorted({r["attribution"]["code"] for r in best_runs if not r.get("success")}),
         "history": hist,
     }
     return artifacts
@@ -969,7 +1518,14 @@ def summarize_robosuite_benchmark(
     method_meta: Mapping[str, Mapping[str, Any]],
     trials: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    method_ids = ("strong_zeroshot", "aspire_protocol", "capx_protocol", "craft_full")
+    method_ids = (
+        "strong_zeroshot",
+        "aspire_protocol",
+        "capx_protocol",
+        "simex_direct_repair",
+        "simex_protocol",
+        "craft_full",
+    )
     summary: dict[str, dict[str, Any]] = {}
 
     for mid in method_ids:
@@ -1023,7 +1579,7 @@ def summarize_robosuite_benchmark(
     paired: dict[str, dict[str, Any]] = {}
     if len(craft_map) == len(keys):
         c_vec = [craft_map[k] for k in keys]
-        for mid in ("strong_zeroshot", "aspire_protocol", "capx_protocol"):
+        for mid in ("strong_zeroshot", "aspire_protocol", "capx_protocol", "simex_direct_repair", "simex_protocol"):
             b_map = {(t["task"], int(t["seed"])): bool(t["success"]) for t in trials if t["method_id"] == mid}
             if len(b_map) == len(keys):
                 paired[mid] = mcnemar_exact_p(c_vec, [b_map[k] for k in keys])
@@ -1035,7 +1591,7 @@ def render_robosuite_html(report: Mapping[str, Any]) -> str:
     by_method = list((report.get("summary_by_method") or {}).values())
     tasks = list(report.get("tasks") or [])
     mcnemar = report.get("paired_mcnemar_craft_vs") or {}
-    colors = ["#94a3b8", "#f59e0b", "#a78bfa", "#22c55e"]
+    colors = ["#94a3b8", "#f59e0b", "#a78bfa", "#38bdf8", "#06b6d4", "#22c55e"]
 
     bar_w, gap = 120, 48
     chart_w = max(680, 90 + len(by_method) * (bar_w + gap))
@@ -1168,6 +1724,7 @@ def run_robosuite_parity_benchmark(
     max_dev_llm_calls: int = 4,
     enable_capx_online_regen: bool = True,
     horizon: int = 400,
+    resume: bool = True,
     progress_cb: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     """Run full Phase 3B Robosuite parity comparison across tasks, seeds, and protocols."""
@@ -1178,6 +1735,14 @@ def run_robosuite_parity_benchmark(
     report_path = out / "robosuite_prior_work_report.json"
     html_path = out / "robosuite_prior_work_report.html"
     started_at = _utc_now()
+    method_ids = (
+        "strong_zeroshot",
+        "aspire_protocol",
+        "capx_protocol",
+        "simex_direct_repair",
+        "simex_protocol",
+        "craft_full",
+    )
 
     def _log(msg: str) -> None:
         if progress_cb:
@@ -1185,6 +1750,44 @@ def run_robosuite_parity_benchmark(
 
     method_meta: dict[str, dict[str, Any]] = {}
     trials: list[dict[str, Any]] = []
+    completed_tasks: set[str] = set()
+
+    if resume and report_path.is_file():
+        try:
+            prev = json.loads(report_path.read_text(encoding="utf-8"))
+            if (
+                prev.get("benchmark_version") == ROBOSUITE_BENCH_VERSION
+                and prev.get("model") == model
+                and prev.get("reasoning_effort") == reasoning_effort
+                and list(prev.get("dev_seeds") or []) == list(dev_seeds)
+                and list(prev.get("eval_seeds") or []) == list(eval_seeds)
+                and int(prev.get("max_dev_llm_calls") or 0) == int(max_dev_llm_calls)
+            ):
+                prev_mbt = prev.get("methods_by_task") or {}
+                prev_trials = list(prev.get("trials") or [])
+                for tk in tasks:
+                    tk_meta = prev_mbt.get(tk) or {}
+                    tk_trials = [t for t in prev_trials if t.get("task") == tk]
+                    all_ok = all(
+                        mid in tk_meta
+                        and (pol_dir / f"{tk}_{mid}.py").is_file()
+                        and sum(1 for t in tk_trials if t.get("method_id") == mid) == len(eval_seeds)
+                        for mid in method_ids
+                    )
+                    if all_ok:
+                        restored: dict[str, Any] = {}
+                        for mid in method_ids:
+                            art = dict(tk_meta[mid])
+                            art["source"] = (pol_dir / f"{tk}_{mid}.py").read_text(encoding="utf-8")
+                            restored[mid] = art
+                        method_meta[tk] = restored
+                        trials.extend(tk_trials)
+                        completed_tasks.add(tk)
+                        _log(f"[{tk}] Resumed completed task from checkpoint ({len(tk_trials)} trials)")
+        except Exception:  # noqa: BLE001
+            method_meta.clear()
+            trials.clear()
+            completed_tasks.clear()
 
     def _build_payload(*, finished: bool) -> dict[str, Any]:
         stats = summarize_robosuite_benchmark(tasks, eval_seeds, method_meta, trials)
@@ -1215,21 +1818,40 @@ def run_robosuite_parity_benchmark(
             "paired_mcnemar_craft_vs": stats["paired_mcnemar_craft_vs"],
         }
 
+    skill_store = SkillExperienceStore(out / "robosuite_skills.json")
+    simex_skill_store = SkillExperienceStore(out / "simex_toolbox_skills.json")
+    contract_sha = digest(SHARED_ROBOSUITE_SDK_CONTRACT)
     for task in tasks:
+        if task in completed_tasks:
+            continue
+        verified_hints = [
+            f"{sk.title}: {sk.guidance} (measured_limits={json.dumps(sk.measured_limits)}"
+            + (f", helpers={list(sk.entry_functions)}" if sk.entry_functions else "")
+            + ")"
+            for sk in skill_store.list_verified(sdk_contract_sha256=contract_sha)
+            if sk.task_name != task
+        ]
+        simex_notes = [
+            f"{sk.title}: {sk.guidance}"
+            for sk in simex_skill_store.list_verified(sdk_contract_sha256=contract_sha)
+            if sk.task_name != task
+        ]
         arts = _develop_task_methods(
             task,
             llm_fn,
             dev_seeds,
             max_dev_llm_calls=max_dev_llm_calls,
             horizon=horizon,
+            skill_hints=verified_hints,
+            simex_toolbox_notes=simex_notes,
             log_cb=_log,
         )
         method_meta[task] = arts
         for mid, art in arts.items():
             (pol_dir / f"{task}_{mid}.py").write_text(str(art["source"]) + "\n", encoding="utf-8")
 
-        # Evaluate all 4 frozen/online methods on disjoint held-out eval_seeds
-        for mid in ("strong_zeroshot", "aspire_protocol", "capx_protocol", "craft_full"):
+        # Evaluate all 6 frozen/online methods on disjoint held-out eval_seeds
+        for mid in method_ids:
             art = arts[mid]
             online_cb = None
             if mid == "capx_protocol" and enable_capx_online_regen:
@@ -1257,6 +1879,44 @@ def run_robosuite_parity_benchmark(
                 trials.append(rec)
                 if rec["success"]:
                     passed_cnt += 1
+            if mid == "simex_protocol":
+                simex_skill_store.add(
+                    SkillExperience(
+                        skill_id=f"simex-{task.lower()}-v3",
+                        title=f"SimEX {task} Toolbox Entry",
+                        guidance=f"Capability-bank screened policy for {task} ({passed_cnt}/{len(eval_seeds)} held-out).",
+                        task_name=task,
+                        required_methods=("get_state", "move_to", "move_delta", "set_gripper", "step_raw"),
+                        sdk_contract_sha256=contract_sha,
+                        evidence_source="simulator",
+                        verification_report_id=f"simex-v3-{task}",
+                        verified=passed_cnt >= max(1, int(0.75 * len(eval_seeds))),
+                        verified_at_utc=_utc_now(),
+                        code_snippet=_extract_verified_helper_snippet(str(art["source"])),
+                    )
+                )
+            if mid == "craft_full":
+                skill_store.add(
+                    SkillExperience(
+                        skill_id=f"robosuite-{task.lower()}-v3",
+                        title=f"Robosuite {task} Verified Policy Skill",
+                        guidance=f"ActiveProbe + RepairScreener frozen policy for {task} ({passed_cnt}/{len(eval_seeds)} held-out).",
+                        task_name=task,
+                        required_methods=("get_state", "move_to", "move_delta", "set_gripper", "step_raw"),
+                        sdk_contract_sha256=contract_sha,
+                        evidence_source="simulator",
+                        verification_report_id=f"robosuite-v3-{task}",
+                        verified=passed_cnt >= max(1, int(0.75 * len(eval_seeds))),
+                        verified_at_utc=_utc_now(),
+                        measured_limits={
+                            "dev_pass_rate": round(art["dev_passed"] / max(1, art["dev_total"]), 4),
+                            "heldout_pass_rate": round(passed_cnt / max(1, len(eval_seeds)), 4),
+                            "dev_llm_calls": art["dev_llm_calls"],
+                        },
+                        known_failure_modes=tuple(art.get("known_failure_modes") or ()),
+                        code_snippet=_extract_verified_helper_snippet(str(art["source"])),
+                    )
+                )
             _log(
                 f"[{task}][EVAL] {mid:16s} -> {passed_cnt}/{len(eval_seeds)} "
                 f"({passed_cnt / len(eval_seeds) * 100:.1f}%)"

@@ -1,0 +1,1094 @@
+{
+  "benchmark_version": "CRAFT-Sim2Sim-Stage2-v1.0",
+  "evidence_sources": [
+    "recorded_data",
+    "simulator"
+  ],
+  "finished_at_utc": "2026-11-24T04:01:45.575858+00:00",
+  "max_target_adaptation_trials": 5,
+  "methods": {
+    "craft_full": {
+      "adapt_calibration_trials": 3,
+      "adapt_llm_calls": 4,
+      "adapt_target_trials": 5,
+      "adaptation_log": [
+        {
+          "action": "promoted_after_shadow_gate",
+          "alignment_method": "calibrated_sim_search",
+          "alignment_status": "reproduced_exact",
+          "attribution": {
+            "auto_repair_eligible": true,
+            "code": "escalated_to_human",
+            "layer": "policy",
+            "recommended_owner": "craft_policy",
+            "summary": "Trial did not meet acceptance criteria (escalated_to_human)"
+          },
+          "passed": false,
+          "recorded_shadow_passed": true,
+          "scenario_id": "adapt_01_noisy_slip",
+          "screening_status": "completed_with_recommendation",
+          "trial": 1
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_02_noisy_timeout",
+          "trial": 2
+        },
+        {
+          "action": "promoted_after_shadow_gate",
+          "alignment_method": "calibrated_sim_search",
+          "alignment_status": "reproduced_exact",
+          "attribution": {
+            "auto_repair_eligible": true,
+            "code": "unreconciled_unknown_ack",
+            "layer": "policy",
+            "recommended_owner": "craft_policy",
+            "summary": "Policy failed to call query_command_status after an unknown acknowledgement"
+          },
+          "passed": false,
+          "recorded_shadow_passed": true,
+          "scenario_id": "adapt_03_crash_restart",
+          "screening_status": "completed_with_recommendation",
+          "trial": 3
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_04_shift_slip_unseen_cup",
+          "trial": 4
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_05_noisy_ambiguity",
+          "trial": 5
+        }
+      ],
+      "enable_journal_proxy": true,
+      "label": "CRAFT (Calibrated Sim + RepairScreener + Shadow + Journal)",
+      "method_id": "craft_full",
+      "provenance": "craft_proposed_system",
+      "source_sha256": "4eb6e287ea00ae04c68b5f41b1df35d2c718a3842281058e6e070aeb706a9bb1"
+    },
+    "direct_repair": {
+      "adapt_calibration_trials": 0,
+      "adapt_llm_calls": 2,
+      "adapt_target_trials": 5,
+      "adaptation_log": [
+        {
+          "action": "direct_overwrite",
+          "attribution": {
+            "auto_repair_eligible": true,
+            "code": "escalated_to_human",
+            "layer": "policy",
+            "recommended_owner": "craft_policy",
+            "summary": "Trial did not meet acceptance criteria (escalated_to_human)"
+          },
+          "passed": false,
+          "scenario_id": "adapt_01_noisy_slip",
+          "trial": 1
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_02_noisy_timeout",
+          "trial": 2
+        },
+        {
+          "action": "direct_overwrite",
+          "attribution": {
+            "auto_repair_eligible": true,
+            "code": "unreconciled_unknown_ack",
+            "layer": "policy",
+            "recommended_owner": "craft_policy",
+            "summary": "Policy failed to call query_command_status after an unknown acknowledgement"
+          },
+          "passed": false,
+          "scenario_id": "adapt_03_crash_restart",
+          "trial": 3
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_04_shift_slip_unseen_cup",
+          "trial": 4
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_05_noisy_ambiguity",
+          "trial": 5
+        }
+      ],
+      "enable_journal_proxy": false,
+      "label": "Direct Target Repair",
+      "method_id": "direct_repair",
+      "provenance": "ablation_direct_repair",
+      "source_sha256": "e1c49689361a1c4f9cd7354d7f6afab18a4e5bd100df24be195ec71b11fc7b62"
+    },
+    "simex_protocol": {
+      "adapt_calibration_trials": 3,
+      "adapt_llm_calls": 4,
+      "adapt_target_trials": 5,
+      "adaptation_log": [
+        {
+          "action": "promoted_simex_screened",
+          "alignment_method": "calibrated_sim_search",
+          "alignment_status": "reproduced_exact",
+          "attribution": {
+            "auto_repair_eligible": true,
+            "code": "escalated_to_human",
+            "layer": "policy",
+            "recommended_owner": "craft_policy",
+            "summary": "Trial did not meet acceptance criteria (escalated_to_human)"
+          },
+          "passed": false,
+          "scenario_id": "adapt_01_noisy_slip",
+          "screening_status": "completed_with_recommendation",
+          "trial": 1
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_02_noisy_timeout",
+          "trial": 2
+        },
+        {
+          "action": "promoted_simex_screened",
+          "alignment_method": "calibrated_sim_search",
+          "alignment_status": "reproduced_exact",
+          "attribution": {
+            "auto_repair_eligible": true,
+            "code": "unreconciled_unknown_ack",
+            "layer": "policy",
+            "recommended_owner": "craft_policy",
+            "summary": "Policy failed to call query_command_status after an unknown acknowledgement"
+          },
+          "passed": false,
+          "scenario_id": "adapt_03_crash_restart",
+          "screening_status": "completed_with_recommendation",
+          "trial": 3
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_04_shift_slip_unseen_cup",
+          "trial": 4
+        },
+        {
+          "attribution": {
+            "auto_repair_eligible": false,
+            "code": "passed",
+            "layer": "none",
+            "recommended_owner": "none",
+            "summary": "Trial passed independent verification"
+          },
+          "passed": true,
+          "scenario_id": "adapt_05_noisy_ambiguity",
+          "trial": 5
+        }
+      ],
+      "enable_journal_proxy": false,
+      "label": "SimEX-Protocol (Adapted, Calibrated Sim + Screening)",
+      "method_id": "simex_protocol",
+      "provenance": "protocol_adapted_from_simex_2609_38982",
+      "source_sha256": "7e6f5520d86d62e1bb7038ac3da8789a325cf1210bc158282c1eb968ef8726ab"
+    },
+    "zeroshot_sim2sim": {
+      "adapt_calibration_trials": 0,
+      "adapt_llm_calls": 0,
+      "adapt_target_trials": 0,
+      "adaptation_log": [],
+      "enable_journal_proxy": false,
+      "label": "Zero-Shot Sim2Sim",
+      "method_id": "zeroshot_sim2sim",
+      "provenance": "baseline_control",
+      "source_sha256": "cb6b9d3f91089f6222433c89f7d823c16c74b501e143d8de6c45cfe40fe817ed"
+    }
+  },
+  "model": "gpt-6-astra",
+  "paired_mcnemar_craft_vs": {
+    "direct_repair": {
+      "discordant": 3,
+      "n_a_only": 3,
+      "n_b_only": 0,
+      "p_value": 0.25
+    },
+    "simex_protocol": {
+      "discordant": 3,
+      "n_a_only": 3,
+      "n_b_only": 0,
+      "p_value": 0.25
+    },
+    "zeroshot_sim2sim": {
+      "discordant": 6,
+      "n_a_only": 6,
+      "n_b_only": 0,
+      "p_value": 0.03125
+    }
+  },
+  "provenance": {
+    "git_commit": "4b535cb89a2e8684c6081b564e9fdb7eb1bb0d9d",
+    "worktree_dirty": true
+  },
+  "reasoning_effort": "medium",
+  "sandbox_driver": "mujoco_cafe",
+  "summary_by_method": {
+    "craft_full": {
+      "adapt_calibration_trials": 3,
+      "adapt_llm_calls": 4,
+      "adapt_target_trials": 5,
+      "duplicate_non_idempotent": 0,
+      "false_actuations": 0,
+      "label": "CRAFT (Calibrated Sim + RepairScreener + Shadow + Journal)",
+      "method_id": "craft_full",
+      "pass_rate": 0.95,
+      "passed": 19,
+      "provenance": "craft_proposed_system",
+      "shadow_passed": 4,
+      "shadow_total": 4,
+      "target_passed": 15,
+      "target_total": 16,
+      "total_trials": 20,
+      "wilson_95_ci": [
+        0.7639,
+        0.9911
+      ]
+    },
+    "direct_repair": {
+      "adapt_calibration_trials": 0,
+      "adapt_llm_calls": 2,
+      "adapt_target_trials": 5,
+      "duplicate_non_idempotent": 0,
+      "false_actuations": 0,
+      "label": "Direct Target Repair",
+      "method_id": "direct_repair",
+      "pass_rate": 0.8,
+      "passed": 16,
+      "provenance": "ablation_direct_repair",
+      "shadow_passed": 4,
+      "shadow_total": 4,
+      "target_passed": 12,
+      "target_total": 16,
+      "total_trials": 20,
+      "wilson_95_ci": [
+        0.584,
+        0.9193
+      ]
+    },
+    "simex_protocol": {
+      "adapt_calibration_trials": 3,
+      "adapt_llm_calls": 4,
+      "adapt_target_trials": 5,
+      "duplicate_non_idempotent": 0,
+      "false_actuations": 0,
+      "label": "SimEX-Protocol (Adapted, Calibrated Sim + Screening)",
+      "method_id": "simex_protocol",
+      "pass_rate": 0.8,
+      "passed": 16,
+      "provenance": "protocol_adapted_from_simex_2609_38982",
+      "shadow_passed": 4,
+      "shadow_total": 4,
+      "target_passed": 12,
+      "target_total": 16,
+      "total_trials": 20,
+      "wilson_95_ci": [
+        0.584,
+        0.9193
+      ]
+    },
+    "zeroshot_sim2sim": {
+      "adapt_calibration_trials": 0,
+      "adapt_llm_calls": 0,
+      "adapt_target_trials": 0,
+      "duplicate_non_idempotent": 0,
+      "false_actuations": 0,
+      "label": "Zero-Shot Sim2Sim",
+      "method_id": "zeroshot_sim2sim",
+      "pass_rate": 0.65,
+      "passed": 13,
+      "provenance": "baseline_control",
+      "shadow_passed": 4,
+      "shadow_total": 4,
+      "target_passed": 9,
+      "target_total": 16,
+      "total_trials": 20,
+      "wilson_95_ci": [
+        0.4329,
+        0.8188
+      ]
+    }
+  },
+  "target_driver": "mujoco_cafe",
+  "trials": [
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_01_nominal_dr",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_02_shift_green",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_03_shift_iced",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_04_slip_30",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_05_slip_40",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_06_timeout",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_07_slip_timeout",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_08_crash_nom",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_09_crash_shift",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_10_crash_slot2",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_11_busy_machine",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_12_dual_confirm",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_13_dual_pause",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "rejected_observation_not_ready",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_14_stale_obs",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_15_hazard_nogo",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "s2s_16_contradictory",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "rejected_observation_not_ready",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "rec_01_stale_not_ready",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "rec_02_low_conf_noisy_cup",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "rec_03_ambiguous_dual_cups",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "zeroshot_sim2sim",
+      "scenario_id": "rec_04_distractor_bag_only",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_01_nominal_dr",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_02_shift_green",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_03_shift_iced",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_04_slip_30",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_05_slip_40",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_06_timeout",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_07_slip_timeout",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_08_crash_nom",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_09_crash_shift",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_10_crash_slot2",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_11_busy_machine",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_12_dual_confirm",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_13_dual_pause",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "rejected_observation_not_ready",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_14_stale_obs",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_15_hazard_nogo",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "direct_repair",
+      "scenario_id": "s2s_16_contradictory",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "rejected_observation_not_ready",
+      "method_id": "direct_repair",
+      "scenario_id": "rec_01_stale_not_ready",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "direct_repair",
+      "scenario_id": "rec_02_low_conf_noisy_cup",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "direct_repair",
+      "scenario_id": "rec_03_ambiguous_dual_cups",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "direct_repair",
+      "scenario_id": "rec_04_distractor_bag_only",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_01_nominal_dr",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_02_shift_green",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_03_shift_iced",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_04_slip_30",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_05_slip_40",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_06_timeout",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_07_slip_timeout",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_08_crash_nom",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_09_crash_shift",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_10_crash_slot2",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_11_busy_machine",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_12_dual_confirm",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_13_dual_pause",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "rejected_observation_not_ready",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_14_stale_obs",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_15_hazard_nogo",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "simex_protocol",
+      "scenario_id": "s2s_16_contradictory",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "rejected_observation_not_ready",
+      "method_id": "simex_protocol",
+      "scenario_id": "rec_01_stale_not_ready",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "simex_protocol",
+      "scenario_id": "rec_02_low_conf_noisy_cup",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "simex_protocol",
+      "scenario_id": "rec_03_ambiguous_dual_cups",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "simex_protocol",
+      "scenario_id": "rec_04_distractor_bag_only",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_01_nominal_dr",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_02_shift_green",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_03_shift_iced",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_04_slip_30",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_05_slip_40",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_06_timeout",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_07_slip_timeout",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_08_crash_nom",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_09_crash_shift",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_10_crash_slot2",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_11_busy_machine",
+      "task_passed": false
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "completed",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_12_dual_confirm",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_13_dual_pause",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "rejected_observation_not_ready",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_14_stale_obs",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_15_hazard_nogo",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "simulator",
+      "false_actuation": false,
+      "host_runtime_status": "escalated_to_human",
+      "method_id": "craft_full",
+      "scenario_id": "s2s_16_contradictory",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "rejected_observation_not_ready",
+      "method_id": "craft_full",
+      "scenario_id": "rec_01_stale_not_ready",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "craft_full",
+      "scenario_id": "rec_02_low_conf_noisy_cup",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "craft_full",
+      "scenario_id": "rec_03_ambiguous_dual_cups",
+      "task_passed": true
+    },
+    {
+      "duplicate_non_idempotent": false,
+      "evidence_source": "recorded_data",
+      "false_actuation": false,
+      "host_runtime_status": "paused_for_operator",
+      "method_id": "craft_full",
+      "scenario_id": "rec_04_distractor_bag_only",
+      "task_passed": true
+    }
+  ]
+}
