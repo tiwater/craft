@@ -117,7 +117,7 @@
 % --- Delicate Academic Headers & Footers ---
 \newcommand{\@traxrunningtitle}{TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies}
 \newcommand{\runningtitle}[1]{\renewcommand{\@traxrunningtitle}{#1}}
-\newcommand{\@traxheaderleft}{Tiwater Robotics Research}
+\newcommand{\@traxheaderleft}{Tiwater}
 \newcommand{\traxheaderleft}[1]{\renewcommand{\@traxheaderleft}{#1}}
 \newcommand{\@traxdate}{November 2026}
 \newcommand{\traxdate}[1]{\renewcommand{\@traxdate}{#1}}
