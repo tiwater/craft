@@ -118,7 +118,7 @@ trax/
 ├── src/trax/                  # Pure-Python-stdlib core (policy, journal, runtime, probing,
 │                              # repair_screener, skills, acceptance, operations, studio)
 │                              # + isolated optional sim drivers (mujoco_cafe_driver, robosuite_bench, libero_bench)
-├── papers/trax/               # IEEEtran LaTeX preprint draft, auto-generated tables/ & compiled trax.pdf
+├── papers/trax/               # Single-column technical report (trax.cls), auto-generated tables/ & trax.pdf
 ├── docs/                      # Academic project page (https://tiwater.github.io/trax/) & architecture docs
 ├── tools/                     # Deterministic JSON-receipt -> LaTeX table & SVG figure generator
 ├── experiments/               # Archived benchmark JSON receipts, HTML reports, frozen policies & logs

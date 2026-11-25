@@ -1,46 +1,30 @@
-\documentclass[10pt,journal]{IEEEtran}
-\usepackage[T1]{fontenc}
-\usepackage{amsmath,amssymb,amsfonts,booktabs,graphicx,multirow,url,cite,xcolor}
-\usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning}
-\usepackage[colorlinks=true,linkcolor=blue!65!black,citecolor=blue!65!black,urlcolor=blue!65!black]{hyperref}
+\documentclass{trax}
 
-\setlength{\tabcolsep}{3.6pt}
-\renewcommand{\arraystretch}{1.10}
-\setlength{\emergencystretch}{2em}
-\tolerance=1000
-\setcounter{topnumber}{4}
-\setcounter{dbltopnumber}{4}
-\setcounter{totalnumber}{6}
-\renewcommand{\topfraction}{0.95}
-\renewcommand{\dbltopfraction}{0.95}
-\renewcommand{\textfraction}{0.05}
-\renewcommand{\floatpagefraction}{0.88}
-\renewcommand{\dblfloatpagefraction}{0.88}
+\title{TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies for Real-World Robotics}
+\runningtitle{TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies}
+\traxbadge{Technical Report $\cdot$ v0.4 Preprint}
+\traxdate{November 2026}
+\traxauthors{Tiwater}
+\traxaffil{Tiwater Robotics Research $\;\cdot\;$ \href{mailto:research@tiwater.com}{\texttt{research@tiwater.com}}}
+\traxlinks{%
+  \textbf{Project Page:} \url{https://tiwater.github.io/trax/} \quad$\cdot$\quad
+  \textbf{Code \& Receipts:} \url{https://github.com/tiwater/trax}
+}
 
-\markboth{ARXIV PREPRINT}{TIWATER: TRAX: TRANSACTIONAL, CRASH-RECOVERABLE, AND OWNERSHIP-SEPARATED CODE POLICIES FOR REAL-WORLD ROBOTICS}
+\traxabstract{%
+Agentic code-as-policies systems can synthesize executable robot manipulation programs from natural language, yet deploying them in commercial workstations---such as espresso brewing, bagel/oven heating, and shared-arm multi-appliance fulfillment---exposes five operational failure modes largely unaddressed by simulation-only or research-sandbox agents: (i) non-idempotent external appliances where crashes or lost receipts cause duplicate brews or burnt food under naive retry; (ii) blurred authority between perception, policy synthesis, and host safety interlocks; (iii) coupled self-evaluation where the same LLM grades its own patches; (iv) high onboarding compute budgets and multi-second online LLM latency; and (v) sequential single-appliance assumptions that waste shared-arm throughput. We present \textbf{TRAX} (\emph{Transactional Robot Action eXecution}), a pure-Python-stdlib policy governance, crash reconciliation, and bounded offline evolution framework that keeps perception ownership (e.g., EvidenceScene), deterministic policy execution, and host actuation strictly separated. Online, TRAX executes SHA-256-frozen policies inside a restricted Python AST sandbox with zero online LLM calls and an intent-before-dispatch SQLite command journal enforcing query-first reconciliation on ambiguous physical outcomes. Offline, TRAX combines task-agnostic public-SDK \emph{Active Physical Probing}, closed-loop simulator parameter calibration, multi-hypothesis \texttt{RepairScreener} with AST-based selective subroutine repair, zero-actuation \texttt{recorded\_data} shadow safety gating, decoupled independent acceptance, and an executable \texttt{SkillExperience} toolbox with automatic contract-drift invalidation. Across five strictly evidence-tagged experimental tracks using a matched LLM backend (\texttt{gpt-6-astra}) in MuJoCo, Robosuite, and LIBERO simulations plus recorded-frame shadow feeds: (1) on \textsc{CafeBench~v2} ($n{=}30$: $26$ MuJoCo + $4$ \texttt{recorded\_data}), TRAX achieves \textbf{30/30 (100.0\%, 0 duplicates, 0 false actuations)} in $2$ dev LLM calls ($102.3\,\mathrm{s}$) versus $23/30$ ($76.7\%$, exact McNemar $p{=}0.0156$) for adapted ASPIRE and CaP-X; (2) on a $\le 5$-trial physics-mismatched Sim-to-Sim adaptation benchmark ($n{=}20$), TRAX reaches \textbf{19/20 (95.0\%, 15/16 target + 4/4 shadow)} versus $16/20$ ($80.0\%$) for adapted SimEX-Protocol and $13/20$ ($65.0\%$, $p{=}0.0313$) for zero-shot transfer; (3) on \textsc{CafeBench~v3} shared-arm Coffee+Bagel/Oven concurrent operations ($n{=}12$), TRAX Pipelined+Journal achieves \textbf{12/12 (100.0\%, 0 duplicates, 0 interlock violations)} at $75.9\,\text{orders/hr}$ ($+62.5\%$ over sequential execution at $46.7\,\text{orders/hr}$); (4) on zero-leakage Robosuite~v4 Panda manipulation ($4$ tasks $\times 20$ held-out seeds $= 480$ rollouts, zero hardcoded task hints), TRAX ranks \textbf{\#1 overall and \#1 on every task at 72/80 (90.0\%; \texttt{NutAssemblySquare} 17/20, \texttt{Door} 15/20)}, outperforming online-regenerating CaP-X ($67/80$, $23\times$ higher $p_{95}$ latency) and every frozen baseline ($p \le 1.9{\times}10^{-5}$) with $0$ online LLM calls and $2.05\,\mathrm{s}$ $p_{95}$ latency; and (5) on official LIBERO under a matched \texttt{host\_state\_api} contract, TRAX reaches \textbf{97/100 (97.0\%, $p{=}0.0386$ vs.\ adapted ASPIRE 89/100)} on full \textsc{LIBERO-Spatial} ($10/10$ tasks) and \textbf{88/100 (88.0\%, 0 zero-score task collapses)} on a pre-registered, zero-tuning blind \textsc{LIBERO-Object} generalization test ($10/10$ tasks), exceeding matched-contract adapted RAX-Protocol ($80/100$) and SimEX-Protocol ($82/100$) while statistically tying ASPIRE ($90/100$, $p{=}0.824$, which collapsed $0/10$ on \texttt{t1})---yielding \textbf{257/280 (91.8\%)} and zero task collapses across all $24$ external benchmark tasks. Physical-robot qualification remains pending; no simulation result is claimed as hardware safety approval.
+}
 
-\title{TRAX: Transactional, Crash-Recoverable, and\\ Ownership-Separated Code Policies for\\ Real-World Robotics}
-\author{Tiwater\\
-{\normalsize\href{mailto:research@tiwater.com}{\texttt{research@tiwater.com}}}%
-\thanks{Tiwater (e-mail: \href{mailto:research@tiwater.com}{\texttt{research@tiwater.com}}). Project page: \url{https://tiwater.github.io/trax/}. Archived benchmark receipts from earlier milestones retain legacy internal codename keys (\texttt{craft\_full}) without altering any numerical measurements.}}
+\traxkeywords{TRAX, transactional robot execution, code-as-policies, crash reconciliation, non-idempotent actuation, simulator calibration, active physical probing, verifiable robot software, reproducibility.}
 
 \begin{document}
-\sloppy
-\maketitle
 
-\begin{abstract}\normalfont
-Agentic code-as-policies systems can synthesize executable robot manipulation programs from natural language, yet deploying them in commercial workstations---such as espresso brewing, bagel/oven heating, and shared-arm multi-appliance fulfillment---exposes five operational failure modes largely unaddressed by simulation-only or research-sandbox agents: (i) non-idempotent external appliances where crashes or lost receipts cause duplicate brews or burnt food under naive retry; (ii) blurred authority between perception, policy synthesis, and host safety interlocks; (iii) coupled self-evaluation where the same LLM grades its own patches; (iv) high onboarding compute budgets and multi-second online LLM latency; and (v) sequential single-appliance assumptions that waste shared-arm throughput. We present \textbf{TRAX} (\emph{Transactional Robot Action eXecution}), a pure-Python-stdlib policy governance, crash reconciliation, and bounded offline evolution framework that keeps perception ownership (e.g., EvidenceScene), deterministic policy execution, and host actuation strictly separated. Online, TRAX executes SHA-256-frozen policies inside a restricted Python AST sandbox with zero online LLM calls and an intent-before-dispatch SQLite command journal enforcing query-first reconciliation on ambiguous physical outcomes. Offline, TRAX combines task-agnostic public-SDK \emph{Active Physical Probing}, closed-loop simulator parameter calibration, multi-hypothesis \texttt{RepairScreener} with AST-based selective subroutine repair, zero-actuation \texttt{recorded\_data} shadow safety gating, decoupled independent acceptance, and an executable \texttt{SkillExperience} toolbox with automatic contract-drift invalidation. Across five strictly evidence-tagged experimental tracks using a matched LLM backend (\texttt{gpt-6-astra}) in MuJoCo, Robosuite, and LIBERO simulations plus recorded-frame shadow feeds: (1) on \textsc{CafeBench~v2} ($n{=}30$: $26$ MuJoCo + $4$ \texttt{recorded\_data}), TRAX achieves $30/30$ ($100.0\%$, $0$ duplicate brews, $0$ false actuations) in $2$ dev LLM calls ($102.3\,\mathrm{s}$) versus $23/30$ ($76.7\%$, exact McNemar $p{=}0.0156$) for adapted ASPIRE and CaP-X; (2) on a $\le 5$-trial physics-mismatched Sim-to-Sim adaptation benchmark ($n{=}20$), TRAX reaches $19/20$ ($95.0\%$, $15/16$ target + $4/4$ shadow) versus $16/20$ ($80.0\%$) for adapted SimEX-Protocol and $13/20$ ($65.0\%$, $p{=}0.0313$) for zero-shot transfer; (3) on \textsc{CafeBench~v3} shared-arm Coffee+Bagel/Oven concurrent operations ($n{=}12$), TRAX Pipelined+Journal achieves $12/12$ ($100.0\%$, $0$ duplicates, $0$ interlock violations) at $75.9\,\text{orders/hr}$ ($+62.5\%$ over sequential execution at $46.7\,\text{orders/hr}$); (4) on zero-leakage Robosuite~v4 Panda manipulation ($4$ tasks $\times 20$ held-out seeds $= 480$ rollouts, zero hardcoded task hints), TRAX ranks \#1 overall and \#1 on every task at $72/80$ ($90.0\%$; \texttt{NutAssemblySquare} $17/20$, \texttt{Door} $15/20$), outperforming online-regenerating CaP-X ($67/80$, $23\times$ higher $p_{95}$ latency) and every frozen baseline ($p \le 1.9{\times}10^{-5}$) with $0$ online LLM calls and $2.05\,\mathrm{s}$ $p_{95}$ latency; and (5) on official LIBERO under a matched \texttt{host\_state\_api} contract, TRAX reaches $97/100$ ($97.0\%$, $p{=}0.0386$ vs.\ adapted ASPIRE $89/100$) on full \textsc{LIBERO-Spatial} ($10/10$ tasks) and $88/100$ ($88.0\%$, $0$ zero-score task collapses) on a pre-registered, zero-tuning blind \textsc{LIBERO-Object} generalization test ($10/10$ tasks), exceeding matched-contract adapted RAX-Protocol ($80/100$) and SimEX-Protocol ($82/100$) while statistically tying ASPIRE ($90/100$, $p{=}0.824$, which collapsed $0/10$ on \texttt{t1})---yielding $257/280$ ($91.8\%$) and zero task collapses across all $24$ external benchmark tasks. Physical-robot qualification remains pending; no simulation result is claimed as hardware safety approval.
-\end{abstract}
-
-\begin{IEEEkeywords}\normalfont
-TRAX, transactional robot execution, code-as-policies, crash reconciliation, non-idempotent actuation, simulator calibration, active physical probing, verifiable robot software, reproducibility.
-\end{IEEEkeywords}
+\makeheader
 
 \section{Introduction}
 \label{sec:intro}
 
-\IEEEPARstart{C}{ode-generating} robot agents have progressed rapidly from single-shot program synthesis~\cite{liang2022cap,singh2022progprompt} to closed-loop repair~\cite{schlesinger2024roborepair,ahn2025reliablecap}, standardized coding-agent benchmarks~\cite{fu2026capx}, autonomous skill discovery~\cite{lu2026aspire,enpire2026,ace2026}, simulation-integrated autoresearch (SimEX~\cite{hu2026simex}), and scalable online exploration (RAX~\cite{huang2026rax}). Despite these advances, commercial real-world workstations---such as automated espresso preparation, bagel heating, and multi-appliance combo fulfillment---remain poorly served by drop-in deployment of research agent frameworks.
+Code-generating robot agents have progressed rapidly from single-shot program synthesis~\cite{liang2022cap,singh2022progprompt} to closed-loop repair~\cite{schlesinger2024roborepair,ahn2025reliablecap}, standardized coding-agent benchmarks~\cite{fu2026capx}, autonomous skill discovery~\cite{lu2026aspire,enpire2026,ace2026}, simulation-integrated autoresearch (SimEX~\cite{hu2026simex}), and scalable online exploration (RAX~\cite{huang2026rax}). Despite these advances, commercial real-world workstations---such as automated espresso preparation, bagel heating, and multi-appliance combo fulfillment---remain poorly served by drop-in deployment of research agent frameworks.
 
 Examining why recent state-of-the-art frameworks such as SimEX~\cite{hu2026simex} and RAX~\cite{huang2026rax} cannot be deployed directly in a commercial robotic cell reveals five structural gaps:
 \begin{enumerate}
@@ -53,30 +37,34 @@ Examining why recent state-of-the-art frameworks such as SimEX~\cite{hu2026simex
 
 We present \textbf{TRAX} (\emph{Transactional Robot Action eXecution}), a lightweight, pure-Python-stdlib governance and closed-loop evolution framework designed specifically around these commercial constraints while absorbing the strongest compatible mechanisms from SimEX and RAX. Rather than competing with perception or low-level control stacks, TRAX defines an explicit transactional contract boundary between perception authorities, deterministic policy execution, and host actuation.
 
-\textbf{Evidence scope.} Throughout this paper, we enforce a strict four-tier evidence separation: \texttt{fixture} (deterministic software contracts), \texttt{simulator} (MuJoCo~3.3.0 PBR café workstation, Robosuite~1.5.2 Panda, and optional LIBERO), \texttt{recorded\_data} (zero-actuation replay of recorded/logged perception frames), and \texttt{physical\_robot} (currently $0$ physical hardware qualification runs; explicitly future work). Every quantitative table is deterministically generated from archived JSON receipts with explicit evidence tags.
+\begin{traxcallout}[Evidence Scope \& Provenance Discipline]
+Throughout this report, we enforce a strict four-tier evidence separation: \texttt{fixture} (deterministic software contracts), \texttt{simulator} (MuJoCo~3.3.0 PBR café workstation, Robosuite~1.5.2 Panda, and optional LIBERO), \texttt{recorded\_data} (zero-actuation replay of recorded/logged perception frames), and \texttt{physical\_robot} (currently $0$ physical hardware qualification runs; explicitly future work). Every quantitative table is deterministically generated from immutable archived JSON receipts with explicit evidence tags. Archived receipts from earlier milestones retain legacy internal codename keys (\texttt{craft\_full}) without altering any numerical measurements.
+\end{traxcallout}
 
 Our contributions are fourfold:
 \begin{enumerate}
-    \item \textbf{Ownership-Separated Runtime Governance and Intent-Before-Dispatch Reconciliation (Section~\ref{sec:formulation}--\ref{sec:method}-A/B):} We formalize a four-layer failure attribution taxonomy (\texttt{perception} / \texttt{control} / \texttt{device} / \texttt{policy}), a restricted Python AST sandbox executing SHA-256-frozen bundles with zero online LLM calls, and a crash-recoverable SQLite command journal enforcing query-first reconciliation on non-idempotent appliance actions.
-    \item \textbf{Zero-Leakage Active Physical Probing, Closed-Loop Sim Calibration, and Selective Subroutine Repair (Section~\ref{sec:method}-C/D):} We introduce task-agnostic diagnostic probes strictly over public host SDKs (zero hardcoded task constants), bounded simulator parameter calibration for physics-mismatched Sim-to-Sim adaptation, and a multi-hypothesis \texttt{RepairScreener} enhanced with AST-guided selective subroutine repair, adaptive stagnation escape, and negative-attempt memory.
-    \item \textbf{Verified Executable Skill Toolbox and Commercial Operations Loop (Section~\ref{sec:method}-E/F):} We store AST-verified helper snippets paired with empirical \texttt{measured\_limits}, \texttt{regression\_case\_ids}, and automatic invalidation upon host SDK contract drift, embedded inside a Day-Shift $\to$ Nightly Evolution $\to$ Independent Acceptance $\to$ Versioned Rollback operational loop.
+    \item \textbf{Ownership-Separated Runtime Governance and Intent-Before-Dispatch Reconciliation (Sections~\ref{sec:formulation} and~\ref{sec:method}):} We formalize a four-layer failure attribution taxonomy (\texttt{perception} / \texttt{control} / \texttt{device} / \texttt{policy}), a restricted Python AST sandbox executing SHA-256-frozen bundles with zero online LLM calls, and a crash-recoverable SQLite command journal enforcing query-first reconciliation on non-idempotent appliance actions.
+    \item \textbf{Zero-Leakage Active Physical Probing, Closed-Loop Sim Calibration, and Selective Subroutine Repair (Section~\ref{sec:method}):} We introduce task-agnostic diagnostic probes strictly over public host SDKs (zero hardcoded task constants), bounded simulator parameter calibration for physics-mismatched Sim-to-Sim adaptation, and a multi-hypothesis \texttt{RepairScreener} enhanced with AST-guided selective subroutine repair, adaptive stagnation escape, and negative-attempt memory.
+    \item \textbf{Verified Executable Skill Toolbox and Commercial Operations Loop (Section~\ref{sec:method}):} We store AST-verified helper snippets paired with empirical \texttt{measured\_limits}, \texttt{regression\_case\_ids}, and automatic invalidation upon host SDK contract drift, embedded inside a Day-Shift $\to$ Nightly Evolution $\to$ Independent Acceptance $\to$ Versioned Rollback operational loop.
     \item \textbf{Reproducible Multi-Track Empirical Evaluation (Section~\ref{sec:experiments}):} Using a matched real model backend (\texttt{gpt-6-astra}) across five evaluation tracks---Day/Night Operations Loop + \textsc{CafeBench~v2}, $\le 5$-trial Sim-to-Sim Stage-2 adaptation, \textsc{CafeBench~v3} multi-appliance combo operations, zero-leakage Robosuite~v4 Panda manipulation ($480$ rollouts), and official \textsc{LIBERO-Spatial} ($10/10$) plus pre-registered zero-tuning blind \textsc{LIBERO-Object} ($10/10$)---we demonstrate statistically significant gains over adapted ASPIRE, CaP-X, SimEX, and RAX protocols while honestly archiving failed intermediate runs and remaining gaps.
 \end{enumerate}
 
 \section{Related Work and Positioning}
 \label{sec:related}
 
-\textbf{Code-as-Policies and Closed-Loop Program Repair:} Code as Policies~\cite{liang2022cap} and ProgPrompt~\cite{singh2022progprompt} established LLM synthesis of Python robot control scripts over perception and motion primitives, later extended with 3D value maps (VoxPoser~\cite{huang2023voxposer}), relational keypoints (ReKep~\cite{huang2024rekep}), language corrections (DROC~\cite{zha2023droc}), in-context control feedback (InCoRo~\cite{zhu2024incoro}), and service-robot deployment (CodeBotler~\cite{hu2023codebotler}). RoboRepair~\cite{schlesinger2024roborepair} and Reliable-CaP~\cite{ahn2025reliablecap} introduced structured trace-driven repair and neuro-symbolic guards. However, these methods assume idempotent or stateless primitives and omit persistent intent journaling, multi-appliance interlocks, and decoupled release governance.
+\textbf{Code-as-Policies and Closed-Loop Program Repair.} Code as Policies~\cite{liang2022cap} and ProgPrompt~\cite{singh2022progprompt} established LLM synthesis of Python robot control scripts over perception and motion primitives, later extended with 3D value maps (VoxPoser~\cite{huang2023voxposer}), relational keypoints (ReKep~\cite{huang2024rekep}), language corrections (DROC~\cite{zha2023droc}), in-context control feedback (InCoRo~\cite{zhu2024incoro}), and service-robot deployment (CodeBotler~\cite{hu2023codebotler}). RoboRepair~\cite{schlesinger2024roborepair} and Reliable-CaP~\cite{ahn2025reliablecap} introduced structured trace-driven repair and neuro-symbolic guards. However, these methods assume idempotent or stateless primitives and omit persistent intent journaling, multi-appliance interlocks, and decoupled release governance.
 
-\textbf{Agentic Skill Discovery, Benchmarks, and Online Exploration:} Recent frameworks scale agentic code generation through benchmarking and iterative experience: CaP-X~\cite{fu2026capx} evaluates coding agents with multi-turn online regeneration; ASPIRE~\cite{lu2026aspire} and ENPIRE~\cite{enpire2026} autonomously discover reusable skills and self-improve real-world policies; ACE-CaP-0~\cite{ace2026}, Voyager~\cite{wang2023voyager}, RoboSkill~\cite{xie2026roboskill}, AMP~\cite{chen2026amp}, and RoboClaw~\cite{li2026roboclaw} build persistent experience libraries for long-horizon manipulation. Most closely related to TRAX's offline evolution loop are \textbf{SimEX}~\cite{hu2026simex} (simulation-integrated autoresearch with iterative simulator calibration, paired code-plus-experience libraries, and $\le 5$-trial real-world adaptation) and \textbf{RAX}~\cite{huang2026rax} (scaling online exploration with selective subroutine repair, working memory of failed attempts, and backend refusal diagnostics). Table~\ref{tab:positioning} positions TRAX against these paradigms: TRAX adopts SimEX's simulator-calibrated multi-hypothesis screening and RAX's selective subroutine repair, while adding strict ownership separation, SQLite transactional reconciliation, independent acceptance, and zero-online-LLM deterministic service execution.
+\textbf{Agentic Skill Discovery, Benchmarks, and Online Exploration.} Recent frameworks scale agentic code generation through benchmarking and iterative experience: CaP-X~\cite{fu2026capx} evaluates coding agents with multi-turn online regeneration; ASPIRE~\cite{lu2026aspire} and ENPIRE~\cite{enpire2026} autonomously discover reusable skills and self-improve real-world policies; ACE-CaP-0~\cite{ace2026}, Voyager~\cite{wang2023voyager}, RoboSkill~\cite{xie2026roboskill}, AMP~\cite{chen2026amp}, and RoboClaw~\cite{li2026roboclaw} build persistent experience libraries for long-horizon manipulation. Most closely related to TRAX's offline evolution loop are \textbf{SimEX}~\cite{hu2026simex} (simulation-integrated autoresearch with iterative simulator calibration, paired code-plus-experience libraries, and $\le 5$-trial real-world adaptation) and \textbf{RAX}~\cite{huang2026rax} (scaling online exploration with selective subroutine repair, working memory of failed attempts, and backend refusal diagnostics). Table~\ref{tab:positioning} positions TRAX against these paradigms: TRAX adopts SimEX's simulator-calibrated multi-hypothesis screening and RAX's selective subroutine repair, while adding strict ownership separation, SQLite transactional reconciliation, independent acceptance, and zero-online-LLM deterministic service execution.
 
-\begin{table*}[t]
+\begin{table}[t]
 \centering
-\caption{Architectural Positioning of TRAX Against Representative Code-as-Policies and Agentic Robotics Frameworks.}
+\caption{Architectural positioning of TRAX against representative code-as-policies and agentic robotics frameworks.}
 \label{tab:positioning}
-\resizebox{\textwidth}{!}{%
+\footnotesize
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{@{}lccccccc@{}}
 \toprule
+\rowcolor{traxbg}
 Framework & Ownership Boundary & Non-Idempotent Journal & Indep.\ Gate + Shadow & Online LLM Calls & Offline Budget & Multi-Appliance & Code Status \\
 \midrule
 CaP / ProgPrompt~\cite{liang2022cap,singh2022progprompt} & Coupled scripts & No & No & $0$ (single-shot) & $1$ call & No & Public \\
@@ -84,10 +72,11 @@ CaP-X~\cite{fu2026capx} & Benchmark harness & No & Env reward only & Multi-turn 
 ASPIRE~\cite{lu2026aspire} & Skill library agent & No & Self-verified & $0$ (frozen skill) & Med & No & Public \\
 SimEX~\cite{hu2026simex} & Unified sim/real & No & Sim replay only & $0$ (frozen code) & $\sim 3{,}360$ calls ($21.6\,\mathrm{h}$) & No & Closed \\
 RAX~\cite{huang2026rax} & Agent owns RGB-D & No & Env reward only & Online episodes & $16$--$128$ eps ($4.9$--$14.2\,\mathrm{h}$) & No & Research \\
+\rowcolor{traxtint}
 \textbf{TRAX (Ours)} & \textbf{Strict 3-Owner} & \textbf{SQLite Query-First} & \textbf{Decoupled + 0-Act} & \textbf{0 (Frozen AST)} & \textbf{2--12 calls (mins)} & \textbf{Pipelined + Locks} & \textbf{Pure Stdlib} \\
 \bottomrule
 \end{tabular}}
-\end{table*}
+\end{table}
 
 \section{Problem Formulation and Ownership Boundaries}
 \label{sec:formulation}
@@ -103,43 +92,89 @@ We model a commercial robotic cell as three strictly separated authorities:
 \subsection{Non-Idempotent Command Lifecycle}
 Partition host actions into idempotent observations/re-centerings $\mathcal{A}_{\mathrm{idem}}$ and non-idempotent physical commitments $\mathcal{A}_{\mathrm{non}}$ (e.g., \texttt{start\_coffee\_machine}, \texttt{start\_oven\_heat}). Every call $a \in \mathcal{A}_{\mathrm{non}}$ receives a deterministic key $k = \text{key}(\text{order\_id}, \text{step}, \text{attempt\_scope})$ and transitions through an explicit state machine:
 \begin{equation}
-\begin{aligned}
-    \texttt{INTENT} &\xrightarrow{\text{dispatch}} \texttt{DISPATCHED} \\
-    &\xrightarrow{\text{receipt}} \{\texttt{SUCCEEDED}, \texttt{FAILED}, \texttt{UNKNOWN}\}.
-\end{aligned}
+    \texttt{INTENT} \xrightarrow{\;\text{dispatch}\;} \texttt{DISPATCHED} \xrightarrow{\;\text{receipt}\;} \{\texttt{SUCCEEDED},\; \texttt{FAILED},\; \texttt{UNKNOWN}\}.
 \end{equation}
 If a crash or timeout yields \texttt{UNKNOWN}, the policy \emph{must not} re-dispatch $a$; instead, the runtime executes a mandatory \texttt{RECONCILE} transition via $\mathcal{H}.\texttt{query\_action\_status}(k)$. Crucially, we do \emph{not} claim distributed exactly-once physical execution from a local SQLite journal alone: exact single actuation requires cooperative host-side idempotency key verification, and unresolved ambiguity fails closed into operator escalation.
 
 \subsection{Four-Layer Failure Attribution and Evidence Taxonomy}
-When an execution fails, naive code-repair agents blindly edit policy code even when the root cause is a stale camera or broken appliance. TRAX enforces four-layer attribution $\ell(e) \in \{\texttt{perception},\allowbreak \texttt{control},\allowbreak \texttt{device},\allowbreak \texttt{policy}\}$ before invoking policy repair, blocking policy edits that would mask perception or hardware faults. Every verification record carries an explicit tag $s \in \{\texttt{fixture},\allowbreak \texttt{simulator},\allowbreak \texttt{recorded\_data},\allowbreak \texttt{physical\_robot}\}$ so simulation success can never be conflated with physical safety qualification.
+When an execution fails, naive code-repair agents blindly edit policy code even when the root cause is a stale camera or broken appliance. TRAX enforces four-layer attribution $\ell(e) \in \{\texttt{perception},\, \texttt{control},\, \texttt{device},\, \texttt{policy}\}$ before invoking policy repair, blocking policy edits that would mask perception or hardware faults. Every verification record carries an explicit tag $s \in \{\texttt{fixture},\, \texttt{simulator},\, \texttt{recorded\_data},\, \texttt{physical\_robot}\}$ so simulation success can never be conflated with physical safety qualification.
 
 \section{The TRAX Architecture and Method}
 \label{sec:method}
 
-Fig.~\ref{fig:architecture} illustrates the end-to-end TRAX runtime and offline evolution architecture. All core governance modules under \texttt{src/trax/} depend exclusively on the Python~3.10 standard library; physics simulators (\texttt{mujoco\_cafe\_driver.py}, \texttt{robosuite\_bench.py}, \texttt{libero\_bench.py}) are strictly isolated optional modules.
+Figure~\ref{fig:architecture} illustrates the end-to-end TRAX runtime and offline evolution architecture. All core governance modules under \texttt{src/trax/} depend exclusively on the Python~3.10 standard library; physics simulators (\texttt{mujoco\_cafe\_driver.py}, \texttt{robosuite\_bench.py}, \texttt{libero\_bench.py}) are strictly isolated optional modules.
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[font=\scriptsize,
-    box/.style={draw, rounded corners=1.5pt, align=center, inner sep=2.2pt, minimum height=5.4mm},
-    arr/.style={-{Latex[length=1.4mm]}, semithick}]
-\node[box, fill=black!5, text width=8.2cm] (perc) {\textbf{1. Perception Owner} (EvidenceScene / Vision / \texttt{recorded\_data} Shadow): timestamped state, confidence, freshness};
-\node[box, below=2.0mm of perc, text width=8.2cm, fill=blue!7] (online) {\textbf{2A. TRAX Online Runtime (0 Online LLM Calls)}\\ SHA-256 Frozen Bundle $\to$ AST Sandbox $\to$ SQLite Intent Journal (Query-First Reconcile) $\to$ 4-Layer Attribution};
-\node[box, below=2.0mm of online, text width=8.2cm, fill=black!5] (host) {\textbf{3. Host Actuation Owner} (\texttt{ticos-edge} / MuJoCo / Robosuite): robot IK, thermal/door/L2 interlocks, \texttt{query\_action\_status}};
-\node[box, below=3.0mm of host, xshift=-2.1cm, text width=3.85cm, fill=orange!9] (probe) {\textbf{2B. Offline Evolution}\\ Public-SDK ActiveProbe + Sim Calibration + Multi-Hypothesis \texttt{RepairScreener} (AST Subroutine Fix)};
-\node[box, below=3.0mm of host, xshift=2.1cm, text width=3.85cm, fill=green!8] (gate) {\textbf{2C. Decoupled Governance}\\ Zero-Actuation Shadow + Independent Acceptance + \texttt{ReleaseRegistry} + Verified Skill Toolbox};
-\draw[arr] (perc) -- (online);
-\draw[arr] (online) -- (host);
-\draw[arr, dashed] (host.south -| probe.north) -- (probe.north);
-\draw[arr] (probe.east) -- (gate.west);
-\draw[arr, rounded corners=2pt] (gate.east) -- ++(2.2mm,0) |- (online.east);
-\end{tikzpicture}
-\caption{\textbf{TRAX ownership-separated transactional architecture.} Solid arrows denote deterministic runtime execution and verified release promotion; the dashed arrow denotes offline regression capture from host/runtime traces into bounded nightly evolution.}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+    font=\sffamily\footnotesize,
+    zone/.style={draw=traxborder, rounded corners=4pt, line width=0.7pt, inner sep=6pt},
+    card/.style={draw=traxborder, fill=white, rounded corners=3pt, line width=0.6pt, align=left, inner sep=5pt},
+    hi/.style={draw=traxblue, fill=traxtint, rounded corners=3pt, line width=0.8pt, align=left, inner sep=5pt},
+    ok/.style={draw=traxgreen!60, fill=traxgreenbg, rounded corners=3pt, line width=0.7pt, align=left, inner sep=5pt},
+    warn/.style={draw=traxamber!60, fill=traxamberbg, rounded corners=3pt, line width=0.7pt, align=left, inner sep=5pt},
+    arr/.style={-{Latex[length=2mm]}, line width=0.8pt, color=traxslate},
+    barr/.style={-{Latex[length=2mm]}, line width=0.9pt, color=traxblue},
+    garr/.style={-{Latex[length=2mm]}, line width=0.85pt, color=traxgreen}
+]
+% --- Zone 1: Perception ---
+\node[card, text width=3.35cm] (perc1) {\textbf{\color{traxnavy}EvidenceScene / Vision}\\[2pt]{\scriptsize $\bullet$ 6-DoF object \& cup pose\\$\bullet$ Confidence \& freshness\\$\bullet$ Ambiguity flags}};
+\node[card, below=4.5mm of perc1, text width=3.35cm] (perc2) {\textbf{\color{traxnavy}Recorded Shadow Feed}\\[2pt]{\scriptsize $\bullet$ Real/logged edge frames\\$\bullet$ Zero physical actuation\\\texttt{recorded\_data}}};
+\node[warn, below=4.5mm of perc2, text width=3.35cm] (perc3) {\textbf{\color{traxamber}Boundary Invariant}\\[2pt]{\scriptsize Never fabricates scene state;\\fails closed on stale/ambig.}};
+
+% --- Zone 2: TRAX Core ---
+\node[hi, right=7.5mm of perc1, yshift=1.5mm, text width=7.55cm] (online) {%
+  \textbf{\color{traxblue}2A.\ Online Transactional Runtime (0 Online LLM Calls)}\\[3pt]
+  {\scriptsize
+  \textbf{Frozen Bundle} (SHA-256 + AST Sandbox) $\;\to\;$
+  \textbf{SQLite Intent Journal} (Query-First Reconcile) $\;\to\;$
+  \textbf{4-Layer Attribution} (\texttt{percep/ctrl/dev/policy})}
+};
+\node[card, below=5mm of online, text width=7.55cm] (offline) {%
+  \textbf{\color{traxnavy}2B.\ Offline / Nightly Evolution (Bounded Budget)}\\[3pt]
+  {\scriptsize
+  \textbf{Public-SDK ActiveProbe} (0 hardcoded hints) $\;+\;$
+  \textbf{Closed-Loop Sim Calibration} $\;\to\;$
+  \textbf{Multi-Hypothesis \texttt{RepairScreener}} (AST selective subroutine fix + negative memory + \texttt{RegressionSuite})}
+};
+\node[ok, below=5mm of offline, text width=7.55cm] (gov) {%
+  \textbf{\color{traxgreen}2C.\ Decoupled Release Governance \& Verified Toolbox}\\[3pt]
+  {\scriptsize
+  \textbf{Zero-Actuation Shadow} $\;\to\;$
+  \textbf{Independent Acceptance} (Proposer $\neq$ Eval) $\;\to\;$
+  \textbf{\texttt{ReleaseRegistry}} (rollback drills) $\;+\;$
+  \textbf{\texttt{SkillExperience}} (contract-drift invalidation)}
+};
+
+% --- Zone 3: Host ---
+\node[card, right=7.5mm of online, yshift=-1.5mm, text width=3.4cm] (host1) {\textbf{\color{traxnavy}Robot \& Interlocks}\\[2pt]{\scriptsize $\bullet$ Motion / IK controller\\$\bullet$ Thermal, door \& L2 locks\\\texttt{ticos-edge} / sim host}};
+\node[card, below=4.5mm of host1, text width=3.4cm] (host2) {\textbf{\color{traxnavy}Non-Idempotent Devices}\\[2pt]{\scriptsize $\bullet$ Espresso brew machine\\$\bullet$ Bagel / high-speed oven\\\texttt{query\_action\_status}}};
+\node[ok, below=4.5mm of host2, text width=3.4cm] (host3) {\textbf{\color{traxgreen}4-Tier Evidence Tags}\\[2pt]{\scriptsize \texttt{fixture} $|$ \texttt{simulator}\\\texttt{recorded\_data} $|$ \texttt{robot*}}};
+
+% Background Zones
+\begin{scope}[on background layer]
+  \node[zone, fill=traxbg, fit=(perc1)(perc2)(perc3), label={[font=\sffamily\scriptsize\bfseries, text=traxslate]above:1.\ Perception Owner}] (z1) {};
+  \node[zone, fill=traxtint!45, draw=traxblue!45, fit=(online)(offline)(gov), label={[font=\sffamily\scriptsize\bfseries, text=traxblue]above:2.\ TRAX Core (Pure Python Stdlib)}] (z2) {};
+  \node[zone, fill=traxbg, fit=(host1)(host2)(host3), label={[font=\sffamily\scriptsize\bfseries, text=traxslate]above:3.\ Host Actuation Owner}] (z3) {};
+\end{scope}
+
+% Arrows
+\draw[arr] (perc1.east) -- (online.west |- perc1.east);
+\draw[arr, dashed] (perc2.east) -- (gov.west |- perc2.east);
+\draw[barr] ([yshift=2.5pt]online.east) -- ([yshift=2.5pt]host1.west |- online.east);
+\draw[arr] ([yshift=-4.5pt]host1.west |- online.east) -- ([yshift=-4.5pt]online.east);
+\draw[arr] (host1.south) -- (host2.north);
+\draw[arr, dashed] (online.south) -- node[right, font=\sffamily\tiny, color=traxmuted]{failed trace capture} (offline.north);
+\draw[garr] (offline.south) -- (gov.north);
+\draw[garr, rounded corners=3pt] (gov.east) -- ++(3mm,0) |- ([yshift=-11pt]online.east);
+\end{tikzpicture}}
+\caption{\textbf{TRAX ownership-separated transactional architecture.} Solid arrows denote deterministic runtime execution and verified release promotion; dashed arrows denote zero-actuation \texttt{recorded\_data} shadow feeds and offline regression capture into bounded nightly evolution.}
 \label{fig:architecture}
 \end{figure}
 
 \subsection{Frozen Policy Bundles and Restricted AST Sandbox}
-Every promotable policy is serialized into an immutable \texttt{PolicyBundle} binding source code, configuration, host SDK contract, and acceptance criteria via SHA-256 digests (\texttt{PolicyBundle} hashes freeze content; they are not safety signatures). Execution uses a pure-stdlib AST validator and interpreter (\texttt{src/trax/policy.py}) that forbids \texttt{import}, \texttt{exec}, \texttt{eval}, attribute/identifier names starting with \texttt{\_}, and arbitrary Python built-in calls, permitting only declared pure helpers and the host SDK surface. Preflight compliance (\texttt{check\_sandbox\_ast\_compliance}) rejects non-compliant drafts before consuming any simulator reset.
+Every promotable policy is serialized into an immutable \texttt{PolicyBundle} binding source code, configuration, host SDK contract, and acceptance criteria via SHA-256 digests (\texttt{PolicyBundle} hashes freeze content; they are not safety signatures). Execution uses a pure-stdlib AST validator and interpreter (\texttt{src/trax/policy.py}) that forbids \texttt{import}, \texttt{exec}, \texttt{eval}, \texttt{lambda}, attribute/identifier names starting with \texttt{\_}, and arbitrary Python built-in calls, permitting only declared pure helpers and the host SDK surface. Preflight compliance (\texttt{check\_sandbox\_ast\_compliance}) rejects non-compliant drafts before consuming any simulator reset.
 
 \subsection{Intent-Before-Dispatch SQLite Journal}
 Non-idempotent host actions pass through \texttt{Journal} (\texttt{src/trax/journal.py}), backed by durable SQLite WAL storage. Before calling the host driver, TRAX persists an \texttt{INTENT} record keyed by $(\text{order\_id}, \text{action\_name}, \text{step\_key})$. On recovery after crash, restart, or lost receipt, the journal intercepts repeated calls for the same key and invokes \texttt{query\_action\_status} on the host: if the host confirms completion, TRAX returns the reconciled receipt without re-actuating; if the host reports in-progress, TRAX awaits completion; if the host cannot confirm state, TRAX fails closed (\texttt{unreconciled\_unknown}) rather than blindly retrying.
@@ -163,34 +198,35 @@ Unlike passive text memories, TRAX's \texttt{SkillExperienceStore} (\texttt{src/
 \subsection{Commercial Operations Loop}
 \texttt{src/trax/operations.py} orchestrates continuous service without online LLM instability:
 \begin{equation}
-{\small \text{Day-Shift } v_k \xrightarrow{\text{capture}} \text{Nightly Screener} \xrightarrow{\text{Shadow+Gate}} v_{k+1}.}
+    \text{Day-Shift } v_k \xrightarrow{\;\text{failure capture}\;} \text{Nightly Screener} \xrightarrow{\;\text{Shadow + Indep.\ Gate}\;} \text{Immutable Release } v_{k+1}.
 \end{equation}
 Any failed order during Day-Shift automatically mints a regression case. Nightly evolution runs replay calibration, multi-hypothesis screening, zero-actuation \texttt{recorded\_data} shadow checks, and a strictly decoupled \texttt{evaluate\_acceptance} gate (checking completion rate and metric delivery accuracy) before publishing immutable release $v_{k+1}$ with verified rollback to $v_k$.
 
 \section{Experimental Evaluation}
 \label{sec:experiments}
 
-All LLM-driven benchmarks use a matched real model backend (\texttt{gpt-6-astra}, \texttt{provider=codex\_cli}, \texttt{effort=medium}) with shared paired initial drafts where applicable, Wilson $95\%$ confidence intervals, and exact paired two-sided McNemar $p$-values. All tables below are auto-generated directly from archived JSON receipts via \texttt{make tables}. Fig.~\ref{fig:pbr_workstation} shows the MuJoCo~3.3.0 7-DOF Franka Panda PBR café workstation used in our simulator tracks.
+All LLM-driven benchmarks use a matched real model backend (\texttt{gpt-6-astra}, \texttt{provider=codex\_cli}, \texttt{effort=medium}) with shared paired initial drafts where applicable, Wilson $95\%$ confidence intervals, and exact paired two-sided McNemar $p$-values. All tables below are auto-generated directly from archived JSON receipts via \texttt{make tables}. Figure~\ref{fig:pbr_workstation} shows the MuJoCo~3.3.0 7-DOF Franka Panda PBR café workstation used in our simulator tracks.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.32\linewidth]{figures/panda_pbr_overview.jpg}\hfill
-\includegraphics[width=0.32\linewidth]{figures/panda_pbr_overhead.jpg}\hfill
-\includegraphics[width=0.32\linewidth]{figures/panda_pbr_spout.jpg}
+\includegraphics[width=0.324\linewidth]{figures/panda_pbr_overview.jpg}\hfill
+\includegraphics[width=0.324\linewidth]{figures/panda_pbr_overhead.jpg}\hfill
+\includegraphics[width=0.324\linewidth]{figures/panda_pbr_spout.jpg}
 \caption{\textbf{MuJoCo 3.3.0 7-DOF Franka Panda PBR café workstation (\texttt{evidence\_source=simulator}).} Left: isometric workstation overview; center: overhead layout; right: espresso spout alignment camera. Optional \texttt{--sensor-noise} and \texttt{--domain-randomization} flags parameterize Sim-to-Sim physics mismatch.}
 \label{fig:pbr_workstation}
 \end{figure}
 
 \subsection{Track A: Operations Closed Loop and \textsc{CafeBench~v2}}
-\textbf{Operations Closed Loop (\texttt{simulator} + \texttt{recorded\_data}):} Starting from frozen live-generated policy \texttt{v1.0} without journal protection, Day-Shift completes $5/6$ orders and fails on a mid-brew crash/restart, automatically capturing regression case \texttt{reg\_001\_047faa}. Nightly evolution reproduces the fault (\texttt{reproduced\_exact}), rejects zero-shot rewrite H1 (\texttt{target\_failure\_not\_fixed}), promotes journal-reconciling candidate H2, passes $4/4$ zero-actuation \texttt{recorded\_data} shadow frames ($0$ false actuations), passes independent acceptance ($100\%$ completion, max delivery error $0.067\,\mathrm{mm} \le 15.0\,\mathrm{mm}$), drills rollback (\texttt{v2.0 $\to$ v1.0 $\to$ v2.0}), and records verified \texttt{SkillExperience} limits ($\text{slip}=34.2\,\mathrm{mm}$, $\text{layout shift}=35.4\,\mathrm{mm}$). Subsequent Day-Shift \texttt{v2.0} completes $6/6$ ($100\%$) with $0$ duplicate brews and $0$ unreconciled unknowns.
+\textbf{Operations Closed Loop (\texttt{simulator} + \texttt{recorded\_data}).} Starting from frozen live-generated policy \texttt{v1.0} without journal protection, Day-Shift completes $5/6$ orders and fails on a mid-brew crash/restart, automatically capturing regression case \texttt{reg\_001\_047faa}. Nightly evolution reproduces the fault (\texttt{reproduced\_exact}), rejects zero-shot rewrite H1 (\texttt{target\_failure\_not\_fixed}), promotes journal-reconciling candidate H2, passes $4/4$ zero-actuation \texttt{recorded\_data} shadow frames ($0$ false actuations), passes independent acceptance ($100\%$ completion, max delivery error $0.067\,\mathrm{mm} \le 15.0\,\mathrm{mm}$), drills rollback (\texttt{v2.0 $\to$ v1.0 $\to$ v2.0}), and records verified \texttt{SkillExperience} limits ($\text{slip}=34.2\,\mathrm{mm}$, $\text{layout shift}=35.4\,\mathrm{mm}$). Subsequent Day-Shift \texttt{v2.0} completes $6/6$ ($100\%$) with $0$ duplicate brews and $0$ unreconciled unknowns.
 
-\textbf{\textsc{CafeBench~v2} ($n{=}30$ held-out: $26$ MuJoCo simulator + $4$ \texttt{recorded\_data} shadow):} We compare TRAX against adapted ASPIRE, CaP-X, SimEX-Direct-Repair (ablation without screening/journal), and Strong Zero-Shot across five fault tiers (layout/cup slip, crash/reconciliation, appliance redlines, compound faults, and recorded shadow frames). As shown in Table~\ref{tab:cafebench_v2}, TRAX achieves \textbf{30/30 (100.0\%, 95\% CI [88.7\%, 100.0\%])} with $0$ duplicate non-idempotent brews and $0$ false actuations in just \textbf{2 dev LLM calls} ($102.3\,\mathrm{s}$), outperforming adapted ASPIRE and CaP-X ($23/30$, $76.7\%$, $+23.3\,\mathrm{pp}$, exact McNemar $p{=}0.0156$) at $3\times$ lower LLM budget and wall time, and beating SimEX-Direct-Repair ($21/30$, $70.0\%$, $p{=}0.0039$) which regressed on $2/4$ shadow frames. Stateless baselines fail $7/10$ crash-reconciliation scenarios.
+\textbf{\textsc{CafeBench~v2} ($n{=}30$ held-out: $26$ MuJoCo simulator + $4$ \texttt{recorded\_data} shadow).} We compare TRAX against adapted ASPIRE, CaP-X, SimEX-Direct-Repair (ablation without screening/journal), and Strong Zero-Shot across five fault tiers (layout/cup slip, crash/reconciliation, appliance redlines, compound faults, and recorded shadow frames). As shown in Table~\ref{tab:cafebench_v2}, TRAX achieves \textbf{30/30 (100.0\%, 95\% CI [88.7\%, 100.0\%])} with $0$ duplicate non-idempotent brews and $0$ false actuations in just \textbf{2 dev LLM calls} ($102.3\,\mathrm{s}$), outperforming adapted ASPIRE and CaP-X ($23/30$, $76.7\%$, $+23.3\,\mathrm{pp}$, exact McNemar $p{=}0.0156$) at $3\times$ lower LLM budget and wall time, and beating SimEX-Direct-Repair ($21/30$, $70.0\%$, $p{=}0.0039$) which regressed on $2/4$ shadow frames. Stateless baselines fail $7/10$ crash-reconciliation scenarios.
 
 \begin{table}[t]
 \centering
-\caption{\textsc{CafeBench~v2} Held-Out Results ($n{=}30$: $26$ \texttt{simulator} + $4$ \texttt{recorded\_data}, Matched \texttt{gpt-6-astra}).}
+\caption{\textsc{CafeBench~v2} held-out results ($n{=}30$: $26$ \texttt{simulator} + $4$ \texttt{recorded\_data}, matched \texttt{gpt-6-astra}).}
 \label{tab:cafebench_v2}
-\resizebox{\linewidth}{!}{\input{tables/cafebench_v2_table.tex}}
+\small
+\input{tables/cafebench_v2_table.tex}
 \end{table}
 
 \subsection{Track B: $\le 5$-Trial Physics-Mismatched Sim-to-Sim Adaptation}
@@ -198,9 +234,10 @@ Inspired by SimEX's Stage-2 real-world transfer protocol~\cite{hu2026simex}, we 
 
 \begin{table}[t]
 \centering
-\caption{Sim-to-Sim Stage-2 Adaptation ($\le 5$ Target Trials, \texttt{simulator} + \texttt{recorded\_data}). Run~1 Preserved Honestly.}
+\caption{Sim-to-Sim Stage-2 adaptation ($\le 5$ target trials, \texttt{simulator} + \texttt{recorded\_data}). Run~1 preserved honestly.}
 \label{tab:sim2sim}
-\resizebox{\linewidth}{!}{\input{tables/sim2sim_table.tex}}
+\small
+\input{tables/sim2sim_table.tex}
 \end{table}
 
 \subsection{Track C: \textsc{CafeBench~v3} Multi-Appliance Combo Operations}
@@ -208,9 +245,10 @@ To test shared-arm multi-appliance concurrency (coffee machine + bagel oven unde
 
 \begin{table}[t]
 \centering
-\caption{\textsc{CafeBench~v3} Shared-Arm Multi-Appliance Combo Operations ($n{=}12$, \texttt{evidence\_source=simulator}).}
+\caption{\textsc{CafeBench~v3} shared-arm multi-appliance combo operations ($n{=}12$, \texttt{evidence\_source=simulator}).}
 \label{tab:combo_v3}
-\resizebox{\linewidth}{!}{\input{tables/combo_v3_table.tex}}
+\small
+\input{tables/combo_v3_table.tex}
 \end{table}
 
 \subsection{Track D: Zero-Leakage Robosuite~v4 Panda Parity (480 Rollouts)}
@@ -218,19 +256,20 @@ To verify that TRAX's evolution loop generalizes beyond café workflows without 
 
 In earlier v3 iterations (archived in \texttt{experiments/goal-v3-simex-parity/}), TRAX initially lagged on \texttt{NutAssemblySquare} ($4/20$) because coarse whole-file polish locked out mechanistic edits; enabling AST selective subroutine repair, adaptive stagnation escape, and negative-attempt memory first tripled \texttt{NutAssemblySquare} to $12/20$ ($60.0\%$, $p{=}0.0005$ vs.\ adapted SimEX-Protocol). Table~\ref{tab:robosuite_v4} reports the full 480-rollout v4 rerun with all upgrades active. \textbf{TRAX ranks \#1 overall and \#1 on every individual task at 72/80 (90.0\%, 95\% CI [81.5\%, 94.9\%])}: \texttt{Lift} $20/20$, \texttt{PickPlaceCan} $20/20$, \texttt{NutAssemblySquare} $17/20$ ($85\%$), and \texttt{Door} $15/20$ ($75\%$). TRAX outperforms online multi-turn CaP-X ($67/80$, $83.8\%$, Turn-1 frozen $66/80$) with \textbf{0 online eval LLM calls} and \textbf{23$\times$ lower $p_{95}$ latency} ($2.05\,\mathrm{s}$ vs.\ $47.29\,\mathrm{s}$ with $8$ online eval LLM calls), beats every frozen baseline with high statistical significance---adapted SimEX-Protocol ($51/80$, $63.7\%$, $p{=}1.9{\times}10^{-5}$), adapted ASPIRE ($49/80$, $61.3\%$, $p{=}1.5{\times}10^{-5}$), SimEX-Direct-Repair ($41/80$, $51.2\%$, $p{<}10^{-4}$), and Strong Zero-Shot ($20/80$, $25.0\%$, $p{<}10^{-4}$)---and consumes the \textbf{lowest dev budget} of all iterative protocols ($13$ dev LLM calls, $67$ sim resets).
 
-\begin{table*}[t]
+\begin{table}[t]
 \centering
-\caption{Zero-Leakage Robosuite~v4 Panda Benchmark (4 Tasks $\times$ 20 Held-Out Seeds $= 480$ Rollouts, \texttt{evidence\_source=simulator}, Matched \texttt{gpt-6-astra}). TRAX ranks \#1 overall and \#1 on every task with $0$ online eval LLM calls and the lowest dev budget.}
+\caption{Zero-Leakage Robosuite~v4 Panda benchmark (4 tasks $\times$ 20 held-out seeds $= 480$ rollouts, \texttt{evidence\_source=simulator}, matched \texttt{gpt-6-astra}). TRAX ranks \#1 overall and \#1 on every task with $0$ online eval LLM calls and the lowest dev budget.}
 \label{tab:robosuite_v4}
-\resizebox{\textwidth}{!}{\input{tables/robosuite_v4_table.tex}}
-\end{table*}
+\footnotesize
+\resizebox{\linewidth}{!}{\input{tables/robosuite_v4_table.tex}}
+\end{table}
 
 \subsection{Track E: Official \textsc{LIBERO-Spatial} (10/10) and Zero-Tuning Blind \textsc{LIBERO-Object} (10/10)}
 We integrate the official LIBERO benchmark suite inside an isolated optional environment (\texttt{.venv-libero}, \texttt{trax libero-bench}) with per-task subprocess isolation (eliminating upstream \texttt{robosuite 1.4.0} XML file-descriptor leaks) and standard 10-step post-reset object settling applied identically to all methods. Crucially, our LIBERO harness exposes a structured host state API (\texttt{observation\_contract="host\_state\_api"}) rather than raw RGB-D pixels; accordingly, all matched-contract rows share the same \texttt{gpt-6-astra} model, $\le 5$ dev LLM calls, and zero goal images, while RAX's Table~6 RGB-D numbers~\cite{huang2026rax} are reported strictly as an unmatched literature reference.
 
-\textbf{Full \textsc{LIBERO-Spatial} ($10/10$ tasks $\times 10$ held-out init states $= 100$ trials/method):} Across all 10 tasks (Table~\ref{tab:libero_m1}), \textbf{TRAX reaches 97/100 (97.0\%, 95\% CI [91.6\%, 99.0\%])}---achieving $10/10$ on $8/10$ tasks and $9/10$ on the hardest articulated top-drawer task (\texttt{t4}) where every baseline scored $0/10$---while converging in just $21$ dev LLM calls ($2.1$/task; $9/10$ tasks converged on iteration~2) and $115$ sim resets. TRAX significantly outperforms adapted ASPIRE ($89/100$, $p{=}0.0386$, $28$ calls), adapted SimEX-Protocol ($17/100$, $p{<}10^{-4}$), and Strong Zero-Shot ($0/100$, $p{<}10^{-4}$). All iterative fixes along the Spatial progression ($1/10 \to 57/100 \to 97/100$) were strictly task-agnostic infrastructure and probing bugs (dropped 3D probe fields in \texttt{parse\_probe\_telemetry}, missing 10-step settling, numeric \texttt{gripper=1} parsing, and forbidden-\texttt{lambda} AST documentation).
+\textbf{Full \textsc{LIBERO-Spatial} ($10/10$ tasks $\times 10$ held-out init states $= 100$ trials/method).} Across all 10 tasks (Table~\ref{tab:libero_m1}), \textbf{TRAX reaches 97/100 (97.0\%, 95\% CI [91.6\%, 99.0\%])}---achieving $10/10$ on $8/10$ tasks and $9/10$ on the hardest articulated top-drawer task (\texttt{t4}) where every baseline scored $0/10$---while converging in just $21$ dev LLM calls ($2.1$/task; $9/10$ tasks converged on iteration~2) and $115$ sim resets. TRAX significantly outperforms adapted ASPIRE ($89/100$, $p{=}0.0386$, $28$ calls), adapted SimEX-Protocol ($17/100$, $p{<}10^{-4}$), and Strong Zero-Shot ($0/100$, $p{<}10^{-4}$). All iterative fixes along the Spatial progression ($1/10 \to 57/100 \to 97/100$) were strictly task-agnostic infrastructure and probing bugs (dropped 3D probe fields in \texttt{parse\_probe\_telemetry}, missing 10-step settling, numeric \texttt{gripper=1} parsing, and forbidden-\texttt{lambda} AST documentation).
 
-\textbf{Pre-Registered Zero-Tuning Blind \textsc{LIBERO-Object} ($10/10$ tasks, 5 matched methods):} To test directly against overfitting on \textsc{LIBERO-Spatial}, we froze code at commit \texttt{108648a} (\texttt{TRAX-LIBERO-v1.1}) \emph{before} executing a single \textsc{LIBERO-Object} episode, making only three task-agnostic pre-registered additions: (i) balanced 5-sample rim+center ActiveProbe within 450 steps, (ii) fairness parity for SimEX-Protocol (exposing \texttt{policy\_return} and a paired skill toolbox), and (iii) a matched-contract \textbf{RAX-Protocol (Adapted)} baseline (\texttt{PROGRESS/TIPS} working memory + AST subroutine preservation + cross-task skill library, without TRAX ActiveProbe or 4-layer attribution). On this one-shot blind test with zero tuning (Table~\ref{tab:libero_m1}):
+\textbf{Pre-Registered Zero-Tuning Blind \textsc{LIBERO-Object} ($10/10$ tasks, 5 matched methods).} To test directly against overfitting on \textsc{LIBERO-Spatial}, we froze code at commit \texttt{108648a} (\texttt{TRAX-LIBERO-v1.1}) \emph{before} executing a single \textsc{LIBERO-Object} episode, making only three task-agnostic pre-registered additions: (i) balanced 5-sample rim+center ActiveProbe within 450 steps, (ii) fairness parity for SimEX-Protocol (exposing \texttt{policy\_return} and a paired skill toolbox), and (iii) a matched-contract \textbf{RAX-Protocol (Adapted)} baseline (\texttt{PROGRESS/TIPS} working memory + AST subroutine preservation + cross-task skill library, without TRAX ActiveProbe or 4-layer attribution). On this one-shot blind test with zero tuning (Table~\ref{tab:libero_m1}):
 \begin{itemize}
     \item Fixing SimEX-Protocol parity lifted it from $17/100$ (Spatial) to $82/100$ (blind Object), and adapted ASPIRE reached $90/100$---confirming the benchmark harness is strictly fair to baselines.
     \item \textbf{TRAX achieved 88/100 (88.0\%)}---exceeding matched-contract \textbf{RAX-Protocol (Adapted) ($80/100$, $+8.0\,\mathrm{pp}$)} and \textbf{SimEX-Protocol ($82/100$, $+6.0\,\mathrm{pp}$)}, statistically tying ASPIRE ($90/100$, exact McNemar $p{=}0.824$), and standing as the \textbf{only method with zero $0/10$ task collapses} (minimum task score $6/10$). On \texttt{t1} (\texttt{cream\_cheese\_1}), TRAX's balanced probe empirically discovered center grasping ($r{=}0.0$, lift $0.086\,\mathrm{m}$) and scored \textbf{9/10}, while ASPIRE ($0/10$), SimEX ($0/10$), and RAX-Protocol ($2/10$) collapsed.
@@ -238,12 +277,13 @@ We integrate the official LIBERO benchmark suite inside an isolated optional env
     \item \emph{Honest blind-test lesson (not retroactively patched):} When ActiveProbe achieves $0/5$ lifts (\texttt{t4} ketchup, \texttt{t6} butter), emitting a zero-lift ``best'' candidate adds mild prompt noise (\texttt{t4}: $9/10$, \texttt{t6}: $8/10$). Adding a $0/5$ probe-abstention gate is deferred cleanly to M2 without altering the frozen blind run.
 \end{itemize}
 
-\begin{table*}[t]
+\begin{table}[t]
 \centering
-\caption{Official \textsc{LIBERO-Spatial} ($10/10$) and Pre-Registered Zero-Tuning Blind \textsc{LIBERO-Object} ($10/10$, Frozen Commit \texttt{108648a}, \texttt{evidence\_source=simulator}, \texttt{observation\_contract=host\_state\_api}). $\dagger$ Local matched-contract adaptation (\texttt{protocol\_adapted\_from\_rax\_2610\_22496}), not an official RGB-D reproduction. $\ddagger$ Unmatched literature reference~\cite{huang2026rax}: raw $256{\times}256$ RGB-D + 3 goal images, Claude Opus 5.5, $\le 20$ episodes/task, $n{=}500$/suite.}
+\caption{Official \textsc{LIBERO-Spatial} ($10/10$) and pre-registered zero-tuning blind \textsc{LIBERO-Object} ($10/10$, frozen commit \texttt{108648a}, \texttt{evidence\_source=simulator}, \texttt{observation\_contract=host\_state\_api}). $\dagger$ Local matched-contract adaptation (\texttt{protocol\_adapted\_from\_rax\_2610\_22496}), not an official RGB-D reproduction. $\ddagger$ Unmatched literature reference~\cite{huang2026rax}: raw $256{\times}256$ RGB-D + 3 goal images, Claude Opus 5.5, $\le 20$ episodes/task, $n{=}500$/suite.}
 \label{tab:libero_m1}
-\resizebox{\textwidth}{!}{\input{tables/libero_m1_table.tex}}
-\end{table*}
+\footnotesize
+\resizebox{\linewidth}{!}{\input{tables/libero_m1_table.tex}}
+\end{table}
 
 \section{Limitations, Honest Evidence Boundaries, and Future Work}
 \label{sec:limitations}
@@ -261,7 +301,7 @@ We explicitly bound the claims supported by our current evidence:
 
 We presented \textbf{TRAX}, a pure-Python-stdlib transactional governance and bounded offline evolution framework for real-world robot code policies. By preserving strict ownership separation between perception, policy execution, and host actuation---and combining intent-before-dispatch SQLite reconciliation, zero-leakage public-SDK active physical probing, closed-loop simulator calibration, AST-guided selective subroutine repair, decoupled acceptance, and contract-drift-aware executable skill toolboxes---TRAX resolves key operational failure modes left open by prior coding-agent frameworks while keeping online execution deterministic with zero online LLM latency. All code, pure-stdlib tests, and archived JSON receipts are open for reproducible verification at \url{https://tiwater.github.io/trax/}.
 
-\bibliographystyle{IEEEtran}
+\bibliographystyle{unsrtnat}
 \bibliography{../../references/references}
 
 \end{document}

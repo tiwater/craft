@@ -62,6 +62,7 @@ def generate_cafebench_v2_table(data: dict[str, Any], src: Path) -> str:
         f"% Auto-generated from {src.relative_to(ROOT)} (sha256:{_sha256_short(src)})",
         "\\begin{tabular}{@{}lcccccc@{}}",
         "\\toprule",
+        "\\rowcolor{traxbg}",
         "Method & Held-Out & Sim / Shadow & Dup / False & Dev LLM & Wall (s) & $p$ vs.\\ TRAX \\\\",
         "\\midrule",
     ]
@@ -77,6 +78,7 @@ def generate_cafebench_v2_table(data: dict[str, Any], src: Path) -> str:
             dup_fa = f"\\textbf{{{dup_fa}}}"
             dev_llm = f"\\textbf{{{r['dev_llm_calls']}}}"
             wall = f"\\textbf{{{r['dev_wall_s']:.1f}}}"
+            lines.append("\\rowcolor{traxtint}")
         else:
             dev_llm = str(r["dev_llm_calls"])
             wall = f"{r['dev_wall_s']:.1f}"
@@ -99,6 +101,7 @@ def generate_sim2sim_table(r2: dict[str, Any], r1: dict[str, Any], src_r2: Path,
         f"% Auto-generated from {src_r2.relative_to(ROOT)} (sha256:{_sha256_short(src_r2)}) and {src_r1.relative_to(ROOT)} (sha256:{_sha256_short(src_r1)})",
         "\\begin{tabular}{@{}lcccccc@{}}",
         "\\toprule",
+        "\\rowcolor{traxbg}",
         "Method & Overall ($n{=}20$) & Target / Shadow & Trials / Cal & LLM & Run 1 & $p$ vs.\\ TRAX \\\\",
         "\\midrule",
     ]
@@ -113,6 +116,7 @@ def generate_sim2sim_table(r2: dict[str, Any], r1: dict[str, Any], src_r2: Path,
         if key == "craft_full":
             overall = f"\\textbf{{{overall}}}"
             t_sh = f"\\textbf{{{t_sh}}}"
+            lines.append("\\rowcolor{traxtint}")
         lines.append(f"{label} & {overall} & {t_sh} & {tr_cal} & {r['adapt_llm_calls']} & {run1_str} & {p_str} \\\\")
     lines.extend(["\\bottomrule", "\\end{tabular}", ""])
     return "\n".join(lines)
@@ -129,6 +133,7 @@ def generate_combo_table(data: dict[str, Any], src: Path) -> str:
         f"% Auto-generated from {src.relative_to(ROOT)} (sha256:{_sha256_short(src)})",
         "\\begin{tabular}{@{}lccccc@{}}",
         "\\toprule",
+        "\\rowcolor{traxbg}",
         "Execution Policy & Pass ($n{=}12$) & Dup Actions & Interlocks & Cycle (s) & Orders/hr \\\\",
         "\\midrule",
     ]
@@ -145,6 +150,7 @@ def generate_combo_table(data: dict[str, Any], src: Path) -> str:
             inter = f"\\textbf{{{inter}}}"
             cyc = f"\\textbf{{{cyc}}}"
             tput = f"\\textbf{{{tput}}}"
+            lines.append("\\rowcolor{traxtint}")
         lines.append(f"{label} & {passed} & {dup} & {inter} & {cyc} & {tput} \\\\")
     lines.extend(["\\bottomrule", "\\end{tabular}", ""])
     return "\n".join(lines)
@@ -212,6 +218,7 @@ def generate_robosuite_v4_table(v4: dict[str, Any], src_v4: Path) -> str:
         f"% Auto-generated from {src_v4.relative_to(ROOT)} (sha256:{_sha256_short(src_v4)})",
         "\\begin{tabular}{@{}lccccccc@{}}",
         "\\toprule",
+        "\\rowcolor{traxbg}",
         "Method & Overall ($n{=}80$) & Turn-1 & Lift / Can / Nut / Door & Dev LLM / Resets & Eval LLM & P95 (s) & $p$ vs.\\ TRAX \\\\",
         "\\midrule",
     ]
@@ -232,6 +239,7 @@ def generate_robosuite_v4_table(v4: dict[str, Any], src_v4: Path) -> str:
             dev_str = f"\\textbf{{{dev_str}}}"
             eval_llm = f"\\textbf{{{eval_llm}}}"
             p95 = f"\\textbf{{{p95}}}"
+            lines.append("\\rowcolor{traxtint}")
         lines.append(
             f"{label} & {overall} & {t1} & {tasks_str} & {dev_str} & {eval_llm} & {p95} & {p_str} \\\\"
         )
@@ -271,6 +279,7 @@ def generate_libero_m1_table(
         f"% Auto-generated from {src_spatial.relative_to(ROOT)} (sha256:{_sha256_short(src_spatial)}) and {src_obj.relative_to(ROOT)} (sha256:{_sha256_short(src_obj)})",
         "\\begin{tabular}{@{}lcccccc@{}}",
         "\\toprule",
+        "\\rowcolor{traxbg}",
         "Method (\\texttt{host\\_state\\_api}, \\texttt{gpt-6-astra}) & Spatial ($n{=}100$) & Spatial Dev & Spatial $p$ & Blind Object ($n{=}100$) & Obj.\\ 0/10 Tasks & Object $p$ \\\\",
         "\\midrule",
     ]
@@ -293,6 +302,7 @@ def generate_libero_m1_table(
             sp_dev = f"\\textbf{{{sp_dev}}}"
             ob_val = f"\\textbf{{{ob_val}}}"
             ob_zero = f"\\textbf{{{ob_zero}}}"
+            lines.append("\\rowcolor{traxtint}")
         lines.append(
             f"{label} & {sp_val} & {sp_dev} & {sp_p} & {ob_val} & {ob_zero} & {ob_p} \\\\"
         )
