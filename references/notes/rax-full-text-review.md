@@ -2,7 +2,7 @@
 
 - **Stable cite key and exact source/version:** `huang2026rax` — *Scaling Online Exploration for Robot Agents*, `https://arxiv.org/abs/2610.22496` (arXiv:2610.22496v1, submitted 2026-10-15; PDF `https://arxiv.org/pdf/2610.22496`).
 - **Authors:** Runhan Huang, Xiangcheng Zhang, Haoyu Chen, Yitong Li, Yen-Jen Wang, Bohan Lyu, Haotian Ye, Chuye Hong, Yixuan Wang, Chloe Su, Haoyu Xiong, Yangzhen Wu, Enze Xie, Travis Manderson, Stefano Ermon, Pieter Abbeel, Antonio Torralba, Dawn Song, Weirui Ye, Yilun Du.
-- **Reading date / coverage:** 2026-11-24. Abstract, Sections 1–6 (Introduction, Related Work, Cognitive Architecture, System, Experiments, Ablations, Continual Learning, Discussion), and Tables 1, 2, 4, 7, 8 text reviewed from arXiv PDF text extraction. Figure images and full appendices not independently audited. Not reproduced.
+- **Reading date / coverage:** 2026-11-24 (updated 2026-11-25 with Section 5.2.5, Table 6, and Section 10.7 HTML text extraction). Abstract, Sections 1–6, Section 10.7, and Tables 1, 2, 4, 6, 7, 8 text reviewed from arXiv v1. Figure images and full appendices not independently audited. Not reproduced.
 
 ## Problem and scope
 
@@ -19,7 +19,10 @@ RAX (*Robot Agent eXploration*) studies scaling online exploration for general-p
 
 ## Key reported results (not cross-paper ranking; exact paper scope)
 
-- **Simulation (6 benchmarks, Section 5.2):** Outperforms top baselines by **+37.4% on average** across RoboDojo (bimanual ARX X5), BEHAVIOR-1K (Galaxea R1Pro), HumanoidArena (Unitree G1 + Dex3: **89.8%** avg across 60 official test episodes, +7.9 pts over WB-WAM, `Table 4`), DexJoCo (Franka + 16-DoF Allegro), and LIBERO / LIBERO-Pro (exceeds VPP2 by +33.7 pts and **ASPIRE by +12.8 pts**).
+- **Simulation (6 benchmarks, Section 5.2):** Outperforms top baselines by **+37.4% on average** across RoboDojo (bimanual ARX X5), BEHAVIOR-1K (Galaxea R1Pro), HumanoidArena (Unitree G1 + Dex3: **89.8%** avg across 60 official test episodes, +7.9 pts over WB-WAM, `Table 4`), DexJoCo (Franka + 16-DoF Allegro), and LIBERO / LIBERO-Pro (`Table 6`, Section 5.2.5 & 10.7):
+  - **LIBERO (50 official init states/task, RGB-D 256×256 + 3 goal images, Claude Opus 5.5, ≤20 interactive exploration episodes/task, after 10 no-op settling steps):** Spatial **99.2%**, Object **100.0%**, Goal **98.6%**, Long **96.2%**, Avg **98.5%**.
+  - **LIBERO-Pro (position perturbation, no adapt / ≤5 adapt eps):** Spatial **79.2% / 79.2%**, Object **100.0% / 100.0%**, Goal **73.4% / 87.0%**, Long **51.2% / 71.4%**, Avg **76.0% / 84.4%** (exceeds VPP2 by +33.7 pts without adaptation and **ASPIRE** 63.2% avg by +12.8 pts without adaptation / +21.2 pts with adaptation).
+  - **Robosuite (`Lift`, `PickPlaceCan`, `NutAssemblySquare`, `Door`):** Not evaluated in `huang2026rax`.
 - **Depth ablation (`Table 8`):** RGB-D outperforms RGB-only by **+17.3 points** on average across domain-randomized RoboDojo tasks (`31.1%` vs `13.8%`).
 - **Real robots (Sections 5.1, 5.5):** Franka FR3 (5 tasks: memory cup shuffle, air-fryer articulated drawer + banana, wet/paper towel wiping, 0.1 mm peg insertion) and wheeled dual-arm Rainbow RB-Y1 (6-stage long-horizon lab tidying composing prior skills).
 

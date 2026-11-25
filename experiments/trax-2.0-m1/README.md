@@ -19,6 +19,7 @@
 | #4 | ASPIRE-Protocol (Adapted) | 49/80 (61.3%) | 49/80 (61.3%) | 20/20 | 20/20 | 0/20 (0%) | 9/20 (45%) | 17 / 85 | 0 | 2.14s | **`+26/-3` (`p=1.5e-5`)** |
 | #5 | SimEX-Direct-Repair (Ablation) | 41/80 (51.2%) | 41/80 (51.2%) | 20/20 | 20/20 | 1/20 (5%) | 0/20 (0%) | 16 / 80 | 0 | 2.10s | **`+32/-1` (`p<1e-6`)** |
 | #6 | Strong Zero-Shot | 20/80 (25.0%) | 20/20 (25.0%) | 20/20 | 0/20 | 0/20 (0%) | 0/20 (0%) | 4 / 0 | 0 | 2.02s | **`+52/-0` (`p<1e-6`)** |
+| — | *RAX (`huang2026rax`, lit. ref.)* | *N/R* | *N/R* | *N/R* | *N/R* | *N/R* | *N/R* | *—* | *—* | *—* | *Not evaluated on Robosuite in paper* |
 
 - **Key takeaways:** TRAX ranks **#1 on every individual task**, beats **online multi-turn CaP-X by +6.2 pp** with **0 online eval LLM calls** and **23× lower p95 latency** (`2.05s` vs `47.29s`), beats every frozen baseline with `p <= 1.9e-5`, and uses the **lowest dev budget** (`13` LLM calls, `67` sim resets) of all iterative methods.
 
@@ -35,6 +36,9 @@
 | #2 | ASPIRE-Protocol (Adapted) | 89/100 (89.0%) | `[81.4%, 93.8%]` | 10 | 10 | 10 | 10 | 0 | 10 | 9 | 10 | 10 | 10 | 28 / 140 | 4.00s / 5.18s | **`+10/-2` (`p=0.0386`)** |
 | #3 | SimEX-Protocol (Adapted) | 17/100 (17.0%) | `[10.9%, 25.6%]` | 0 | 8 | 0 | 0 | 0 | 9 | 0 | 0 | 0 | 0 | 50 / 250 | 3.88s / 5.32s | **`+80/-0` (`p<1e-6`)** |
 | #4 | Strong Zero-Shot | 0/100 (0.0%) | `[0.0%, 3.7%]` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 10 / 0 | 3.09s / 3.84s | **`+97/-0` (`p<1e-6`)** |
+| — | *RAX (`huang2026rax`, Table 6, unmatched RGB-D)*† | *99.2% (n=500)* | *—* | *—* | *—* | *—* | *—* | *—* | *—* | *—* | *—* | *—* | *—* | *≤20 eps/task (Claude Opus 5.5)* | *—* | *Unmatched contract†* |
+
+> † **Contract & budget boundary for RAX (`huang2026rax`, arXiv:2610.22496v1, Section 5.2.5 & 10.7):** RAX is shown strictly as an **unmatched literature reference** (not ranked directly against `host_state_api` rows). RAX operates from raw `256×256` RGB-D cameras + 3 goal completion images using Claude Opus 5.5 with up to 20 interactive multi-turn exploration episodes per task (~1 hour/task, evaluated on 50 official init states/task; Spatial `99.2%`, Object `100.0%`, Goal `98.6%`, Long `96.2%`, LIBERO-Pro Spatial `79.2%`), whereas the four matched-contract rows above use `gpt-6-astra` over `host_state_api` with `max_dev_llm_calls=5` (TRAX averaged 2.1 calls / 11.5 sim resets per task) and zero goal images.
 
 - **Key takeaways:**
   - **97/100 (97.0%)** overall — **8/10 tasks at 10/10 (100%)**, and **9/10 on the hardest top-drawer task `t4`** where every baseline scored **0/10**.
