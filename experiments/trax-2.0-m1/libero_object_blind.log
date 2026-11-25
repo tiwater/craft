@@ -1,0 +1,633 @@
+[libero_object_t0] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t0] Task: 'pick up the alphabet soup and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t0][Shared it=1] dev=1/5
+  [libero_object_t0][ASPIRE it=2] dev=5/5
+  [libero_object_t0][SimEX-Protocol it=2] dev=5/5 regs=0
+  [libero_object_t0][RAX-Protocol it=2] dev=5/5
+  [libero_object_t0][TRAX it=2] (H-Subroutine1: Selective Subroutine Repair (4 failing init state(s))) dev=1/5 regs=0 prog=0.146 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_object_t0][TRAX it=3] (H-Ground2: Exact Spatial-Relation Grounding + Unblocked Approach) dev=2/5 regs=0 prog=0.146 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_object_t0][TRAX it=4] (H-Subroutine1: Selective Subroutine Repair (3 failing init state(s))) dev=1/5 regs=1 prog=0.146 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_object_t0][TRAX it=5] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=1/5 regs=1 prog=0.146 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+[libero_object_t0][EVAL] strong_zeroshot  -> 5/10 (50.0%)
+[libero_object_t0][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t0][EVAL] simex_protocol   -> 10/10 (100.0%)
+[libero_object_t0][EVAL] rax_protocol     -> 10/10 (100.0%)
+[libero_object_t0][EVAL] craft_full       -> 6/10 (60.0%)
+[libero_object_t1] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t1] Task: 'pick up the cream cheese and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t1][Shared it=1] dev=0/5
+  [libero_object_t1][ASPIRE it=2] dev=0/5
+  [libero_object_t1][ASPIRE it=3] dev=0/5
+  [libero_object_t1][ASPIRE it=4] dev=0/5
+  [libero_object_t1][ASPIRE it=5] dev=0/5
+  [libero_object_t1][SimEX-Protocol it=2] dev=0/5 regs=0
+  [libero_object_t1][SimEX-Protocol it=3] dev=0/5 regs=0
+  [libero_object_t1][SimEX-Protocol it=4] dev=0/5 regs=0
+  [libero_object_t1][SimEX-Protocol it=5] dev=0/5 regs=0
+  [libero_object_t1][RAX-Protocol it=2] dev=0/5
+  [libero_object_t1][RAX-Protocol it=3] dev=1/5
+  [libero_object_t1][RAX-Protocol it=4] dev=0/5
+  [libero_object_t1][RAX-Protocol it=5] dev=0/5
+  [libero_object_t1][TRAX ActiveProbe] +1 sim reset -> ['Scanned 5 free-space radial/center grasps on `cream_cheese_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0861m at radius_m=0.0, z_offset_m=0.0, world_angle_rad=0.0, gripper_yaw_rad=0.0 (jaw_rel_rad=0.0, clearance_m=0.1114, closed_width=0.0421m; 1/5 samples lifted >=0.03m).']
+  [libero_object_t1][TRAX it=2] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=0/5 regs=0 prog=-0.018 attr=['never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort']
+  [libero_object_t1][TRAX it=3] (H-Ground2: Exact Spatial-Relation Grounding + Unblocked Approach) dev=5/5 regs=0 prog=0.148 attr=[]
+[libero_object_t1][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_object_t1][EVAL] aspire_protocol  -> 0/10 (0.0%)
+[libero_object_t1][EVAL] simex_protocol   -> 0/10 (0.0%)
+[libero_object_t1][EVAL] rax_protocol     -> 2/10 (20.0%)
+[libero_object_t1][EVAL] craft_full       -> 9/10 (90.0%)
+[libero_object_t2] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t2] Task: 'pick up the salad dressing and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t2][Shared it=1] dev=0/5
+  [libero_object_t2][ASPIRE it=2] dev=5/5
+  [libero_object_t2][SimEX-Protocol it=2] dev=3/5 regs=0
+  [libero_object_t2][SimEX-Protocol it=3] dev=5/5 regs=0
+  [libero_object_t2][RAX-Protocol it=2] dev=5/5
+  [libero_object_t2][TRAX ActiveProbe] +1 sim reset -> ['Scanned 5 free-space radial/center grasps on `salad_dressing_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0535m at radius_m=0.0, z_offset_m=0.0, world_angle_rad=0.0, gripper_yaw_rad=3.143 (jaw_rel_rad=0.0, clearance_m=0.1154, closed_width=0.0376m; 1/5 samples lifted >=0.03m).']
+  [libero_object_t2][TRAX it=2] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=3/5 regs=0 prog=0.081 attr=['grasp_missed_or_slip', 'grasp_missed_or_slip']
+  [libero_object_t2][TRAX it=3] (H-Subroutine2: Preserve Working Path + Add Closed-Loop Multi-Side Grasp Fallback) dev=3/5 regs=0 prog=0.081 attr=['grasp_missed_or_slip', 'grasp_missed_or_slip']
+  [libero_object_t2][TRAX it=4] (H-Place3: High-Clearance Transport, Obstacle Avoidance & Precision Release) dev=0/5 regs=3 prog=-0.073 attr=['approach_missed_object', 'approach_missed_object', 'approach_missed_object', 'approach_missed_object', 'approach_missed_object']
+  [libero_object_t2][TRAX it=5] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=0/5 regs=3 prog=-0.014 attr=['never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort']
+[libero_object_t2][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_object_t2][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t2][EVAL] simex_protocol   -> 10/10 (100.0%)
+[libero_object_t2][EVAL] rax_protocol     -> 10/10 (100.0%)
+[libero_object_t2][EVAL] craft_full       -> 7/10 (70.0%)
+[libero_object_t3] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t3] Task: 'pick up the bbq sauce and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t3][Shared it=1] dev=0/5
+  [libero_object_t3][ASPIRE it=2] dev=5/5
+  [libero_object_t3][SimEX-Protocol it=2] dev=5/5 regs=0
+  [libero_object_t3][RAX-Protocol it=2] dev=5/5
+  [libero_object_t3][TRAX ActiveProbe] +1 sim reset -> ['Scanned 5 free-space radial/center grasps on `bbq_sauce_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0729m at radius_m=0.0, z_offset_m=0.0, world_angle_rad=0.0, gripper_yaw_rad=3.141 (jaw_rel_rad=0.0, clearance_m=0.1232, closed_width=0.0376m; 1/5 samples lifted >=0.03m).']
+  [libero_object_t3][TRAX it=2] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=5/5 regs=0 prog=0.142 attr=[]
+[libero_object_t3][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_object_t3][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t3][EVAL] simex_protocol   -> 10/10 (100.0%)
+[libero_object_t3][EVAL] rax_protocol     -> 10/10 (100.0%)
+[libero_object_t3][EVAL] craft_full       -> 9/10 (90.0%)
+[libero_object_t4] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t4] Task: 'pick up the ketchup and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t4][Shared it=1] dev=0/5
+  [libero_object_t4][ASPIRE it=2] dev=5/5
+  [libero_object_t4][SimEX-Protocol it=2] dev=5/5 regs=0
+  [libero_object_t4][RAX-Protocol it=2] dev=5/5
+  [libero_object_t4][TRAX ActiveProbe] +1 sim reset -> ['Scanned 5 free-space radial/center grasps on `ketchup_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=-0.0532m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=4.712, gripper_yaw_rad=-0.0 (jaw_rel_rad=1.571, clearance_m=0.2106, closed_width=0.0041m; 0/5 samples lifted >=0.03m).']
+  [libero_object_t4][TRAX it=2] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=3/5 regs=0 prog=0.140 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_object_t4][TRAX it=3] (H-Subroutine2: Preserve Working Path + Add Closed-Loop Multi-Side Grasp Fallback) dev=3/5 regs=0 prog=0.140 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_object_t4][TRAX it=4] (H-Place3: High-Clearance Transport, Obstacle Avoidance & Precision Release) dev=3/5 regs=0 prog=0.140 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_object_t4][TRAX it=5] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=3/5 regs=0 prog=0.140 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+[libero_object_t4][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_object_t4][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t4][EVAL] simex_protocol   -> 10/10 (100.0%)
+[libero_object_t4][EVAL] rax_protocol     -> 10/10 (100.0%)
+[libero_object_t4][EVAL] craft_full       -> 9/10 (90.0%)
+[libero_object_t5] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t5] Task: 'pick up the tomato sauce and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t5][Shared it=1] dev=3/5
+  [libero_object_t5][ASPIRE it=2] dev=5/5
+  [libero_object_t5][SimEX-Protocol it=2] dev=3/5 regs=0
+  [libero_object_t5][SimEX-Protocol it=3] dev=0/5 regs=3
+  [libero_object_t5][SimEX-Protocol it=4] dev=3/5 regs=0
+  [libero_object_t5][SimEX-Protocol it=5] dev=3/5 regs=0
+  [libero_object_t5][RAX-Protocol it=2] dev=0/5
+  [libero_object_t5][RAX-Protocol it=3] dev=5/5
+  [libero_object_t5][TRAX it=2] (H-Subroutine1: Selective Subroutine Repair (2 failing init state(s))) dev=5/5 regs=0 prog=0.145 attr=[]
+[libero_object_t5][EVAL] strong_zeroshot  -> 2/10 (20.0%)
+[libero_object_t5][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t5][EVAL] simex_protocol   -> 2/10 (20.0%)
+[libero_object_t5][EVAL] rax_protocol     -> 10/10 (100.0%)
+[libero_object_t5][EVAL] craft_full       -> 10/10 (100.0%)
+[libero_object_t6] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t6] Task: 'pick up the butter and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t6][Shared it=1] dev=0/5
+  [libero_object_t6][ASPIRE it=2] dev=3/5
+  [libero_object_t6][ASPIRE it=3] dev=5/5
+  [libero_object_t6][SimEX-Protocol it=2] dev=0/5 regs=0
+  [libero_object_t6][SimEX-Protocol it=3] dev=5/5 regs=0
+  [libero_object_t6][RAX-Protocol it=2] dev=3/5
+  [libero_object_t6][RAX-Protocol it=3] dev=1/5
+  [libero_object_t6][RAX-Protocol it=4] dev=2/5
+  [libero_object_t6][RAX-Protocol it=5] dev=2/5
+  [libero_object_t6][TRAX ActiveProbe] +1 sim reset -> ['Scanned 5 free-space radial/center grasps on `butter_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=4.712, gripper_yaw_rad=0.0 (jaw_rel_rad=1.571, clearance_m=0.2196, closed_width=0.004m; 0/5 samples lifted >=0.03m).']
+  [libero_object_t6][TRAX it=2] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=0/5 regs=0 prog=-0.010 attr=['grasp_missed_or_slip', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'grasp_missed_or_slip']
+  [libero_object_t6][TRAX it=3] (H-Ground2: Exact Spatial-Relation Grounding + Unblocked Approach) dev=5/5 regs=0 prog=0.149 attr=[]
+[libero_object_t6][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_object_t6][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t6][EVAL] simex_protocol   -> 10/10 (100.0%)
+[libero_object_t6][EVAL] rax_protocol     -> 6/10 (60.0%)
+[libero_object_t6][EVAL] craft_full       -> 8/10 (80.0%)
+[libero_object_t7] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t7] Task: 'pick up the milk and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t7][Shared it=1] dev=0/5
+  [libero_object_t7][ASPIRE it=2] dev=2/5
+  [libero_object_t7][ASPIRE it=3] dev=5/5
+  [libero_object_t7][SimEX-Protocol it=2] dev=5/5 regs=0
+  [libero_object_t7][RAX-Protocol it=2] dev=5/5
+  [libero_object_t7][TRAX ActiveProbe] +1 sim reset -> ['Scanned 5 free-space radial/center grasps on `milk_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0615m at radius_m=0.0, z_offset_m=0.0, world_angle_rad=0.0, gripper_yaw_rad=0.0 (jaw_rel_rad=0.0, clearance_m=0.1835, closed_width=0.0609m; 1/5 samples lifted >=0.03m).']
+  [libero_object_t7][TRAX it=2] (H-FreeSpace1: Max-Clearance Free-Space Contact & Probe-Grounded Jaw Alignment) dev=0/5 regs=0 prog=-0.005 attr=['never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort', 'never_closed_gripper_early_abort']
+  [libero_object_t7][TRAX it=3] (H-Ground2: Exact Spatial-Relation Grounding + Unblocked Approach) dev=5/5 regs=0 prog=0.140 attr=[]
+[libero_object_t7][EVAL] strong_zeroshot  -> 0/10 (0.0%)
+[libero_object_t7][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t7][EVAL] simex_protocol   -> 10/10 (100.0%)
+[libero_object_t7][EVAL] rax_protocol     -> 10/10 (100.0%)
+[libero_object_t7][EVAL] craft_full       -> 10/10 (100.0%)
+[libero_object_t8] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t8] Task: 'pick up the chocolate pudding and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t8][Shared it=1] dev=1/5
+  [libero_object_t8][ASPIRE it=2] dev=0/5
+  [libero_object_t8][ASPIRE it=3] dev=0/5
+  [libero_object_t8][ASPIRE it=4] dev=5/5
+  [libero_object_t8][SimEX-Protocol it=2] dev=1/5 regs=0
+  [libero_object_t8][SimEX-Protocol it=3] dev=5/5 regs=0
+  [libero_object_t8][RAX-Protocol it=2] dev=0/5
+  [libero_object_t8][RAX-Protocol it=3] dev=0/5
+  [libero_object_t8][RAX-Protocol it=4] dev=0/5
+  [libero_object_t8][RAX-Protocol it=5] dev=0/5
+  [libero_object_t8][TRAX it=2] (H-Subroutine1: Selective Subroutine Repair (4 failing init state(s))) dev=0/5 regs=1 prog=0.144 attr=['insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error', 'insertion_or_release_precision_error']
+  [libero_object_t8][TRAX it=3] (H-Ground2: Exact Spatial-Relation Grounding + Unblocked Approach) dev=0/5 regs=1 prog=0.003 attr=['grasp_missed_or_slip', 'grasp_missed_or_slip', 'grasp_missed_or_slip', 'grasp_missed_or_slip', 'grasp_missed_or_slip']
+  [libero_object_t8][TRAX it=4] (H-Place3: High-Clearance Transport, Obstacle Avoidance & Precision Release) dev=5/5 regs=0 prog=0.148 attr=[]
+[libero_object_t8][EVAL] strong_zeroshot  -> 2/10 (20.0%)
+[libero_object_t8][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t8][EVAL] simex_protocol   -> 10/10 (100.0%)
+[libero_object_t8][EVAL] rax_protocol     -> 2/10 (20.0%)
+[libero_object_t8][EVAL] craft_full       -> 10/10 (100.0%)
+[libero_object_t9] Launching isolated worker subprocess (FD-leak safe)...
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python <workspace>/.venv-libero/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[Warning]: datasets path <workspace>/.libero-src/libero/libero/../datasets does not exist!
+[libero_object_t9] Task: 'pick up the orange juice and place it in the basket' (dev=[0, 1, 2, 3, 4], eval=5..14)
+  [libero_object_t9][Shared it=1] dev=5/5
+[libero_object_t9][EVAL] strong_zeroshot  -> 10/10 (100.0%)
+[libero_object_t9][EVAL] aspire_protocol  -> 10/10 (100.0%)
+[libero_object_t9][EVAL] simex_protocol   -> 10/10 (100.0%)
+[libero_object_t9][EVAL] rax_protocol     -> 10/10 (100.0%)
+[libero_object_t9][EVAL] craft_full       -> 10/10 (100.0%)
+{
+  "benchmark_version": "TRAX-LIBERO-v1.1",
+  "summary_by_method": {
+    "strong_zeroshot": {
+      "method_id": "strong_zeroshot",
+      "label": "Strong Zero-Shot",
+      "passed": 19,
+      "total_trials": 100,
+      "pass_rate": 0.19,
+      "wilson_95_ci": [
+        0.1251,
+        0.2778
+      ],
+      "by_task": {
+        "libero_object_t0": {
+          "passed": 5,
+          "total": 10,
+          "rate": 0.5
+        },
+        "libero_object_t1": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "libero_object_t2": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "libero_object_t3": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "libero_object_t4": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "libero_object_t5": {
+          "passed": 2,
+          "total": 10,
+          "rate": 0.2
+        },
+        "libero_object_t6": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "libero_object_t7": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "libero_object_t8": {
+          "passed": 2,
+          "total": 10,
+          "rate": 0.2
+        },
+        "libero_object_t9": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        }
+      },
+      "dev_llm_calls": 10,
+      "dev_sim_resets": 0,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 2.716,
+      "p95_wall_s": 3.864
+    },
+    "aspire_protocol": {
+      "method_id": "aspire_protocol",
+      "label": "ASPIRE-Protocol (Adapted)",
+      "passed": 90,
+      "total_trials": 100,
+      "pass_rate": 0.9,
+      "wilson_95_ci": [
+        0.8256,
+        0.9448
+      ],
+      "by_task": {
+        "libero_object_t0": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t1": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "libero_object_t2": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t3": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t4": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t5": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t6": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t7": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t8": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t9": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        }
+      },
+      "dev_llm_calls": 26,
+      "dev_sim_resets": 130,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 2.645,
+      "p95_wall_s": 3.182
+    },
+    "simex_protocol": {
+      "method_id": "simex_protocol",
+      "label": "SimEX-Protocol (Adapted)",
+      "passed": 82,
+      "total_trials": 100,
+      "pass_rate": 0.82,
+      "wilson_95_ci": [
+        0.7333,
+        0.883
+      ],
+      "by_task": {
+        "libero_object_t0": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t1": {
+          "passed": 0,
+          "total": 10,
+          "rate": 0.0
+        },
+        "libero_object_t2": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t3": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t4": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t5": {
+          "passed": 2,
+          "total": 10,
+          "rate": 0.2
+        },
+        "libero_object_t6": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t7": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t8": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t9": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        }
+      },
+      "dev_llm_calls": 28,
+      "dev_sim_resets": 140,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 2.805,
+      "p95_wall_s": 3.543
+    },
+    "rax_protocol": {
+      "method_id": "rax_protocol",
+      "label": "RAX-Protocol (Adapted)",
+      "passed": 80,
+      "total_trials": 100,
+      "pass_rate": 0.8,
+      "wilson_95_ci": [
+        0.7112,
+        0.8666
+      ],
+      "by_task": {
+        "libero_object_t0": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t1": {
+          "passed": 2,
+          "total": 10,
+          "rate": 0.2
+        },
+        "libero_object_t2": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t3": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t4": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t5": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t6": {
+          "passed": 6,
+          "total": 10,
+          "rate": 0.6
+        },
+        "libero_object_t7": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t8": {
+          "passed": 2,
+          "total": 10,
+          "rate": 0.2
+        },
+        "libero_object_t9": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        }
+      },
+      "dev_llm_calls": 29,
+      "dev_sim_resets": 145,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 2.859,
+      "p95_wall_s": 3.563
+    },
+    "craft_full": {
+      "method_id": "craft_full",
+      "label": "TRAX (ActiveProbe + SubroutineRepair + Skills)",
+      "passed": 88,
+      "total_trials": 100,
+      "pass_rate": 0.88,
+      "wilson_95_ci": [
+        0.8019,
+        0.93
+      ],
+      "by_task": {
+        "libero_object_t0": {
+          "passed": 6,
+          "total": 10,
+          "rate": 0.6
+        },
+        "libero_object_t1": {
+          "passed": 9,
+          "total": 10,
+          "rate": 0.9
+        },
+        "libero_object_t2": {
+          "passed": 7,
+          "total": 10,
+          "rate": 0.7
+        },
+        "libero_object_t3": {
+          "passed": 9,
+          "total": 10,
+          "rate": 0.9
+        },
+        "libero_object_t4": {
+          "passed": 9,
+          "total": 10,
+          "rate": 0.9
+        },
+        "libero_object_t5": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t6": {
+          "passed": 8,
+          "total": 10,
+          "rate": 0.8
+        },
+        "libero_object_t7": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t8": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        },
+        "libero_object_t9": {
+          "passed": 10,
+          "total": 10,
+          "rate": 1.0
+        }
+      },
+      "dev_llm_calls": 33,
+      "dev_sim_resets": 171,
+      "eval_llm_calls": 0,
+      "mean_wall_s": 3.049,
+      "p95_wall_s": 3.695
+    }
+  },
+  "paired_mcnemar_craft_vs": {
+    "strong_zeroshot": {
+      "n_a_only": 69,
+      "n_b_only": 0,
+      "discordant": 69,
+      "p_value": 0.0
+    },
+    "aspire_protocol": {
+      "n_a_only": 9,
+      "n_b_only": 11,
+      "discordant": 20,
+      "p_value": 0.823803
+    },
+    "simex_protocol": {
+      "n_a_only": 17,
+      "n_b_only": 11,
+      "discordant": 28,
+      "p_value": 0.344928
+    },
+    "rax_protocol": {
+      "n_a_only": 17,
+      "n_b_only": 9,
+      "discordant": 26,
+      "p_value": 0.168638
+    }
+  }
+}

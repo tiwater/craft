@@ -1,0 +1,244 @@
+{
+  "libero-libero_object_t1": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the cream cheese and place it in the basket' (9/10 held-out). ActiveProbe: Scanned 5 free-space radial/center grasps on `cream_cheese_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0861m at radius_m=0.0, z_offset_m=0.0, world_angle_rad=0.0, gripper_yaw_rad=0.0 (jaw_rel_rad=0.0, clearance_m=0.1114, closed_width=0.0421m; 1/5 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 0.9
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t1",
+    "task_name": "libero_object_t1",
+    "title": "LIBERO libero_object_t1 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t1",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:26:02.450794+00:00"
+  },
+  "libero-libero_object_t2": {
+    "applicability_notes": "",
+    "code_sha256": "50ecf021f192bff6737b50c37564530d6ca2960ce86ce06d17b14b46bc5ef37e",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, state[\"max_steps\"] - state[\"steps_used\"])\n\ndef move(sdk, position, yaw, grip, steps, tolerance=0.012):\n    available = remaining_steps(sdk)\n    if available > 0:\n        sdk.move_to(\n            position,\n            yaw=yaw,\n            gripper=grip,\n            max_steps=min(steps, available),\n            tol=tolerance,\n        )\n\ndef grip(sdk, action, steps):\n    available = remaining_steps(sdk)\n    if available > 0:\n        sdk.set_gripper(action, steps=min(steps, available))",
+    "entry_functions": [
+      "remaining_steps",
+      "move",
+      "grip"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the salad dressing and place it in the basket' (7/10 held-out). ActiveProbe: Scanned 5 free-space radial/center grasps on `salad_dressing_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0535m at radius_m=0.0, z_offset_m=0.0, world_angle_rad=0.0, gripper_yaw_rad=3.143 (jaw_rel_rad=0.0, clearance_m=0.1154, closed_width=0.0376m; 1/5 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 0.7
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t2",
+    "task_name": "libero_object_t2",
+    "title": "LIBERO libero_object_t2 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t2",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:39:19.115576+00:00"
+  },
+  "libero-libero_object_t3": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the bbq sauce and place it in the basket' (9/10 held-out). ActiveProbe: Scanned 5 free-space radial/center grasps on `bbq_sauce_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0729m at radius_m=0.0, z_offset_m=0.0, world_angle_rad=0.0, gripper_yaw_rad=3.141 (jaw_rel_rad=0.0, clearance_m=0.1232, closed_width=0.0376m; 1/5 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 0.9
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t3",
+    "task_name": "libero_object_t3",
+    "title": "LIBERO libero_object_t3 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t3",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:47:40.338298+00:00"
+  },
+  "libero-libero_object_t4": {
+    "applicability_notes": "",
+    "code_sha256": "e7aadcd97ea43cc8fe692902bf2388334128c080f5d4dc9d9fd201eea77f820e",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef move(sdk, position, yaw, action, steps, tolerance=0.012):\n    budget = min(steps, remaining_steps(sdk))\n    if budget > 0:\n        return sdk.move_to(\n            position, yaw=yaw, gripper=action,\n            max_steps=budget, tol=tolerance\n        )\n    return {\"reached\": False}\n\ndef grip(sdk, action, steps):\n    budget = min(steps, remaining_steps(sdk))\n    if budget > 0:\n        sdk.set_gripper(action, steps=budget)",
+    "entry_functions": [
+      "remaining_steps",
+      "move",
+      "grip"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the ketchup and place it in the basket' (9/10 held-out). ActiveProbe: Scanned 5 free-space radial/center grasps on `ketchup_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=-0.0532m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=4.712, gripper_yaw_rad=-0.0 (jaw_rel_rad=1.571, clearance_m=0.2106, closed_width=0.0041m; 0/5 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 0.9
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t4",
+    "task_name": "libero_object_t4",
+    "title": "LIBERO libero_object_t4 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t4",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:00:29.268244+00:00"
+  },
+  "libero-libero_object_t5": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the tomato sauce and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t5",
+    "task_name": "libero_object_t5",
+    "title": "LIBERO libero_object_t5 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t5",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:13:31.908203+00:00"
+  },
+  "libero-libero_object_t6": {
+    "applicability_notes": "",
+    "code_sha256": "aead9d07fc2d73991966530ff91d95c329d02f9fae9f5680b61dd57c5a07d595",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef move(sdk, position, yaw, action, steps, tolerance=0.012):\n    budget = min(steps, remaining_steps(sdk))\n    if budget > 0:\n        return sdk.move_to(\n            position, yaw=yaw, gripper=action,\n            max_steps=budget, tol=tolerance\n        )\n    return {\"reached\": False}\n\ndef grip(sdk, action, steps):\n    budget = min(steps, remaining_steps(sdk))\n    if budget > 0:\n        return sdk.set_gripper(action, steps=budget)\n    return {\"gripper_width\": 0.0, \"grasped_hint\": False}",
+    "entry_functions": [
+      "remaining_steps",
+      "move",
+      "grip"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the butter and place it in the basket' (8/10 held-out). ActiveProbe: Scanned 5 free-space radial/center grasps on `butter_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0m at radius_m=0.04, z_offset_m=0.02, world_angle_rad=4.712, gripper_yaw_rad=0.0 (jaw_rel_rad=1.571, clearance_m=0.2196, closed_width=0.004m; 0/5 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 0.8
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t6",
+    "task_name": "libero_object_t6",
+    "title": "LIBERO libero_object_t6 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t6",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:28:55.615524+00:00"
+  },
+  "libero-libero_object_t7": {
+    "applicability_notes": "",
+    "code_sha256": "7bf27d42c6d609e7c4e62da385410a43714e24e347609ae9259d39f5ca64ff0f",
+    "code_snippet": "def remaining_steps(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef move(sdk, position, yaw, action, steps, tolerance=0.015):\n    budget = min(steps, remaining_steps(sdk))\n    if budget > 0:\n        return sdk.move_to(\n            position, yaw=yaw, gripper=action,\n            max_steps=budget, tol=tolerance\n        )\n    return {\"reached\": False}\n\ndef grip(sdk, action, steps):\n    budget = min(steps, remaining_steps(sdk))\n    if budget > 0:\n        return sdk.set_gripper(action, steps=budget)\n    return {\"gripper_width\": 0.0, \"grasped_hint\": False}",
+    "entry_functions": [
+      "remaining_steps",
+      "move",
+      "grip"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the milk and place it in the basket' (10/10 held-out). ActiveProbe: Scanned 5 free-space radial/center grasps on `milk_1` (frame=world_free_space_radial, NOT random object yaw); best empirical lift=0.0615m at radius_m=0.0, z_offset_m=0.0, world_angle_rad=0.0, gripper_yaw_rad=0.0 (jaw_rel_rad=0.0, clearance_m=0.1835, closed_width=0.0609m; 1/5 samples lifted >=0.03m).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t7",
+    "task_name": "libero_object_t7",
+    "title": "LIBERO libero_object_t7 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t7",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:39:12.458672+00:00"
+  },
+  "libero-libero_object_t8": {
+    "applicability_notes": "",
+    "code_sha256": "964ea2a86c88cb7245ab38dd9b7a98144bc81a472d134daa3cbc69993d01124f",
+    "code_snippet": "def policy_move(sdk, pos, yaw, gripper, limit=50, tol=0.012):\n    state = sdk.get_state()\n    remaining = min(450, state[\"max_steps\"]) - state[\"steps_used\"]\n    if remaining <= 0:\n        return False\n    result = sdk.move_to(\n        pos, yaw=yaw, gripper=gripper,\n        max_steps=min(limit, remaining), tol=tol\n    )\n    return result[\"reached\"]\n\ndef policy_grip(sdk, action, steps=12):\n    state = sdk.get_state()\n    remaining = min(450, state[\"max_steps\"]) - state[\"steps_used\"]\n    if remaining > 0:\n        return sdk.set_gripper(action, steps=min(steps, remaining))\n    return {\"gripper_width\": state[\"gripper_width\"], \"grasped_hint\": False}\n\ndef basket_target(state, basket):\n    preferred = basket + \"_contain_region\"\n    if preferred in state[\"sites\"]:\n        return list(state[\"sites\"][preferred])\n    for name in state[\"sites\"]:\n        if basket in name and \"contain\" in name:\n            return list(state[\"sites\"][name])\n    pos = state[\"objects\"][basket][\"pos\"]\n    return [pos[0], pos[1], pos[2] + 0.07]",
+    "entry_functions": [
+      "policy_move",
+      "policy_grip",
+      "basket_target"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the chocolate pudding and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t8",
+    "task_name": "libero_object_t8",
+    "title": "LIBERO libero_object_t8 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t8",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:57:18.287685+00:00"
+  },
+  "libero-libero_object_t9": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the orange juice and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "libero-libero_object_t9",
+    "task_name": "libero_object_t9",
+    "title": "LIBERO libero_object_t9 Verified Manipulation Skill",
+    "verification_report_id": "libero-libero_object_t9",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T04:00:38.141534+00:00"
+  }
+}

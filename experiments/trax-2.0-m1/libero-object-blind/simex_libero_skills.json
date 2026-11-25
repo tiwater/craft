@@ -1,0 +1,186 @@
+{
+  "simex-libero-libero_object_t0": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the alphabet soup and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "simex-libero-libero_object_t0",
+    "task_name": "libero_object_t0",
+    "title": "SimEX libero_object_t0 Verified Skill Note",
+    "verification_report_id": "simex-libero-libero_object_t0",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:04:40.679027+00:00"
+  },
+  "simex-libero-libero_object_t2": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the salad dressing and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "simex-libero-libero_object_t2",
+    "task_name": "libero_object_t2",
+    "title": "SimEX libero_object_t2 Verified Skill Note",
+    "verification_report_id": "simex-libero-libero_object_t2",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:38:20.842208+00:00"
+  },
+  "simex-libero-libero_object_t3": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the bbq sauce and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "simex-libero-libero_object_t3",
+    "task_name": "libero_object_t3",
+    "title": "SimEX libero_object_t3 Verified Skill Note",
+    "verification_report_id": "simex-libero-libero_object_t3",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:46:37.868471+00:00"
+  },
+  "simex-libero-libero_object_t4": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the ketchup and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "simex-libero-libero_object_t4",
+    "task_name": "libero_object_t4",
+    "title": "SimEX libero_object_t4 Verified Skill Note",
+    "verification_report_id": "simex-libero-libero_object_t4",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:59:26.809915+00:00"
+  },
+  "simex-libero-libero_object_t6": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the butter and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "simex-libero-libero_object_t6",
+    "task_name": "libero_object_t6",
+    "title": "SimEX libero_object_t6 Verified Skill Note",
+    "verification_report_id": "simex-libero-libero_object_t6",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:27:58.089695+00:00"
+  },
+  "simex-libero-libero_object_t7": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the milk and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "simex-libero-libero_object_t7",
+    "task_name": "libero_object_t7",
+    "title": "SimEX libero_object_t7 Verified Skill Note",
+    "verification_report_id": "simex-libero-libero_object_t7",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:38:18.404132+00:00"
+  },
+  "simex-libero-libero_object_t8": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the chocolate pudding and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "simex-libero-libero_object_t8",
+    "task_name": "libero_object_t8",
+    "title": "SimEX libero_object_t8 Verified Skill Note",
+    "verification_report_id": "simex-libero-libero_object_t8",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:56:16.837946+00:00"
+  },
+  "simex-libero-libero_object_t9": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified frozen policy for 'pick up the orange juice and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "simex-libero-libero_object_t9",
+    "task_name": "libero_object_t9",
+    "title": "SimEX libero_object_t9 Verified Skill Note",
+    "verification_report_id": "simex-libero-libero_object_t9",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:59:45.066238+00:00"
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "rax-libero-libero_object_t0": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified modular policy for 'pick up the alphabet soup and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "rax-libero-libero_object_t0",
+    "task_name": "libero_object_t0",
+    "title": "RAX libero_object_t0 Verified Modular Skill",
+    "verification_report_id": "rax-libero-libero_object_t0",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:05:08.898197+00:00"
+  },
+  "rax-libero-libero_object_t2": {
+    "applicability_notes": "",
+    "code_sha256": "d08ec97956596913dcee0b19cc95aa933ea86c9519f8efdcf028f35a8b78b38b",
+    "code_snippet": "def policy_move(sdk, pos, yaw, gripper, limit=45, tol=0.012):\n    state = sdk.get_state()\n    remaining = state[\"max_steps\"] - state[\"steps_used\"]\n    if remaining <= 0:\n        return False\n    result = sdk.move_to(\n        pos,\n        yaw=yaw,\n        gripper=gripper,\n        max_steps=min(limit, remaining),\n        tol=tol,\n    )\n    return result[\"reached\"]\n\ndef policy_grip(sdk, action, steps=12):\n    state = sdk.get_state()\n    remaining = state[\"max_steps\"] - state[\"steps_used\"]\n    if remaining > 0:\n        return sdk.set_gripper(action, steps=min(steps, remaining))\n    return {\"gripper_width\": state[\"gripper_width\"], \"grasped_hint\": False}\n\ndef basket_target(state, basket):\n    sites = state[\"sites\"]\n    name = basket + \"_contain_region\"\n    if name in sites:\n        return list(sites[name])\n    for name in sites:\n        if basket in name and \"contain\" in name:\n            return list(sites[name])\n    pos = state[\"objects\"][basket][\"pos\"]\n    return [pos[0], pos[1], pos[2] + 0.075]",
+    "entry_functions": [
+      "policy_move",
+      "policy_grip",
+      "basket_target"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified modular policy for 'pick up the salad dressing and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "rax-libero-libero_object_t2",
+    "task_name": "libero_object_t2",
+    "title": "RAX libero_object_t2 Verified Modular Skill",
+    "verification_report_id": "rax-libero-libero_object_t2",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:38:48.353640+00:00"
+  },
+  "rax-libero-libero_object_t3": {
+    "applicability_notes": "",
+    "code_sha256": "d08ec97956596913dcee0b19cc95aa933ea86c9519f8efdcf028f35a8b78b38b",
+    "code_snippet": "def policy_move(sdk, pos, yaw, gripper, limit=45, tol=0.012):\n    state = sdk.get_state()\n    remaining = state[\"max_steps\"] - state[\"steps_used\"]\n    if remaining <= 0:\n        return False\n    result = sdk.move_to(\n        pos,\n        yaw=yaw,\n        gripper=gripper,\n        max_steps=min(limit, remaining),\n        tol=tol,\n    )\n    return result[\"reached\"]\n\ndef policy_grip(sdk, action, steps=12):\n    state = sdk.get_state()\n    remaining = state[\"max_steps\"] - state[\"steps_used\"]\n    if remaining > 0:\n        return sdk.set_gripper(action, steps=min(steps, remaining))\n    return {\"gripper_width\": state[\"gripper_width\"], \"grasped_hint\": False}\n\ndef basket_target(state, basket):\n    sites = state[\"sites\"]\n    name = basket + \"_contain_region\"\n    if name in sites:\n        return list(sites[name])\n    for name in sites:\n        if basket in name and \"contain\" in name:\n            return list(sites[name])\n    pos = state[\"objects\"][basket][\"pos\"]\n    return [pos[0], pos[1], pos[2] + 0.075]",
+    "entry_functions": [
+      "policy_move",
+      "policy_grip",
+      "basket_target"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified modular policy for 'pick up the bbq sauce and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "rax-libero-libero_object_t3",
+    "task_name": "libero_object_t3",
+    "title": "RAX libero_object_t3 Verified Modular Skill",
+    "verification_report_id": "rax-libero-libero_object_t3",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:47:12.948349+00:00"
+  },
+  "rax-libero-libero_object_t4": {
+    "applicability_notes": "",
+    "code_sha256": "553b00e4b9a33c4f05b77c77dfeeabd513f0a48110d835a74d1882f4554cda09",
+    "code_snippet": "def policy_remaining(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef policy_move(sdk, pos, yaw, grip, steps, tol=0.012):\n    budget = min(steps, policy_remaining(sdk))\n    if budget > 0:\n        return sdk.move_to(\n            pos, yaw=yaw, gripper=grip, max_steps=budget, tol=tol\n        )\n    return {\"reached\": False}\n\ndef policy_grip(sdk, action, steps=12):\n    budget = min(steps, policy_remaining(sdk))\n    if budget > 0:\n        return sdk.set_gripper(action, steps=budget)\n    state = sdk.get_state()\n    return {\n        \"gripper_width\": state[\"gripper_width\"],\n        \"grasped_hint\": False,\n    }",
+    "entry_functions": [
+      "policy_remaining",
+      "policy_move",
+      "policy_grip"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified modular policy for 'pick up the ketchup and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "rax-libero-libero_object_t4",
+    "task_name": "libero_object_t4",
+    "title": "RAX libero_object_t4 Verified Modular Skill",
+    "verification_report_id": "rax-libero-libero_object_t4",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T02:59:53.214216+00:00"
+  },
+  "rax-libero-libero_object_t5": {
+    "applicability_notes": "",
+    "code_sha256": "74f3482d5853e1b97ce58b528c7ca4578f638b0be0f3a3d85bacc954d4f0d222",
+    "code_snippet": "def policy_remaining(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef policy_move(sdk, pos, yaw, grip, steps, tol=0.012, reserve=0):\n    budget = min(steps, max(0, policy_remaining(sdk) - reserve))\n    if budget > 0:\n        return sdk.move_to(\n            pos, yaw=yaw, gripper=grip, max_steps=budget, tol=tol\n        )\n    return {\"reached\": False}\n\ndef policy_grip(sdk, action, steps=12, reserve=0):\n    budget = min(steps, max(0, policy_remaining(sdk) - reserve))\n    if budget > 0:\n        return sdk.set_gripper(action, steps=budget)\n    state = sdk.get_state()\n    return {\n        \"gripper_width\": state[\"gripper_width\"],\n        \"grasped_hint\": False,\n    }",
+    "entry_functions": [
+      "policy_remaining",
+      "policy_move",
+      "policy_grip"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified modular policy for 'pick up the tomato sauce and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "rax-libero-libero_object_t5",
+    "task_name": "libero_object_t5",
+    "title": "RAX libero_object_t5 Verified Modular Skill",
+    "verification_report_id": "rax-libero-libero_object_t5",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:13:03.829726+00:00"
+  },
+  "rax-libero-libero_object_t7": {
+    "applicability_notes": "",
+    "code_sha256": "7a6f13d1da01c601e4c4a998ff995b61f958953c91d7ded60ad74255ef2789db",
+    "code_snippet": "def policy_remaining(sdk):\n    state = sdk.get_state()\n    return max(0, min(450, state[\"max_steps\"]) - state[\"steps_used\"])\n\ndef policy_move(sdk, position, yaw, gripper, steps, tolerance=0.012):\n    available = policy_remaining(sdk)\n    if available <= 0:\n        return False\n    result = sdk.move_to(\n        position,\n        yaw=yaw,\n        gripper=gripper,\n        max_steps=min(steps, available),\n        tol=tolerance,\n    )\n    return result[\"reached\"]\n\ndef policy_gripper(sdk, action, steps):\n    available = policy_remaining(sdk)\n    if available > 0:\n        return sdk.set_gripper(action, steps=min(steps, available))\n    state = sdk.get_state()\n    return {\n        \"gripper_width\": state[\"gripper_width\"],\n        \"grasped_hint\": False,\n    }",
+    "entry_functions": [
+      "policy_remaining",
+      "policy_move",
+      "policy_gripper"
+    ],
+    "evidence_source": "simulator",
+    "guidance": "Verified modular policy for 'pick up the milk and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "rax-libero-libero_object_t7",
+    "task_name": "libero_object_t7",
+    "title": "RAX libero_object_t7 Verified Modular Skill",
+    "verification_report_id": "rax-libero-libero_object_t7",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T03:38:46.551091+00:00"
+  },
+  "rax-libero-libero_object_t9": {
+    "applicability_notes": "",
+    "evidence_source": "simulator",
+    "guidance": "Verified modular policy for 'pick up the orange juice and place it in the basket' (10/10 held-out).",
+    "known_failure_modes": [],
+    "measured_limits": {
+      "heldout_pass_rate": 1.0
+    },
+    "regression_case_ids": [],
+    "required_methods": [
+      "get_state",
+      "move_to",
+      "move_delta",
+      "set_gripper"
+    ],
+    "sdk_contract_sha256": "3a18fd13d82709549e18dd7d190649a393cbd876a83e2b207aa22ab62e9e1032",
+    "skill_id": "rax-libero-libero_object_t9",
+    "task_name": "libero_object_t9",
+    "title": "RAX libero_object_t9 Verified Modular Skill",
+    "verification_report_id": "rax-libero-libero_object_t9",
+    "verified": true,
+    "verified_at_utc": "2026-11-25T04:00:11.614696+00:00"
+  }
+}
