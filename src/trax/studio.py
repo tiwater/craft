@@ -1612,9 +1612,21 @@ def create_studio_server(
             raw = self.rfile.read(length) if length > 0 else b"{}"
             return json.loads(raw.decode("utf-8"))
 
+        def _strip_subpath(self, path: str) -> str:
+            if path.startswith("/trax/"):
+                return path[len("/trax") :]
+            return path
+
         def do_GET(self) -> None:  # noqa: N802
             parsed = urlparse(self.path)
-            path = parsed.path
+            raw_path = parsed.path
+            if raw_path == "/trax":
+                self.send_response(HTTPStatus.FOUND)
+                self.send_header("Location", "/trax/")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            path = self._strip_subpath(raw_path)
             if path in ("/", "/index.html"):
                 self._send_bytes(STUDIO_HTML.encode("utf-8"), "text/html; charset=utf-8")
                 return
@@ -1697,7 +1709,7 @@ def create_studio_server(
             self._send_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
 
         def do_POST(self) -> None:  # noqa: N802
-            path = urlparse(self.path).path
+            path = self._strip_subpath(urlparse(self.path).path)
             try:
                 body = self._read_json()
                 if path == "/api/teaching/spec":
