@@ -31,7 +31,7 @@
   <!-- Hero Section -->
   <header class="hero">
     <div class="hero-container">
-      <div class="hero-kicker">Tiwater Robotics Research · v0.3 Preprint &amp; Benchmark Release</div>
+      <div class="hero-kicker">Tiwater Robotics Research · v0.4 Preprint &amp; M1 Benchmark Release</div>
       <h1 class="hero-title">
         TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies for Real-World Robotics
       </h1>
@@ -252,10 +252,17 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile t
         </p>
       </div>
 
-      <div class="teaser-box" style="margin-bottom:1.5rem;">
-        <img src="assets/figures/robosuite_combo_comparison.svg" alt="Zero-Leakage Robosuite NutAssemblySquare Subroutine Fix and CafeBench v3 Combo" class="zoomable-fig" style="border:none;" />
+      <div class="teaser-box" style="margin-bottom:1.15rem;">
+        <img src="assets/figures/robosuite_combo_comparison.svg" alt="Zero-Leakage Robosuite v4 and CafeBench v3 Combo Benchmarks" class="zoomable-fig" style="border:none;" />
         <p class="caption">
-          <strong>Figure 2:</strong> (a) Zero-leakage Robosuite <code>NutAssemblySquare</code> after adding AST selective subroutine repair and adaptive stagnation escape: TRAX jumps <code>3×</code> (<code>4/20 → 12/20</code>) with <code>0</code> online LLM calls and <code>24×</code> lower p95 latency than online-regenerating CaP-X. (b) <strong>CafeBench v3</strong> shared-arm Coffee+Bagel/Oven concurrent operations: <code>12/12</code>, <code>0</code> duplicates, <code>0</code> interlock violations, and <code>+62.5%</code> throughput.
+          <strong>Figure 2:</strong> (a) Zero-leakage <strong>Robosuite v4</strong> (4 tasks, 480 rollouts): TRAX ranks <strong>#1 overall (72/80, 90.0%)</strong> and #1 on every task with <code>0</code> online LLM calls and <code>23×</code> lower p95 latency than online-regenerating CaP-X (<code>67/80</code>). (b) <strong>CafeBench v3</strong> shared-arm Coffee+Bagel/Oven concurrent operations: <code>12/12</code>, <code>0</code> duplicates, <code>0</code> interlock violations, and <code>+62.5%</code> throughput.
+        </p>
+      </div>
+
+      <div class="teaser-box" style="margin-bottom:1.5rem;">
+        <img src="assets/figures/libero_m1_comparison.svg" alt="Official LIBERO-Spatial 10/10 and Zero-Tuning Blind LIBERO-Object 10/10 Benchmarks" class="zoomable-fig" style="border:none;" />
+        <p class="caption">
+          <strong>Figure 3:</strong> Official <strong>LIBERO</strong> under matched <code>host_state_api</code> (<code>gpt-6-astra</code>, <code>&le;5</code> dev calls). (a) <strong>LIBERO-Spatial 10/10</strong>: TRAX achieves <code>97/100 (97.0%)</code> (<code>p = 0.0386</code> vs. ASPIRE <code>89/100</code>, <code>9/10</code> on top-drawer <code>t4</code> where all baselines score <code>0/10</code>). (b) Pre-registered, zero-tuning blind <strong>LIBERO-Object 10/10</strong> (frozen commit <code>108648a</code>): TRAX reaches <code>88/100 (88.0%)</code> with <strong>0 zero-score task collapses</strong>, outperforming matched-contract <code>RAX-Protocol (Adapted)</code> (<code>80/100</code>) and <code>SimEX-Protocol</code> (<code>82/100</code>) while statistically tying ASPIRE (<code>90/100</code>, <code>p = 0.824</code>).
         </p>
       </div>
 
@@ -443,82 +450,180 @@ make paper          # Regenerate LaTeX tables from JSON receipts &amp; compile t
         </div>
       </div>
 
-      <!-- Table 4: Zero-Leakage Robosuite v3 + Nut Subroutine Fix -->
+      <!-- Table 4: Zero-Leakage Robosuite v4 -->
       <div class="table-block">
-        <h3>4. Zero-Leakage Robosuite Panda Benchmark &amp; Selective Subroutine Ablation <span class="ev-badge ev-sim">simulator (480 + 120 rollouts)</span></h3>
+        <h3>4. Zero-Leakage Robosuite v4 Panda Benchmark (4 Tasks &times; 20 Held-Out Seeds) <span class="ev-badge ev-sim">simulator (480 rollouts)</span></h3>
         <div class="table-wrapper">
           <table class="benchmark-table">
             <thead>
               <tr>
                 <th>Method</th>
-                <th>Full v3 (n=80)</th>
-                <th>Lift / Can / Door</th>
-                <th>Nut (Pre-Fix)</th>
-                <th>Nut (Subroutine Fix)</th>
-                <th>Eval LLM (Full / Nut)</th>
+                <th>Overall (n=80)</th>
+                <th>Turn-1 Frozen</th>
+                <th>Lift / Can / Nut / Door</th>
+                <th>Dev LLM / Resets</th>
+                <th>Eval LLM</th>
                 <th>P95 Wall (s)</th>
+                <th>McNemar p vs. TRAX</th>
               </tr>
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td><strong>TRAX (ActiveProbe + RepairScreener + Skills)</strong></td>
-                <td><strong>64/80 (80.0%)</strong></td>
-                <td><strong>20 / 20 / 20</strong></td>
-                <td>4/20 (20%)</td>
-                <td><strong>12/20 (60.0%)</strong></td>
-                <td><strong>0 / 0</strong></td>
-                <td><strong>2.32 / 2.23</strong></td>
+                <td><strong>TRAX (ActiveProbe + SubroutineRepair + Skills)</strong></td>
+                <td><strong>72/80 (90.0%)</strong></td>
+                <td><strong>72/80 (90.0%)</strong></td>
+                <td><strong>20 / 20 / 17 / 15</strong></td>
+                <td><strong>13 / 67</strong></td>
+                <td><strong>0</strong></td>
+                <td><strong>2.05</strong></td>
+                <td>reference</td>
               </tr>
               <tr>
-                <td>CaP-X-Protocol (Online Eval Regeneration)</td>
-                <td>78/80 (97.5%)</td>
-                <td>20 / 20 / 20</td>
-                <td>18/20 (90%)</td>
-                <td>16/20 (12/20 Turn-1)</td>
-                <td>3 / 8</td>
-                <td>2.35 / 53.45</td>
-              </tr>
-              <tr>
-                <td>ASPIRE-Protocol (Adapted)</td>
-                <td>70/80 (87.5%)</td>
-                <td>20 / 20 / 19</td>
-                <td>11/20 (55%)</td>
-                <td>6/20 (30.0%)</td>
-                <td>0 / 0</td>
-                <td>2.35 / 2.12</td>
+                <td>CaP-X-Protocol (Online Turn-2 Regen)</td>
+                <td>67/80 (83.8%)</td>
+                <td>66/80 (82.5%)</td>
+                <td>20 / 20 / 13 / 14</td>
+                <td>15 / 75</td>
+                <td>8</td>
+                <td>47.29</td>
+                <td>+6.2 pp, <code>p = 0.302</code></td>
               </tr>
               <tr>
                 <td>SimEX-Protocol (Adapted)</td>
-                <td>62/80 (77.5%)</td>
-                <td>20 / 18 / 20</td>
-                <td>4/20 (20%)</td>
-                <td>0/20 (0.0%, <code>p=0.0005</code>)</td>
-                <td>0 / 0</td>
-                <td>2.70 / 2.13</td>
+                <td>51/80 (63.7%)</td>
+                <td>51/80 (63.7%)</td>
+                <td>20 / 20 / 0 / 11</td>
+                <td>15 / 75</td>
+                <td>0</td>
+                <td>2.08</td>
+                <td>+26.3 pp, <code>p = 1.9e-5</code></td>
+              </tr>
+              <tr>
+                <td>ASPIRE-Protocol (Adapted)</td>
+                <td>49/80 (61.3%)</td>
+                <td>49/80 (61.3%)</td>
+                <td>20 / 20 / 0 / 9</td>
+                <td>17 / 85</td>
+                <td>0</td>
+                <td>2.14</td>
+                <td>+28.7 pp, <code>p = 1.5e-5</code></td>
               </tr>
               <tr>
                 <td>SimEX-Direct-Repair (Ablation)</td>
-                <td>59/80 (73.8%)</td>
-                <td>20 / 19 / 20</td>
-                <td>0/20 (0%)</td>
-                <td>0/20 (0.0%, <code>p=0.0005</code>)</td>
-                <td>0 / 0</td>
-                <td>2.39 / 1.96</td>
+                <td>41/80 (51.2%)</td>
+                <td>41/80 (51.2%)</td>
+                <td>20 / 20 / 1 / 0</td>
+                <td>16 / 80</td>
+                <td>0</td>
+                <td>2.10</td>
+                <td>+38.8 pp, <code>p &lt; 1e-6</code></td>
               </tr>
               <tr>
                 <td>Strong Zero-Shot</td>
-                <td>40/80 (50.0%)</td>
-                <td>20 / 0 / 20</td>
-                <td>0/20 (0%)</td>
-                <td>0/20 (0.0%, <code>p=0.0005</code>)</td>
-                <td>0 / 0</td>
-                <td>1.79 / 1.56</td>
+                <td>20/80 (25.0%)</td>
+                <td>20/80 (25.0%)</td>
+                <td>20 / 0 / 0 / 0</td>
+                <td>4 / 0</td>
+                <td>0</td>
+                <td>2.02</td>
+                <td>+65.0 pp, <code>p &lt; 1e-6</code></td>
+              </tr>
+              <tr>
+                <td><em>RAX (<code>2610.22496</code>, lit. ref.)</em></td>
+                <td><em>N/R</em></td>
+                <td>&mdash;</td>
+                <td><em>Not evaluated on Robosuite in paper</em></td>
+                <td>&mdash;</td>
+                <td>&mdash;</td>
+                <td>&mdash;</td>
+                <td>&mdash;</td>
               </tr>
             </tbody>
           </table>
         </div>
         <p class="caption">
-          <strong>Zero-leakage guarantee:</strong> Zero task-specific physics hints exist anywhere in prompts or attribution code (enforced by <code>test_zero_task_hint_leakage</code>). On <code>NutAssemblySquare</code>, adding RAX-inspired AST selective subroutine repair and stagnation escape tripled TRAX's pass rate (<code>4/20 → 12/20</code>), tying CaP-X's frozen Turn-1 policy at <code>24×</code> lower p95 latency.
+          <strong>Zero-leakage guarantee:</strong> Zero task-specific physics hints exist anywhere in prompts or attribution code (enforced by <code>test_zero_task_hint_leakage</code>). TRAX ranks <strong>#1 overall and #1 on every individual task</strong> with the lowest dev budget (<code>13</code> LLM calls, <code>67</code> resets) and <code>23×</code> lower p95 latency than online-regenerating CaP-X.
+        </p>
+      </div>
+
+      <!-- Table 5: Official LIBERO-Spatial + Zero-Tuning Blind LIBERO-Object -->
+      <div class="table-block">
+        <h3>5. Official LIBERO-Spatial (10/10) &amp; Zero-Tuning Blind LIBERO-Object (10/10) <span class="ev-badge ev-sim">simulator (host_state_api)</span></h3>
+        <div class="table-wrapper">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Method (<code>host_state_api</code>, <code>gpt-6-astra</code>)</th>
+                <th>Spatial (n=100)</th>
+                <th>Spatial Dev LLM / Resets</th>
+                <th>Spatial McNemar</th>
+                <th>Blind Object (n=100)</th>
+                <th>Object 0/10 Tasks</th>
+                <th>Object McNemar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-row">
+                <td><strong>TRAX (ActiveProbe + SubroutineRepair + Skills)</strong></td>
+                <td><strong>97/100 (97.0%)</strong></td>
+                <td><strong>21 / 115</strong></td>
+                <td>reference</td>
+                <td><strong>88/100 (88.0%)</strong></td>
+                <td><strong>0 / 10</strong></td>
+                <td>reference</td>
+              </tr>
+              <tr>
+                <td>ASPIRE-Protocol (Adapted)</td>
+                <td>89/100 (89.0%)</td>
+                <td>28 / 140</td>
+                <td>+8.0 pp, <code>p = 0.0386</code></td>
+                <td>90/100 (90.0%)</td>
+                <td>1 / 10 (<code>t1=0</code>)</td>
+                <td>-2.0 pp, <code>p = 0.824</code></td>
+              </tr>
+              <tr>
+                <td>SimEX-Protocol (Adapted)</td>
+                <td>17/100 (17.0%)</td>
+                <td>50 / 250</td>
+                <td>+80.0 pp, <code>p &lt; 1e-6</code></td>
+                <td>82/100 (82.0%)</td>
+                <td>1 / 10 (<code>t1=0</code>)</td>
+                <td>+6.0 pp, <code>p = 0.345</code></td>
+              </tr>
+              <tr>
+                <td>RAX-Protocol (Adapted)<sup>&dagger;</sup></td>
+                <td>&mdash;</td>
+                <td>&mdash;</td>
+                <td>&mdash;</td>
+                <td>80/100 (80.0%)</td>
+                <td>0 / 10 (2 at <code>2/10</code>)</td>
+                <td>+8.0 pp, <code>p = 0.169</code></td>
+              </tr>
+              <tr>
+                <td>Strong Zero-Shot</td>
+                <td>0/100 (0.0%)</td>
+                <td>10 / 0</td>
+                <td>+97.0 pp, <code>p &lt; 1e-6</code></td>
+                <td>19/100 (19.0%)</td>
+                <td>6 / 10</td>
+                <td>+69.0 pp, <code>p &lt; 1e-6</code></td>
+              </tr>
+              <tr>
+                <td><em>RAX (<code>2610.22496</code>, Table 6, unmatched RGB-D)</em><sup>&ddagger;</sup></td>
+                <td><em>99.2% (n=500)</em></td>
+                <td><em>&le;20 eps/task (Opus 5.5)</em></td>
+                <td><em>unmatched</em></td>
+                <td><em>100.0% (n=500)</em></td>
+                <td>&mdash;</td>
+                <td><em>unmatched</em></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="caption">
+          <sup>&dagger;</sup> Local matched-contract adaptation (<code>protocol_adapted_from_rax_2610_22496</code>) combining <code>PROGRESS/TIPS</code> memory, AST subroutine preservation, and a cross-task skill library under identical <code>host_state_api</code> + <code>gpt-6-astra</code> + <code>&le;5</code> dev calls.
+          <sup>&ddagger;</sup> Unmatched literature reference (raw <code>256&times;256</code> RGB-D + 3 goal images, Claude Opus 5.5, <code>&le;20</code> interactive episodes/task).
+          <strong>Anti-overfitting audit:</strong> <code>LIBERO-Object</code> was run once on frozen commit <code>108648a</code> with zero tuning; across all 3 external suites (<code>24</code> tasks, <code>280</code> held-out rollouts/method), TRAX totals <strong>257/280 (91.8%)</strong> with <strong>0 collapsed tasks</strong> vs. ASPIRE <code>228/280 (81.4%)</code>.
         </p>
       </div>
     </div>

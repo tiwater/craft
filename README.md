@@ -59,14 +59,19 @@ All LLM-driven tracks use a matched real model backend (`gpt-6-astra`, `codex_cl
 | **CafeBench v2** *(n=30 held-out)* | `simulator` + `recorded_data` | ASPIRE / CaP-X: `23/30` (76.7%, 6 LLM) | **`30/30` (100.0%, 2 LLM)** | **+23.3 pp** (`p = 0.0156`), **0** dup, **0** false act |
 | **Sim-to-Sim Stage-2** *(≤5 target trials, n=20)* | `simulator` + `recorded_data` | SimEX-Protocol: `16/20` (80.0%) | **`19/20` (95.0%)** | `15/16` target + `4/4` shadow (`p = 0.0313` vs Zero-Shot `13/20`) |
 | **CafeBench v3 Combo** *(Coffee + Oven, n=12)* | `simulator` | Sequential Stateless: `9/12` (46.7/hr, 3 dup) | **`12/12` (100.0%, 75.9/hr)** | **+62.5% throughput**, **0** dup, **0** interlock violations |
-| **Zero-Leakage Robosuite v3** *(4 tasks, n=80)* | `simulator` | SimEX-Protocol: `62/80` (77.5%) | **`64/80` (80.0%, 60/60 on 3 tasks)** | **0** eval LLM calls, `2.32 s` p95; CaP-X `78/80` (+3 eval LLM) |
-| **Zero-Leakage `NutAssemblySquare`** *(Subroutine Fix, n=20)* | `simulator` | SimEX-Protocol: `0/20` · ASPIRE: `6/20` | **`12/20` (60.0%, 3× jump)** | **`p = 0.0005`** vs SimEX, tied CaP-X Turn-1 (`24×` faster p95) |
+| **Zero-Leakage Robosuite v4** *(4 tasks, n=80)* | `simulator` | CaP-X (online Turn-2): `67/80` (83.8%) · SimEX: `51/80` | **`72/80` (90.0%, #1 on all 4 tasks)** | **0** eval LLM, `2.05 s` p95 (**23×** faster vs CaP-X), `p ≤ 1.9e-5` vs frozen |
+| **Official LIBERO-Spatial 10/10** *(n=100, `host_state_api`)* | `simulator` | ASPIRE: `89/100` (89.0%) · SimEX: `17/100` | **`97/100` (97.0%, 2.1 calls/task)** | **`p = 0.0386`** vs ASPIRE; `9/10` on top-drawer `t4` (all baselines `0/10`) |
+| **Zero-Tuning Blind LIBERO-Object 10/10** *(n=100, frozen `108648a`)* | `simulator` | ASPIRE: `90/100` (`t1=0/10`) · SimEX: `82/100` · RAX-Protocol (Ad.): `80/100` | **`88/100` (88.0%, 0 collapsed tasks)** | **+8.0 pp** vs matched RAX-Protocol; `t1=9/10`; **257/280 (91.8%)** across all 24 external tasks |
+
+> *Unmatched RGB-D literature reference:* RAX (`huang2026rax`, Table 6: `256×256` RGB-D + 3 goal images, Claude Opus 5.5, ≤20 episodes/task, `n=500`/suite) reports `99.2%` on LIBERO-Spatial and `100.0%` on LIBERO-Object (Robosuite N/R). Because the observation contract and compute budget differ, RAX Table 6 is cited separately from matched-contract `host_state_api` rows.
 
 <div align="center">
   <img src="docs/assets/figures/cafebench_sim2sim_comparison.svg" alt="CafeBench v2 and Sim-to-Sim Comparison" width="96%"/>
+  <br/><br/>
+  <img src="docs/assets/figures/libero_m1_comparison.svg" alt="LIBERO-Spatial and Zero-Tuning Blind LIBERO-Object Comparison" width="96%"/>
 </div>
 
-> Complete archived logs, preserved intermediate runs (including Sim2Sim Run 1 `8/20` and pre-subroutine-fix Robosuite `Nut 4/20`), frozen policies, and HTML reports: [`experiments/goal-v2-20261122/README.md`](experiments/goal-v2-20261122/README.md) and [`experiments/goal-v3-simex-parity/README.md`](experiments/goal-v3-simex-parity/README.md).
+> Complete archived logs, preserved intermediate runs (including Sim2Sim Run 1 `8/20` and pre-fix Robosuite/LIBERO iterations), frozen policies, and HTML reports: [`experiments/trax-2.0-m1/README.md`](experiments/trax-2.0-m1/README.md), [`experiments/goal-v2-20261122/README.md`](experiments/goal-v2-20261122/README.md), and [`experiments/goal-v3-simex-parity/README.md`](experiments/goal-v3-simex-parity/README.md).
 
 ---
 

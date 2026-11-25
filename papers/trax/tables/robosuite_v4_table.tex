@@ -1,0 +1,15 @@
+% Auto-generated from experiments/trax-2.0-m1/robosuite-v4/robosuite_prior_work_report.json (sha256:bab3e2e915e3)
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Method & Overall ($n{=}80$) & Turn-1 & Lift / Can / Nut / Door & Dev LLM / Resets & Eval LLM & P95 (s) & $p$ vs.\ TRAX \\
+\midrule
+\textbf{TRAX (Ours)} & \textbf{72/80 (90.0\%)} & \textbf{72/80} & \textbf{20/20/17/15} & \textbf{13 / 67} & \textbf{0} & \textbf{2.05} & ref. \\
+CaP-X-Protocol (Online Turn-2) & 67/80 (83.8\%) & 66/80 & 20/20/13/14 & 15 / 75 & 8 & 47.29 & $0.3018$ \\
+SimEX-Protocol (Adapted) & 51/80 (63.7\%) & 51/80 & 20/20/0/11 & 15 / 75 & 0 & 2.08 & $<0.0001$ \\
+ASPIRE-Protocol (Adapted) & 49/80 (61.3\%) & 49/80 & 20/20/0/9 & 17 / 85 & 0 & 2.14 & $<0.0001$ \\
+SimEX-Direct-Repair (Ablation) & 41/80 (51.2\%) & 41/80 & 20/20/1/0 & 16 / 80 & 0 & 2.10 & $<0.0001$ \\
+Strong Zero-Shot & 20/80 (25.0\%) & 20/80 & 20/0/0/0 & 4 / 0 & 0 & 2.02 & $<0.0001$ \\
+\midrule
+\emph{RAX~\cite{huang2026rax} (lit.\ ref.)} & \emph{N/R} & --- & \emph{Not evaluated on Robosuite} & --- & --- & --- & --- \\
+\bottomrule
+\end{tabular}

@@ -21,6 +21,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 EXP_V2 = ROOT / "experiments" / "goal-v2-20261122"
 EXP_V3 = ROOT / "experiments" / "goal-v3-simex-parity"
+EXP_M1 = ROOT / "experiments" / "trax-2.0-m1"
 PAPER_DIR = ROOT / "papers" / "trax"
 PAPER_TABLES = PAPER_DIR / "tables"
 PAPER_FIGURES = PAPER_DIR / "figures"
@@ -193,6 +194,115 @@ def generate_robosuite_v3_table(
             p95 = f"\\textbf{{{p95}}}"
         lines.append(f"{label} & {overall} & {lcd} & {nut_pre} & {nut_post} & {eval_llm} & {p95} \\\\")
     lines.extend(["\\bottomrule", "\\end{tabular}", ""])
+    return "\n".join(lines)
+
+
+def generate_robosuite_v4_table(v4: dict[str, Any], src_v4: Path) -> str:
+    s = v4["summary_by_method"]
+    mc = v4["paired_mcnemar_craft_vs"]
+    order = [
+        ("craft_full", "\\textbf{TRAX (Ours)}"),
+        ("capx_protocol", "CaP-X-Protocol (Online Turn-2)"),
+        ("simex_protocol", "SimEX-Protocol (Adapted)"),
+        ("aspire_protocol", "ASPIRE-Protocol (Adapted)"),
+        ("simex_direct_repair", "SimEX-Direct-Repair (Ablation)"),
+        ("strong_zeroshot", "Strong Zero-Shot"),
+    ]
+    lines = [
+        f"% Auto-generated from {src_v4.relative_to(ROOT)} (sha256:{_sha256_short(src_v4)})",
+        "\\begin{tabular}{@{}lccccccc@{}}",
+        "\\toprule",
+        "Method & Overall ($n{=}80$) & Turn-1 & Lift / Can / Nut / Door & Dev LLM / Resets & Eval LLM & P95 (s) & $p$ vs.\\ TRAX \\\\",
+        "\\midrule",
+    ]
+    for key, label in order:
+        r = s[key]
+        bt = r["by_task"]
+        overall = f"{r['passed']}/80 ({_fmt_pct(r['pass_rate'])})"
+        t1 = f"{r['turn1_passed']}/80"
+        tasks_str = f"{bt['Lift']['passed']}/{bt['PickPlaceCan']['passed']}/{bt['NutAssemblySquare']['passed']}/{bt['Door']['passed']}"
+        dev_str = f"{r['dev_llm_calls']} / {r['dev_sim_resets']}"
+        eval_llm = str(r["eval_llm_calls"])
+        p95 = f"{r['p95_wall_s']:.2f}"
+        p_str = "ref." if key == "craft_full" else _fmt_p(mc.get(key, {}).get("p_value"))
+        if key == "craft_full":
+            overall = f"\\textbf{{{overall}}}"
+            t1 = f"\\textbf{{{t1}}}"
+            tasks_str = f"\\textbf{{{tasks_str}}}"
+            dev_str = f"\\textbf{{{dev_str}}}"
+            eval_llm = f"\\textbf{{{eval_llm}}}"
+            p95 = f"\\textbf{{{p95}}}"
+        lines.append(
+            f"{label} & {overall} & {t1} & {tasks_str} & {dev_str} & {eval_llm} & {p95} & {p_str} \\\\"
+        )
+    lines.extend([
+        "\\midrule",
+        "\\emph{RAX~\\cite{huang2026rax} (lit.\\ ref.)} & \\emph{N/R} & --- & \\emph{Not evaluated on Robosuite} & --- & --- & --- & --- \\\\",
+        "\\bottomrule",
+        "\\end{tabular}",
+        "",
+    ])
+    return "\n".join(lines)
+
+
+def _zero_task_count(summary_entry: dict[str, Any]) -> int:
+    by_task = summary_entry.get("by_task", {})
+    return sum(1 for v in by_task.values() if int(v.get("passed", 0)) == 0)
+
+
+def generate_libero_m1_table(
+    spatial: dict[str, Any],
+    obj: dict[str, Any],
+    src_spatial: Path,
+    src_obj: Path,
+) -> str:
+    ss = spatial["summary_by_method"]
+    mc_s = spatial["paired_mcnemar_craft_vs"]
+    so = obj["summary_by_method"]
+    mc_o = obj["paired_mcnemar_craft_vs"]
+    order = [
+        ("craft_full", "\\textbf{TRAX (Ours)}"),
+        ("aspire_protocol", "ASPIRE-Protocol (Adapted)"),
+        ("simex_protocol", "SimEX-Protocol (Adapted)"),
+        ("rax_protocol", "RAX-Protocol (Adapted)$\\dagger$"),
+        ("strong_zeroshot", "Strong Zero-Shot"),
+    ]
+    lines = [
+        f"% Auto-generated from {src_spatial.relative_to(ROOT)} (sha256:{_sha256_short(src_spatial)}) and {src_obj.relative_to(ROOT)} (sha256:{_sha256_short(src_obj)})",
+        "\\begin{tabular}{@{}lcccccc@{}}",
+        "\\toprule",
+        "Method (\\texttt{host\\_state\\_api}, \\texttt{gpt-6-astra}) & Spatial ($n{=}100$) & Spatial Dev & Spatial $p$ & Blind Object ($n{=}100$) & Obj.\\ 0/10 Tasks & Object $p$ \\\\",
+        "\\midrule",
+    ]
+    for key, label in order:
+        if key in ss:
+            rs = ss[key]
+            sp_val = f"{rs['passed']}/100 ({_fmt_pct(rs['pass_rate'])})"
+            sp_dev = f"{rs['dev_llm_calls']} / {rs['dev_sim_resets']}"
+            sp_p = "ref." if key == "craft_full" else _fmt_p(mc_s.get(key, {}).get("p_value"))
+        else:
+            sp_val = "---"
+            sp_dev = "---"
+            sp_p = "---"
+        ro = so[key]
+        ob_val = f"{ro['passed']}/100 ({_fmt_pct(ro['pass_rate'])})"
+        ob_zero = f"{_zero_task_count(ro)}/10"
+        ob_p = "ref." if key == "craft_full" else _fmt_p(mc_o.get(key, {}).get("p_value"))
+        if key == "craft_full":
+            sp_val = f"\\textbf{{{sp_val}}}"
+            sp_dev = f"\\textbf{{{sp_dev}}}"
+            ob_val = f"\\textbf{{{ob_val}}}"
+            ob_zero = f"\\textbf{{{ob_zero}}}"
+        lines.append(
+            f"{label} & {sp_val} & {sp_dev} & {sp_p} & {ob_val} & {ob_zero} & {ob_p} \\\\"
+        )
+    lines.extend([
+        "\\midrule",
+        "\\emph{RAX~\\cite{huang2026rax} (Table 6, unmatched RGB-D)}$\\ddagger$ & \\emph{99.2\\% ($n{=}500$)} & \\emph{$\\le 20$ eps/task} & \\emph{unm.} & \\emph{100.0\\% ($n{=}500$)} & --- & \\emph{unm.} \\\\",
+        "\\bottomrule",
+        "\\end{tabular}",
+        "",
+    ])
     return "\n".join(lines)
 
 
@@ -427,21 +537,21 @@ def build_cafebench_sim2sim_svg(cafe: dict[str, Any], s2s: dict[str, Any]) -> st
 """
 
 
-def build_robosuite_combo_svg(nut_fix: dict[str, Any], combo: dict[str, Any]) -> str:
-    sn = nut_fix["summary_by_method"]
+def build_robosuite_combo_svg(robo_v4: dict[str, Any], combo: dict[str, Any]) -> str:
+    sr = robo_v4["summary_by_method"]
     sc = combo["summary_by_method"]
     left_rows = [
-        ("TRAX (0 eval LLM)", sn["craft_full"]["pass_rate"], tuple(sn["craft_full"]["wilson_95_ci"]), f"{sn['craft_full']['passed']}/20 (60%)", True),
-        ("CaP-X Turn-1 Frozen", sn["capx_protocol"]["turn1_pass_rate"], None, f"{sn['capx_protocol']['turn1_passed']}/20 (60%)", False),
-        ("CaP-X (+8 eval LLM)", sn["capx_protocol"]["pass_rate"], tuple(sn["capx_protocol"]["wilson_95_ci"]), f"{sn['capx_protocol']['passed']}/20 (80%)", False),
-        ("ASPIRE (Adapted)", sn["aspire_protocol"]["pass_rate"], tuple(sn["aspire_protocol"]["wilson_95_ci"]), f"{sn['aspire_protocol']['passed']}/20 (30%)", False),
-        ("SimEX-Protocol", sn["simex_protocol"]["pass_rate"], tuple(sn["simex_protocol"]["wilson_95_ci"]), f"{sn['simex_protocol']['passed']}/20 (0%)", False),
-        ("Zero-Shot", sn["strong_zeroshot"]["pass_rate"], tuple(sn["strong_zeroshot"]["wilson_95_ci"]), f"{sn['strong_zeroshot']['passed']}/20 (0%)", False),
+        ("TRAX (0 eval LLM)", sr["craft_full"]["pass_rate"], tuple(sr["craft_full"]["wilson_95_ci"]), f"{sr['craft_full']['passed']}/80 (90.0%)", True),
+        ("CaP-X (+8 eval LLM)", sr["capx_protocol"]["pass_rate"], tuple(sr["capx_protocol"]["wilson_95_ci"]), f"{sr['capx_protocol']['passed']}/80 (83.8%)", False),
+        ("SimEX-Protocol", sr["simex_protocol"]["pass_rate"], tuple(sr["simex_protocol"]["wilson_95_ci"]), f"{sr['simex_protocol']['passed']}/80 (63.7%)", False),
+        ("ASPIRE (Adapted)", sr["aspire_protocol"]["pass_rate"], tuple(sr["aspire_protocol"]["wilson_95_ci"]), f"{sr['aspire_protocol']['passed']}/80 (61.3%)", False),
+        ("SimEX-Direct", sr["simex_direct_repair"]["pass_rate"], tuple(sr["simex_direct_repair"]["wilson_95_ci"]), f"{sr['simex_direct_repair']['passed']}/80 (51.2%)", False),
+        ("Zero-Shot", sr["strong_zeroshot"]["pass_rate"], tuple(sr["strong_zeroshot"]["wilson_95_ci"]), f"{sr['strong_zeroshot']['passed']}/80 (25.0%)", False),
     ]
     p_left = _hbar_panel(
         22, 30, 452,
-        "(a) Zero-Leakage NutAssemblySquare (Selective Subroutine)",
-        "Robosuite Panda (n=20); TRAX 3x jump (4->12/20), p=0.0005 vs SimEX",
+        "(a) Zero-Leakage Robosuite v4 (4 Tasks, n = 80)",
+        "Panda OSC_POSE (480 rollouts); TRAX #1 on every task, 23x faster p95 vs CaP-X",
         left_rows,
     )
 
@@ -465,7 +575,7 @@ def build_robosuite_combo_svg(nut_fix: dict[str, Any], combo: dict[str, Any]) ->
   <text x="534" y="238" class="p-sub">• TRAX Pipelined + Journal: 100% pass, 0 dup brews/heats, 0 interlocks, 47.45 s/order</text>
   <text x="534" y="256" class="p-sub">• Stateless baselines: 3 duplicate appliance starts, 4–6 interlock violations</text>
 """
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 296" width="980" height="296" role="img" aria-label="Zero-Leakage Robosuite Subroutine Repair and Multi-Appliance Combo Benchmarks">
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 296" width="980" height="296" role="img" aria-label="Zero-Leakage Robosuite v4 and Multi-Appliance Combo Benchmarks">
   <style>
     .p-title {{ font-family: Inter, -apple-system, sans-serif; font-size: 13px; font-weight: 700; fill: #0f172a; }}
     .p-sub   {{ font-family: Inter, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }}
@@ -478,6 +588,50 @@ def build_robosuite_combo_svg(nut_fix: dict[str, Any], combo: dict[str, Any]) ->
   {p_left}
   {p_right}
   {callout}
+</svg>
+"""
+
+
+def build_libero_m1_svg(spatial: dict[str, Any], obj: dict[str, Any]) -> str:
+    ss = spatial["summary_by_method"]
+    so = obj["summary_by_method"]
+    left_rows = [
+        ("TRAX (Ours)", ss["craft_full"]["pass_rate"], tuple(ss["craft_full"]["wilson_95_ci"]), f"{ss['craft_full']['passed']}/100 (97.0%)", True),
+        ("ASPIRE (Adapted)", ss["aspire_protocol"]["pass_rate"], tuple(ss["aspire_protocol"]["wilson_95_ci"]), f"{ss['aspire_protocol']['passed']}/100 (89.0%)", False),
+        ("SimEX-Protocol", ss["simex_protocol"]["pass_rate"], tuple(ss["simex_protocol"]["wilson_95_ci"]), f"{ss['simex_protocol']['passed']}/100 (17.0%)", False),
+        ("Zero-Shot", ss["strong_zeroshot"]["pass_rate"], tuple(ss["strong_zeroshot"]["wilson_95_ci"]), f"{ss['strong_zeroshot']['passed']}/100 (0.0%)", False),
+    ]
+    right_rows = [
+        ("ASPIRE (1 task 0/10)", so["aspire_protocol"]["pass_rate"], tuple(so["aspire_protocol"]["wilson_95_ci"]), f"{so['aspire_protocol']['passed']}/100 (90.0%)", False),
+        ("TRAX (0 tasks 0/10)", so["craft_full"]["pass_rate"], tuple(so["craft_full"]["wilson_95_ci"]), f"{so['craft_full']['passed']}/100 (88.0%)", True),
+        ("SimEX (fair fix)", so["simex_protocol"]["pass_rate"], tuple(so["simex_protocol"]["wilson_95_ci"]), f"{so['simex_protocol']['passed']}/100 (82.0%)", False),
+        ("RAX-Protocol (Ad.)", so["rax_protocol"]["pass_rate"], tuple(so["rax_protocol"]["wilson_95_ci"]), f"{so['rax_protocol']['passed']}/100 (80.0%)", False),
+        ("Zero-Shot", so["strong_zeroshot"]["pass_rate"], tuple(so["strong_zeroshot"]["wilson_95_ci"]), f"{so['strong_zeroshot']['passed']}/100 (19.0%)", False),
+    ]
+    p_left = _hbar_panel(
+        22, 30, 452,
+        "(a) Official LIBERO-Spatial 10/10 (n = 100)",
+        "host_state_api (gpt-6-astra, <=5 dev calls); p=0.0386 vs ASPIRE; 9/10 on drawer t4",
+        left_rows,
+    )
+    p_right = _hbar_panel(
+        506, 30, 452,
+        "(b) Zero-Tuning Blind LIBERO-Object 10/10 (n = 100)",
+        "Frozen commit 108648a (0 tuning); TRAX only method with 0/10 collapsed tasks",
+        right_rows,
+    )
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 265" width="980" height="265" role="img" aria-label="LIBERO-Spatial and Zero-Tuning Blind LIBERO-Object Benchmarks">
+  <style>
+    .p-title {{ font-family: Inter, -apple-system, sans-serif; font-size: 13px; font-weight: 700; fill: #0f172a; }}
+    .p-sub   {{ font-family: Inter, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }}
+    .p-lbl   {{ font-family: Inter, -apple-system, sans-serif; font-size: 11px; fill: #334155; }}
+    .p-lbl-hi{{ font-family: Inter, -apple-system, sans-serif; font-size: 11px; font-weight: 700; fill: #0f172a; }}
+    .p-axis  {{ font-family: "JetBrains Mono", monospace; font-size: 9.5px; fill: #64748b; }}
+  </style>
+  <rect width="980" height="265" fill="#ffffff" rx="6"/>
+  <line x1="490" y1="16" x2="490" y2="250" stroke="#e2e8f0" stroke-width="1"/>
+  {p_left}
+  {p_right}
 </svg>
 """
 
@@ -520,6 +674,9 @@ def main() -> int:
     src_combo = EXP_V3 / "combo-v3" / "combo_report.json"
     src_robo_v3 = EXP_V3 / "robosuite-parity-v3" / "robosuite_prior_work_report.json"
     src_robo_nut = EXP_V3 / "robosuite-v3-nut-subroutine-fix" / "robosuite_prior_work_report.json"
+    src_robo_v4 = EXP_M1 / "robosuite-v4" / "robosuite_prior_work_report.json"
+    src_lib_spatial = EXP_M1 / "libero-spatial-full" / "libero_report.json"
+    src_lib_object = EXP_M1 / "libero-object-blind" / "libero_report.json"
 
     cafe = _load_json(src_cafe)
     s2s_r2 = _load_json(src_s2s_r2)
@@ -527,6 +684,9 @@ def main() -> int:
     combo = _load_json(src_combo)
     robo_v3 = _load_json(src_robo_v3)
     robo_nut = _load_json(src_robo_nut)
+    robo_v4 = _load_json(src_robo_v4)
+    lib_spatial = _load_json(src_lib_spatial)
+    lib_object = _load_json(src_lib_object)
 
     (PAPER_TABLES / "cafebench_v2_table.tex").write_text(
         generate_cafebench_v2_table(cafe, src_cafe), encoding="utf-8"
@@ -540,13 +700,22 @@ def main() -> int:
     (PAPER_TABLES / "robosuite_v3_table.tex").write_text(
         generate_robosuite_v3_table(robo_v3, robo_nut, src_robo_v3, src_robo_nut), encoding="utf-8"
     )
+    (PAPER_TABLES / "robosuite_v4_table.tex").write_text(
+        generate_robosuite_v4_table(robo_v4, src_robo_v4), encoding="utf-8"
+    )
+    (PAPER_TABLES / "libero_m1_table.tex").write_text(
+        generate_libero_m1_table(lib_spatial, lib_object, src_lib_spatial, src_lib_object), encoding="utf-8"
+    )
 
     (DOCS_FIGURES / "trax_architecture.svg").write_text(build_architecture_svg(), encoding="utf-8")
     (DOCS_FIGURES / "cafebench_sim2sim_comparison.svg").write_text(
         build_cafebench_sim2sim_svg(cafe, s2s_r2), encoding="utf-8"
     )
     (DOCS_FIGURES / "robosuite_combo_comparison.svg").write_text(
-        build_robosuite_combo_svg(robo_nut, combo), encoding="utf-8"
+        build_robosuite_combo_svg(robo_v4, combo), encoding="utf-8"
+    )
+    (DOCS_FIGURES / "libero_m1_comparison.svg").write_text(
+        build_libero_m1_svg(lib_spatial, lib_object), encoding="utf-8"
     )
 
     previews_dir = EXP_V2 / "fidelity-previews"
