@@ -47,7 +47,7 @@ from .robosuite_bench import (
 from .skills import SkillExperience, SkillExperienceStore, validate_skill_code_snippet
 
 
-LIBERO_BENCH_VERSION = "TRAX-LIBERO-v1.0"
+LIBERO_BENCH_VERSION = "TRAX-LIBERO-v1.1"
 
 
 def _utc_now() -> str:
@@ -375,9 +375,9 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
     def nearest_jaw_yaw(desired, cur_yaw):
         return cur_yaw + 0.5 * atan2(sin(2.0 * (desired - cur_yaw)), cos(2.0 * (desired - cur_yaw)))
 
-    def run_sample(r, dz, ang, desired_yaw, jaw_rel):
+    def run_sample(r, dz, ang, desired_yaw, jaw_rel, transit_steps=26):
         st = sdk.get_state()
-        if st["steps_used"] > st["max_steps"] - 85 or target not in st["objects"]:
+        if st["steps_used"] > st["max_steps"] - 70 or target not in st["objects"]:
             return None
         o = st["objects"][target]
         pos = o["pos"]
@@ -392,10 +392,10 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
                 if d < clr:
                     clr = d
         sdk.set_gripper("open", steps=4)
-        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="open", max_steps=45, tol=0.012)
-        sdk.move_to([gx, gy, z0 + dz], yaw=yaw, gripper="open", max_steps=26, tol=0.010)
+        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="open", max_steps=transit_steps, tol=0.014)
+        sdk.move_to([gx, gy, z0 + dz], yaw=yaw, gripper="open", max_steps=22, tol=0.010)
         g = sdk.set_gripper("close", steps=12)
-        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="close", max_steps=22, tol=0.015)
+        sdk.move_to([gx, gy, z0 + 0.11], yaw=yaw, gripper="close", max_steps=18, tol=0.015)
         st2 = sdk.get_state()
         p2 = st2["objects"][target]["pos"]
         eef2 = st2["eef_pos"]
@@ -419,18 +419,18 @@ def _build_libero_grasp_probe_source(target_obj: str) -> str:
         samples.append(rec)
         # Gently set object back down before releasing so next sample starts cleanly
         if z1 - z0 > 0.02:
-            sdk.move_to([gx, gy, z0 + dz + 0.005], yaw=yaw, gripper="close", max_steps=16, tol=0.015)
-        sdk.set_gripper("open", steps=5)
+            sdk.move_to([gx, gy, z0 + dz + 0.005], yaw=yaw, gripper="close", max_steps=14, tol=0.015)
+        sdk.set_gripper("open", steps=4)
         return rec
 
-    # Probe non-destructive free-space radial grasps FIRST; test center plunge LAST
-    s_perp = run_sample(0.040, 0.020, best_ang, best_ang + pi / 2.0, pi / 2.0)
-    s_par = run_sample(0.040, 0.020, best_ang, best_ang, 0.0)
+    # Balanced object-agnostic scan: radial rim (both jaw axes) + center (both orthogonal jaw axes)
+    s_perp = run_sample(0.040, 0.020, best_ang, best_ang + pi / 2.0, pi / 2.0, transit_steps=42)
+    s_par = run_sample(0.040, 0.020, best_ang, best_ang, 0.0, transit_steps=20)
     best_jaw = pi / 2.0 if score_sample(s_perp) >= score_sample(s_par) else 0.0
+    run_sample(0.0, 0.0, 0.0, eef0_yaw, 0.0, transit_steps=20)
+    run_sample(0.0, 0.020, 0.0, eef0_yaw + pi / 2.0, pi / 2.0, transit_steps=20)
     opp_ang = best_ang + pi
-    run_sample(0.040, 0.020, opp_ang, opp_ang + best_jaw, best_jaw)
-    run_sample(0.045, 0.025, best_ang, best_ang + best_jaw, best_jaw)
-    run_sample(0.0, 0.0, 0.0, eef0_yaw, 0.0)
+    run_sample(0.040, 0.020, opp_ang, opp_ang + best_jaw, best_jaw, transit_steps=22)
     return {{
         "status": "done",
         "probe": "grasp_offset_scan",
@@ -663,23 +663,31 @@ def _libero_simex_prompt(
     passed_ever: set[int],
     slot: int,
     it: int,
+    toolbox_notes: Sequence[str] = (),
 ) -> str:
     angles = (
         "Hypothesis A (Object/Region Grounding): Verify the exact object/site selection and target coordinates from `sdk.get_state()`.",
-        "Hypothesis B (Grasp & Contact Precision): Refine pre-grasp approach, descent height, gripper open/close timing, and lift clearance.",
+        "Hypothesis B (Grasp & Contact Precision): Refine pre-grasp approach, descent height, gripper orientation/timing, and lift clearance.",
         "Hypothesis C (Transport & Placement): Preserve working grasp and improve alignment, release height, or articulated pull/push trajectory.",
     )
     logs = [
         f"- init={r['init_idx']} success={r['success']} steps={r['steps_used']} err={r['error']!r} "
-        f"lifts={r['obj_lifts']} objs={r['final_state']['objects']} sites={r['final_state']['sites']}"
+        f"ret={r.get('policy_return')} lifts={r['obj_lifts']} eef={r['final_state']['eef_pos']} "
+        f"objs={r['final_state']['objects']}"
         for r in dev_runs
     ]
+    tb_block = (
+        ["Paired Toolbox Notes (SimEX persistent memory):", *[f"- {t}" for t in toolbox_notes], ""]
+        if toolbox_notes
+        else []
+    )
     return "\n".join(
         [
             f'SimEX-Protocol (Adapted) Candidate {slot + 1} for LIBERO task "{task_lang}" (iteration {it}):',
             angles[slot % len(angles)],
             f"Capability-bank passing init_indices to preserve: {sorted(passed_ever)}",
             "",
+            *tb_block,
             SHARED_LIBERO_SDK_CONTRACT,
             "",
             "Current Best Policy:",
@@ -688,6 +696,71 @@ def _libero_simex_prompt(
             "```",
             "",
             "Dev Rollout Traces:",
+            *logs,
+            "",
+            "Return ONLY valid Python code defining `run_policy(sdk)`.",
+        ]
+    )
+
+
+def _libero_rax_prompt(
+    task_lang: str,
+    prev_src: str,
+    dev_runs: Sequence[Mapping[str, Any]],
+    progress_notes: Sequence[str],
+    skill_repo_entries: Sequence[str],
+    it: int,
+) -> str:
+    """Matched-budget RAX-Protocol (Adapted from arXiv:2610.22496 Sections 3.3, 3.4, 5.5).
+
+    Combines RAX's multi-timescale working memory (PROGRESS/TIPS), modular subroutine
+    preservation, and cross-task versioned skill repository over the identical host_state_api
+    SDK and dev LLM budget (without TRAX's 1-reset ActiveProbe or 4-layer failure attribution).
+    """
+    sub = analyze_policy_subroutines(prev_src, [])
+    fn_names = [s["name"] for s in sub.get("subroutines") or []]
+    logs = [
+        f"- init={r['init_idx']} success={r['success']} steps={r['steps_used']} err={r['error']!r} "
+        f"ret={r.get('policy_return')} lifts={r['obj_lifts']} eef={r['final_state']['eef_pos']}\n"
+        f"    objs={r['final_state']['objects']}"
+        for r in dev_runs
+    ]
+    prog_block = (
+        ["Session Working Memory (PROGRESS / TIPS from prior exploration iterations):"]
+        + [f"- {n}" for n in progress_notes[-4:]]
+        + [""]
+        if progress_notes
+        else []
+    )
+    repo_block = (
+        ["Versioned Cross-Task Skill Repository (verified modular skills from prior tasks):"]
+        + [f"- {s}" for s in skill_repo_entries[-2:]]
+        + [""]
+        if skill_repo_entries
+        else []
+    )
+    mod_block = (
+        [f"Modular Program Subroutines ({', '.join(fn_names)}): preserve working helper routines and selectively revise only failing stages.", ""]
+        if fn_names
+        else []
+    )
+    return "\n".join(
+        [
+            f'RAX-Protocol (Adapted) Exploration & Compilation for LIBERO task "{task_lang}" (iteration {it}):',
+            "Diagnose execution feedback from the dev rollouts, compile a clean modular `run_policy(sdk)` with reusable helpers, "
+            "and generalize across all unseen layouts without hardcoding scene coordinates.",
+            "",
+            *mod_block,
+            *prog_block,
+            *repo_block,
+            SHARED_LIBERO_SDK_CONTRACT,
+            "",
+            "Current Best Modular Program:",
+            "```python",
+            prev_src,
+            "```",
+            "",
+            "Dev Rollout Execution Feedback:",
             *logs,
             "",
             "Return ONLY valid Python code defining `run_policy(sdk)`.",
@@ -911,13 +984,15 @@ def run_libero_benchmark(
     task_ckpt_dir.mkdir(parents=True, exist_ok=True)
     dev_indices = list(range(int(dev_count)))
     eval_indices = list(range(int(dev_count), int(dev_count) + int(eval_count)))
-    method_ids = ("strong_zeroshot", "aspire_protocol", "simex_protocol", "craft_full")
+    method_ids = ("strong_zeroshot", "aspire_protocol", "simex_protocol", "rax_protocol", "craft_full")
 
     def _log(msg: str) -> None:
         if progress_cb:
             progress_cb(msg)
 
     skill_store = SkillExperienceStore(out / "libero_skills.json")
+    simex_store = SkillExperienceStore(out / "simex_libero_skills.json")
+    rax_store = SkillExperienceStore(out / "rax_libero_skills.json")
     contract_sha = digest(SHARED_LIBERO_SDK_CONTRACT)
     trials: list[dict[str, Any]] = []
     meta_by_task: dict[str, dict[str, Any]] = {}
@@ -1021,14 +1096,15 @@ def run_libero_benchmark(
                     "dev_passed": best_pass,
                 }
 
-                # SimEX-Protocol (Adapted)
+                # SimEX-Protocol (Adapted, multi-hypothesis + capability bank + paired toolbox)
                 sx_ever = {r["init_idx"] for r in init_runs if r["success"]}
                 sx_src, sx_pass, sx_regs, sx_runs = src0, init_pass, 0, list(init_runs)
+                sx_notes = [f"{sk.title}: {sk.guidance}" for sk in simex_store.list_verified(sdk_contract_sha256=contract_sha)[-2:]]
                 resets, calls = len(dev_indices), 1
                 for it in range(2, max_dev_llm_calls + 1):
                     if sx_pass == len(dev_indices):
                         break
-                    cand = str(llm_fn(_libero_simex_prompt(task_lang, sx_src, sx_runs, sx_ever, it - 2, it))["source"])
+                    cand = str(llm_fn(_libero_simex_prompt(task_lang, sx_src, sx_runs, sx_ever, it - 2, it, toolbox_notes=sx_notes))["source"])
                     calls += 1
                     runs = [run_libero_rollout(suite_name, int(tid), i, cand, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
                     resets += len(dev_indices)
@@ -1042,10 +1118,58 @@ def run_libero_benchmark(
                 arts["simex_protocol"] = {
                     "method_id": "simex_protocol",
                     "label": "SimEX-Protocol (Adapted)",
+                    "provenance": "protocol_adapted_from_simex_2609_38982",
                     "source": sx_src,
                     "dev_llm_calls": calls,
                     "dev_sim_resets": resets,
                     "dev_passed": sx_pass,
+                }
+
+                # RAX-Protocol (Adapted: PROGRESS/TIPS working memory + modular subroutine preservation + versioned skill repo; NO TRAX ActiveProbe/4-layer attribution)
+                rx_src, rx_pass, rx_runs = src0, init_pass, list(init_runs)
+                rx_notes: list[str] = [
+                    f"it=1 baseline dev={init_pass}/{len(dev_indices)}; "
+                    f"sample_ret={init_runs[0].get('policy_return') if init_runs else None} err={init_runs[0].get('error') if init_runs else ''}"
+                ]
+                rx_repo_entries: list[str] = []
+                for sk in rax_store.list_verified(sdk_contract_sha256=contract_sha)[-2:]:
+                    line = f"{sk.title}: {sk.guidance}"
+                    if sk.code_snippet:
+                        snip = sk.code_snippet.strip()
+                        if len(snip) > 1400:
+                            snip = snip[:1400] + "\n# ..."
+                        line += f"\n  Verified module:\n```python\n{snip}\n```"
+                    rx_repo_entries.append(line)
+                resets, calls = len(dev_indices), 1
+                for it in range(2, max_dev_llm_calls + 1):
+                    if rx_pass == len(dev_indices):
+                        break
+                    cand = str(llm_fn(_libero_rax_prompt(task_lang, rx_src, rx_runs, rx_notes, rx_repo_entries, it))["source"])
+                    calls += 1
+                    runs = [run_libero_rollout(suite_name, int(tid), i, cand, horizon=horizon, cached_task=cached, reuse_env=task_env) for i in dev_indices]
+                    resets += len(dev_indices)
+                    p = sum(1 for r in runs if r["success"])
+                    fails = [r for r in runs if not r["success"]]
+                    fail_sample = fails[0] if fails else {}
+                    rx_notes.append(
+                        f"it={it} dev={p}/{len(dev_indices)}; "
+                        + (
+                            f"fail_err={fail_sample.get('error')!r} ret={fail_sample.get('policy_return')} lifts={fail_sample.get('obj_lifts')}"
+                            if fails
+                            else "all dev init states passed"
+                        )
+                    )
+                    _log(f"  [{tkey}][RAX-Protocol it={it}] dev={p}/{len(dev_indices)}")
+                    if p >= rx_pass:
+                        rx_pass, rx_src, rx_runs = p, cand, runs
+                arts["rax_protocol"] = {
+                    "method_id": "rax_protocol",
+                    "label": "RAX-Protocol (Adapted)",
+                    "provenance": "protocol_adapted_from_rax_2610_22496",
+                    "source": rx_src,
+                    "dev_llm_calls": calls,
+                    "dev_sim_resets": resets,
+                    "dev_passed": rx_pass,
                 }
 
                 # TRAX Full Engine (ActiveProbe + AST preflight + 4-layer attribution + Selective Subroutine Repair + Adaptive Escape + Skills)
@@ -1152,6 +1276,42 @@ def run_libero_benchmark(
                         if rec["success"]:
                             ok_cnt += 1
                     _log(f"[{tkey}][EVAL] {mid:16s} -> {ok_cnt}/{len(eval_indices)} ({ok_cnt/len(eval_indices)*100:.1f}%)")
+                    if mid == "simex_protocol" and ok_cnt >= max(1, int(0.7 * len(eval_indices))):
+                        simex_store.add(
+                            SkillExperience(
+                                skill_id=f"simex-libero-{tkey}",
+                                title=f"SimEX {tkey} Verified Skill Note",
+                                guidance=f"Verified frozen policy for '{task_lang}' ({ok_cnt}/{len(eval_indices)} held-out).",
+                                task_name=tkey,
+                                required_methods=("get_state", "move_to", "move_delta", "set_gripper"),
+                                sdk_contract_sha256=contract_sha,
+                                evidence_source="simulator",
+                                verification_report_id=f"simex-libero-{tkey}",
+                                verified=True,
+                                verified_at_utc=_utc_now(),
+                                measured_limits={"heldout_pass_rate": round(ok_cnt / len(eval_indices), 4)},
+                            )
+                        )
+                    if mid == "rax_protocol" and ok_cnt >= max(1, int(0.7 * len(eval_indices))):
+                        rx_snip = _extract_verified_helper_snippet(src)
+                        if not rx_snip and validate_skill_code_snippet(src)["valid"]:
+                            rx_snip = src.strip()
+                        rax_store.add(
+                            SkillExperience(
+                                skill_id=f"rax-libero-{tkey}",
+                                title=f"RAX {tkey} Verified Modular Skill",
+                                guidance=f"Verified modular policy for '{task_lang}' ({ok_cnt}/{len(eval_indices)} held-out).",
+                                task_name=tkey,
+                                required_methods=("get_state", "move_to", "move_delta", "set_gripper"),
+                                sdk_contract_sha256=contract_sha,
+                                evidence_source="simulator",
+                                verification_report_id=f"rax-libero-{tkey}",
+                                verified=True,
+                                verified_at_utc=_utc_now(),
+                                measured_limits={"heldout_pass_rate": round(ok_cnt / len(eval_indices), 4)},
+                                code_snippet=rx_snip,
+                            )
+                        )
                     if mid == "craft_full" and ok_cnt >= max(1, int(0.7 * len(eval_indices))):
                         helper_snip = _extract_verified_helper_snippet(src)
                         if not helper_snip and validate_skill_code_snippet(src)["valid"]:
@@ -1218,7 +1378,7 @@ def run_libero_benchmark(
     paired: dict[str, dict[str, Any]] = {}
     if len(c_map) == len(keys):
         c_vec = [c_map[k] for k in keys]
-        for mid in ("strong_zeroshot", "aspire_protocol", "simex_protocol"):
+        for mid in ("strong_zeroshot", "aspire_protocol", "simex_protocol", "rax_protocol"):
             b_map = {(t["task_key"], int(t["init_idx"])): bool(t["success"]) for t in trials if t["method_id"] == mid}
             if len(b_map) == len(keys):
                 paired[mid] = mcnemar_exact_p(c_vec, [b_map[k] for k in keys])

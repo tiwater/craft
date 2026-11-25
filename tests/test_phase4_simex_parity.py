@@ -165,6 +165,32 @@ def test_probing_parsers_and_llm_hypothesis_extraction() -> None:
     assert "z_offset_m=0.025" in f_world.summary
     assert "NOT random object yaw" in f_world.summary
 
+    from trax.libero_bench import (
+        _build_libero_grasp_probe_source,
+        _libero_rax_prompt,
+        _libero_simex_prompt,
+    )
+    from trax.robosuite_bench import check_robosuite_ast_compliance
+
+    probe_src = _build_libero_grasp_probe_source("target_obj_1")
+    assert check_robosuite_ast_compliance(probe_src)["compliant"] is True
+    assert "run_sample(0.0, 0.0," in probe_src
+    assert "run_sample(0.0, 0.020," in probe_src
+
+    sample_run = {
+        "init_idx": 0,
+        "success": False,
+        "steps_used": 120,
+        "error": "",
+        "policy_return": "{'status': 'failed', 'reason': 'missed'}",
+        "obj_lifts": {"obj_1": 0.0},
+        "final_state": {"eef_pos": [0.0, 0.0, 1.0], "objects": {"obj_1": {"pos": [0.1, 0.0, 0.9], "yaw": 0.0}}},
+    }
+    sx_p = _libero_simex_prompt("pick up obj", "def run_policy(sdk):\n    return {}", [sample_run], set(), 0, 2, toolbox_notes=["note1"])
+    assert "ret=" in sx_p and "note1" in sx_p
+    rx_p = _libero_rax_prompt("pick up obj", "def helper(sdk):\n    return 1\ndef run_policy(sdk):\n    return {}", [sample_run], ["it=1 dev=0/5"], ["skill1"], 2)
+    assert "RAX-Protocol (Adapted)" in rx_p and "PROGRESS / TIPS" in rx_p and "skill1" in rx_p
+
     raw_json = """```json
     [
       {"hypothesis_id": "h1", "title": "Offset grasp", "diagnosis": "missed center", "proposed_strategy": "grasp at +0.055m"}
