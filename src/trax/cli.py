@@ -561,7 +561,7 @@ def main() -> None:
             scope="fixture" if args.driver == "fixture" else None,
         )
         driver = create_host_driver(args.driver, cfg)
-        if getattr(driver, "driver_name", "") == "mujoco_cafe":
+        if getattr(driver, "driver_name", "") in ("mujoco_cafe", "mujoco_so101"):
             driver._realtime_pacing = True  # smooth visible arm motion in live UI video
         policies = _parse_policy_specs(args.policy, include_builtin_ref=False)
         app = TraxUIApp(cfg, driver, args.workspace, policies=policies)

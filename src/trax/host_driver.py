@@ -690,6 +690,11 @@ def _create_mujoco_cafe_driver(config: SceneConfig) -> SceneHostDriver:
     return MuJoCoCafeHostDriver(config)
 
 
+def _create_mujoco_so101_driver(config: SceneConfig) -> SceneHostDriver:
+    from .mujoco_so101_driver import MuJoCoSO101HostDriver
+    return MuJoCoSO101HostDriver(config)
+
+
 def _create_gazebo_cafe_driver(config: SceneConfig) -> SceneHostDriver:
     from .gazebo_cafe_driver import GazeboCafeHostDriver
     return GazeboCafeHostDriver(config)
@@ -701,6 +706,7 @@ _DRIVER_REGISTRY: dict[str, DriverFactory] = {
     "http_edge": HttpHostDriver,
     "recorded": _create_recorded_driver,
     "mujoco_cafe": _create_mujoco_cafe_driver,
+    "mujoco_so101": _create_mujoco_so101_driver,
     "gazebo_cafe": _create_gazebo_cafe_driver,
 }
 

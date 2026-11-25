@@ -8,7 +8,7 @@ test:
 
 check-stdlib:
 	$(PYTHON) -c "import ast, pathlib, sys; \
-allowed_opt = {'mujoco_cafe_driver.py', 'robosuite_bench.py', 'libero_bench.py'}; \
+allowed_opt = {'mujoco_cafe_driver.py', 'mujoco_so101_driver.py', 'robosuite_bench.py', 'libero_bench.py'}; \
 stdlib = set(sys.stdlib_module_names) | {'trax', '__future__'}; \
 bad = []; \
 [bad.append((p.name, mod)) for p in sorted(pathlib.Path('src/trax').glob('*.py')) if p.name not in allowed_opt \
