@@ -1,30 +1,32 @@
-% trax.cls — Modern Single-Column Technical Report Class for TRAX
-% Clean, original arXiv-ready layout compatible with both Tectonic (XeTeX) and pdfLaTeX.
+% trax.cls — Clean Academic Single-Column Preprint Class for TRAX
+% Classic serif academic paper layout (Palatino, centered title block, Page-1 teaser,
+% unboxed centered Abstract, indented paragraphs, "Figure 1 |" captions).
+% Compatible with both Tectonic (XeTeX) and arXiv pdfLaTeX.
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{trax}[2026/11/25 TRAX Modern Single-Column Preprint Class]
+\ProvidesClass{trax}[2026/11/25 TRAX Academic Single-Column Preprint Class]
 
-\LoadClass[10pt,letterpaper]{article}
+\LoadClass[11pt,a4paper]{article}
 
-% --- Encoding & Typography (pdfLaTeX + Tectonic compatible) ---
-\RequirePackage[T1]{fontenc}
-\RequirePackage[utf8]{inputenc}
-\RequirePackage{mathpazo}
-\RequirePackage[scaled=0.92]{helvet}
-\RequirePackage[scaled=0.86]{inconsolata}
-\RequirePackage{microtype}
-\linespread{1.14}
-
-% --- Page Geometry ---
+% --- Page Geometry (A4, generous classic academic margins) ---
 \RequirePackage[
-  letterpaper,
-  top=0.88in,
-  bottom=0.88in,
-  left=0.92in,
-  right=0.92in,
-  headheight=16pt,
-  headsep=18pt,
+  a4paper,
+  top=2.45cm,
+  bottom=2.55cm,
+  left=2.5cm,
+  right=2.5cm,
+  headheight=18pt,
+  headsep=14pt,
   footskip=24pt
 ]{geometry}
+
+% --- Typography (Classic Academic Palatino + subtle monospace) ---
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[sc]{mathpazo}
+\RequirePackage[scaled=0.90]{helvet}
+\RequirePackage[scaled=0.84]{inconsolata}
+\RequirePackage{microtype}
+\linespread{1.08}
 
 % --- Core Packages ---
 \RequirePackage[table]{xcolor}
@@ -35,45 +37,48 @@
 \RequirePackage{titlesec}
 \RequirePackage{fancyhdr}
 \RequirePackage{caption}
+\RequirePackage{etoolbox}
 \RequirePackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
 \RequirePackage[numbers,sort&compress]{natbib}
-\RequirePackage{url}
+\RequirePackage{xurl}
+
+% --- Tasteful Restrained Academic Palette ---
+\definecolor{traxink}{HTML}{1A1F29}      % Deep charcoal ink
+\definecolor{traxaccent}{HTML}{1B5E7A}   % Restrained academic slate-teal
+\definecolor{traxmuted}{HTML}{5F6C7B}    % Metadata / secondary captions
+\definecolor{traxrule}{HTML}{D0D7DE}     % Delicate hairline rules
+\definecolor{traxbg}{HTML}{F7F9FB}       % Subtle diagram card fill
+\definecolor{traxrow}{HTML}{F0F6FA}      % Whisper-light TRAX table row highlight
+\definecolor{traxgreen}{HTML}{1E6B45}    % Muted verification green
+\definecolor{traxgreenbg}{HTML}{F2FAF5}
+\definecolor{traxamber}{HTML}{9A5B13}    % Muted caution amber
+\definecolor{traxamberbg}{HTML}{FDF8F0}
+
 \RequirePackage[
   colorlinks=true,
-  linkcolor=traxblue,
-  citecolor=traxblue,
-  urlcolor=traxblue,
+  linkcolor=traxaccent,
+  citecolor=traxaccent,
+  urlcolor=traxaccent,
   pdfborder={0 0 0}
 ]{hyperref}
 
-% --- Brand Color Palette ---
-\definecolor{traxnavy}{HTML}{0F172A}
-\definecolor{traxblue}{HTML}{1D4ED8}
-\definecolor{traxslate}{HTML}{334155}
-\definecolor{traxmuted}{HTML}{64748B}
-\definecolor{traxbg}{HTML}{F8FAFC}
-\definecolor{traxtint}{HTML}{EFF6FF}
-\definecolor{traxborder}{HTML}{CBD5E1}
-\definecolor{traxgreen}{HTML}{15803D}
-\definecolor{traxgreenbg}{HTML}{F0FDF4}
-\definecolor{traxamber}{HTML}{B45309}
-\definecolor{traxamberbg}{HTML}{FFFBEB}
-
-% --- Paragraph & List Spacing ---
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{5pt}
-\setlength{\emergencystretch}{3em}
-\tolerance=1500
+% --- Classic Academic Paragraph Style (Indented, balanced spacing) ---
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{3pt plus 1pt}
+\setlength{\emergencystretch}{2.5em}
+\tolerance=1400
 \hbadness=2500
 \let\trax@origunderscore\_
 \renewcommand{\_}{\trax@origunderscore\allowbreak}
-\setlist[itemize]{leftmargin=1.4em, itemsep=2.5pt, topsep=3pt, parsep=1pt}
-\setlist[enumerate]{leftmargin=1.6em, itemsep=2.5pt, topsep=3pt, parsep=1pt}
 
-% --- Float & Table Defaults ---
-\setlength{\tabcolsep}{5.2pt}
-\renewcommand{\arraystretch}{1.18}
+\setlist[itemize]{leftmargin=1.6em, itemsep=2pt, topsep=3pt, parsep=0pt}
+\setlist[enumerate]{leftmargin=1.7em, itemsep=2pt, topsep=3pt, parsep=0pt}
+
+% --- Tables & Floats ---
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\AtBeginEnvironment{table}{\let\small\footnotesize\let\footnotesize\scriptsize}
 \setcounter{topnumber}{4}
 \setcounter{bottomnumber}{2}
 \setcounter{totalnumber}{6}
@@ -82,135 +87,97 @@
 \renewcommand{\textfraction}{0.08}
 \renewcommand{\floatpagefraction}{0.85}
 
-% --- Captions ---
+% --- Classic "Figure 1 | ..." & "Table 1 | ..." Captions ---
+\DeclareCaptionLabelSeparator{traxbar}{\;\textcolor{traxaccent}{\textbf{|}}\;}
 \captionsetup{
-  font={small,sf},
-  labelfont={bf,color=traxnavy},
-  textfont={color=traxslate},
-  labelsep=period,
+  font=small,
+  labelfont={bf,color=traxink},
+  textfont={color=traxink},
+  labelsep=traxbar,
   skip=7pt
 }
 \captionsetup[table]{position=top, skip=6pt}
 
-% --- Section Headings ---
+% --- Classic Academic Serif Section Headings ---
 \titleformat{\section}
-  {\Large\sffamily\bfseries\color{traxnavy}}
-  {\color{traxblue}\thesection}{0.65em}{}
+  {\Large\bfseries\color{traxink}}
+  {\thesection}{0.75em}{}
 \titlespacing*{\section}{0pt}{16pt plus 3pt minus 2pt}{6pt plus 1pt}
 
 \titleformat{\subsection}
-  {\normalsize\sffamily\bfseries\color{traxnavy}}
-  {\color{traxslate}\thesubsection}{0.55em}{}
+  {\large\bfseries\color{traxink}}
+  {\thesubsection}{0.65em}{}
 \titlespacing*{\subsection}{0pt}{12pt plus 2pt minus 1pt}{4pt plus 1pt}
 
 \titleformat{\subsubsection}
-  {\normalsize\sffamily\bfseries\color{traxslate}}
-  {\thesubsubsection}{0.5em}{}
+  {\normalsize\bfseries\color{traxink}}
+  {\thesubsubsection}{0.55em}{}
 \titlespacing*{\subsubsection}{0pt}{8pt plus 1pt minus 1pt}{2pt}
 
-% --- Running Headers & Footers ---
-\newcommand{\@traxrunningtitle}{TRAX Technical Report}
+% --- Delicate Academic Headers & Footers ---
+\newcommand{\@traxrunningtitle}{TRAX: Transactional, Crash-Recoverable, and Ownership-Separated Code Policies}
 \newcommand{\runningtitle}[1]{\renewcommand{\@traxrunningtitle}{#1}}
+\newcommand{\@traxheaderleft}{Tiwater Robotics Research}
+\newcommand{\traxheaderleft}[1]{\renewcommand{\@traxheaderleft}{#1}}
+\newcommand{\@traxdate}{November 2026}
+\newcommand{\traxdate}[1]{\renewcommand{\@traxdate}{#1}}
 
 \fancypagestyle{traxmain}{
   \fancyhf{}
-  \fancyhead[L]{\footnotesize\sffamily\color{traxmuted}\@traxrunningtitle}
-  \fancyhead[R]{\footnotesize\sffamily\bfseries\color{traxslate}\thepage}
-  \renewcommand{\headrulewidth}{0.5pt}
-  \renewcommand{\headrule}{\hbox to\headwidth{\color{traxborder}\leaders\hrule height \headrulewidth\hfill}}
+  \fancyhead[L]{\footnotesize\color{traxmuted}\@traxrunningtitle}
+  \fancyhead[R]{\footnotesize\color{traxmuted}\@traxdate}
+  \fancyfoot[C]{\small\color{traxink}\thepage}
+  \renewcommand{\headrulewidth}{0.4pt}
+  \renewcommand{\headrule}{\hbox to\headwidth{\color{traxrule}\leaders\hrule height \headrulewidth\hfill}}
   \renewcommand{\footrulewidth}{0pt}
 }
 
 \fancypagestyle{traxfirst}{
   \fancyhf{}
-  \fancyfoot[C]{\footnotesize\sffamily\color{traxmuted}\thepage}
-  \renewcommand{\headrulewidth}{0pt}
+  \fancyhead[L]{\footnotesize\sffamily\bfseries\color{traxink}TRAX\;\normalfont\color{traxrule}|\;\color{traxmuted}\@traxheaderleft}
+  \fancyhead[R]{\footnotesize\sffamily\color{traxmuted}\@traxdate}
+  \fancyfoot[C]{\small\color{traxink}\thepage}
+  \renewcommand{\headrulewidth}{0.45pt}
+  \renewcommand{\headrule}{\hbox to\headwidth{\color{traxrule}\leaders\hrule height \headrulewidth\hfill}}
   \renewcommand{\footrulewidth}{0pt}
 }
 
 \pagestyle{traxmain}
 
 % --- Metadata Macros ---
-\newcommand{\@traxsubtitle}{}
 \newcommand{\@traxauthors}{}
 \newcommand{\@traxaffil}{}
 \newcommand{\@traxlinks}{}
-\newcommand{\@traxdate}{\today}
-\newcommand{\@traxabstract}{}
-\newcommand{\@traxkeywords}{}
-\newcommand{\@traxbadge}{Technical Report}
-
-\newcommand{\traxbadge}[1]{\renewcommand{\@traxbadge}{#1}}
 \newcommand{\traxauthors}[1]{\renewcommand{\@traxauthors}{#1}}
 \newcommand{\traxaffil}[1]{\renewcommand{\@traxaffil}{#1}}
 \newcommand{\traxlinks}[1]{\renewcommand{\@traxlinks}{#1}}
-\newcommand{\traxdate}[1]{\renewcommand{\@traxdate}{#1}}
-\newcommand{\traxabstract}[1]{\renewcommand{\@traxabstract}{#1}}
-\newcommand{\traxkeywords}[1]{\renewcommand{\@traxkeywords}{#1}}
 
-% --- Modern Single-Column Header & Abstract Card ---
-\newcommand{\makeheader}{%
+% --- Authentic Centered Academic Title Block (DeepSeek-R1 / RAX style) ---
+\newcommand{\makeacademictitle}{%
   \thispagestyle{traxfirst}%
-  \vspace*{-18pt}%
-  {\noindent\sffamily\footnotesize
-    \textbf{\color{traxblue}TRAX}\;\textcolor{traxborder}{|}\;\textcolor{traxslate}{\@traxbadge}%
-    \hfill\textcolor{traxmuted}{\@traxdate}%
-  }\par
-  \vspace{3pt}
-  {\noindent\color{traxblue}\rule{\linewidth}{1.1pt}}\par
-  \vspace{10pt}
-  {\noindent\raggedright\fontsize{17.5}{21.5}\selectfont\sffamily\bfseries\color{traxnavy}\@title\par}
-  \vspace{7pt}
-  {\noindent\sffamily\normalsize\bfseries\color{traxnavy}\@traxauthors\par}
-  \vspace{1.5pt}
-  {\noindent\sffamily\small\color{traxslate}\@traxaffil\par}
-  \vspace{4pt}
-  {\noindent\sffamily\footnotesize\color{traxslate}\@traxlinks\par}
-  \vspace{9pt}
-  \noindent\begin{tikzpicture}
-    \node[
-      draw=traxborder,
-      fill=traxbg,
-      rounded corners=4pt,
-      line width=0.6pt,
-      inner xsep=12pt,
-      inner ysep=8.5pt,
-      text width=\dimexpr\linewidth-25.2pt\relax,
-      align=justify
-    ] (absbox) {%
-      {\sffamily\small\bfseries\color{traxnavy}Abstract}\par\vspace{3pt}%
-      {\linespread{1.05}\selectfont\footnotesize\color{traxnavy}\@traxabstract\par}%
-      \ifx\@traxkeywords\@empty\else
-        \vspace{5pt}%
-        {\linespread{1.05}\selectfont\scriptsize\sffamily\color{traxslate}\textbf{\color{traxnavy}Keywords:} \@traxkeywords\par}%
-      \fi
-    };
-    \fill[traxblue, rounded corners=1.5pt]
-      ([xshift=0.3pt,yshift=-0.3pt]absbox.north west)
-      rectangle
-      ([xshift=3.2pt,yshift=0.3pt]absbox.south west);
-  \end{tikzpicture}\par
-  \vspace{6pt}
+  \begin{center}
+    \vspace*{2pt}
+    {\fontsize{15.5}{20.5}\selectfont\bfseries\color{traxink}\@title\par}
+    \vspace{10pt}
+    {\normalsize\bfseries\color{traxink}\@traxauthors\par}
+    \vspace{3pt}
+    {\small\color{traxmuted}\@traxaffil\par}
+    \vspace{5pt}
+    {\small\sffamily\color{traxmuted}\@traxlinks\par}
+  \end{center}
+  \vspace{8pt}
 }
 
-% --- Clean Callout Box ---
-\newenvironment{traxcallout}[1][Note]{%
-  \par\vspace{4pt}\noindent
-  \begin{tikzpicture}
-    \node[
-      draw=traxborder,
-      fill=traxbg,
-      rounded corners=3pt,
-      line width=0.5pt,
-      inner xsep=10pt,
-      inner ysep=7pt,
-      text width=\dimexpr\linewidth-21pt\relax,
-      align=justify
-    ] (cbox) \bgroup
-    {\sffamily\footnotesize\bfseries\color{traxblue}#1.}\hspace{0.4em}\small\color{traxslate}%
+% --- Clean Centered Unboxed Academic Abstract ---
+\renewenvironment{abstract}{%
+  \vspace{6pt}
+  \begin{center}
+    {\large\bfseries\color{traxink}Abstract}
+  \end{center}
+  \vspace{-4pt}
+  \noindent\ignorespaces
 }{%
-    \egroup;
-  \end{tikzpicture}\par\vspace{4pt}%
+  \par\vspace{6pt}
 }
 
 \endinput
