@@ -87,7 +87,7 @@ def discover_so101_dir() -> Path:
 
 
 def build_so101_workstation_mjcf(so101_dir: Path | None = None) -> str:
-    """Compose official SO-101 MJCF with tabletop espresso workstation and 4 cameras."""
+    """Compose official SO-101 MJCF with tabletop workstation and realistic 2-camera rig (front_top + wrist)."""
     base_dir = so101_dir or discover_so101_dir()
     assets_dir = base_dir / "assets"
     so101_xml_path = base_dir / "so101_new_calib_camera.xml"
@@ -155,10 +155,8 @@ def build_so101_workstation_mjcf(so101_dir: Path | None = None) -> str:
     <light pos="0.15 -0.45 2.05" dir="0.12 0.22 -1" diffuse="0.88 0.85 0.80" specular="0.35 0.35 0.35" castshadow="true"/>
     <light pos="0.55 0.50 1.95" dir="-0.15 -0.20 -1" diffuse="0.45 0.48 0.56" castshadow="false"/>
 
-    <!-- Unobstructed Cameras framed specifically for LeRobot SO-101 desktop scale -->
-    <camera name="overview" pos="-0.10 -0.48 1.42" xyaxes="0.86 -0.51 0 0.27 0.45 0.85" fovy="46"/>
-    <camera name="overhead" pos="0.34 0.00 1.48" xyaxes="0 1 0 -1 0 0" fovy="58"/>
-    <camera name="spout" pos="0.22 -0.28 1.20" xyaxes="0.786 -0.618 0 0.212 0.270 0.939" fovy="44"/>
+    <!-- Realistic LeRobot SO-101 Global Front-Top Downward Camera (above & in front of the arm) -->
+    <camera name="front_top" pos="0.40 0.00 1.42" xyaxes="0.0000 1.0000 0.0000 -0.9216 0.0000 0.3881" fovy="64"/>
 
     <!-- Floor & Backdrop Wall -->
     <geom name="floor" type="plane" size="3 3 0.1" material="floor_mat"/>
@@ -623,7 +621,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                 self._set_free_body_pose("obj-cup-b", 1.80, 1.80, SO101_CUP_REST_Z)
             self._set_free_body_pose("obj-bag-1", 0.24, 0.24, TABLE_TOP_Z + 0.026)
 
-            self._set_arm_ctrl_world(0.32, 0.00, 1.18, gripper_open=True)
+            self._set_arm_ctrl_world(0.24, 0.00, 1.22, gripper_open=True)
             self._set_brew_stream(active=False)
             self._mj.mj_forward(self._model, self._data)
             self._step_physics(18)
@@ -977,6 +975,10 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
     # TRAX Embodiment Backend Plugin Contract (Manifest, URDF Assets, MCP)
     # -----------------------------------------------------------------------
 
+    def list_cameras(self) -> tuple[str, ...]:
+        """LeRobot SO-101 realistic 2-camera rig: fixed global front-top + eye-in-hand wrist."""
+        return ("front_top", "wrist")
+
     def set_realtime_pacing(self, enabled: bool) -> None:
         self._realtime_pacing = bool(enabled)
 
@@ -1019,9 +1021,12 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
 
         return {
             "camera": camera_name,
+            "mount": "eye_in_hand" if camera_name == "wrist" else "fixed_world",
             "rgb": rgb,
             "depth_m": depth_m,
             "K": K,
+            "fovy_deg": round(fovy_deg, 2),
+            "aspect": round(float(w) / max(1.0, float(h)), 4),
             "T_world_cam": T_world_cam,
             "step_seq": step_seq,
         }
@@ -1029,12 +1034,12 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
     def reconstruct_scene_evidencescene(
         self,
         *,
-        cameras: tuple[str, ...] = ("overview", "overhead", "spout"),
+        cameras: tuple[str, ...] = ("front_top", "wrist"),
         voxel_size_m: float = 0.009,
         max_points: int = 4200,
         stride: int = 3,
     ) -> dict[str, Any]:
-        """Reconstruct 3D scene surfels and 6-DoF Schur observability from calibrated MuJoCo RGB-D via EvidenceScene."""
+        """Reconstruct 3D scene surfels and 6-DoF Schur observability from calibrated 2-camera RGB-D (front_top + wrist) via EvidenceScene."""
         np = self._np
         cache_key = (int(self._step_seq), cameras, round(voxel_size_m, 4), int(max_points))
         cached = getattr(self, "_recon_cache", None)
@@ -1049,6 +1054,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         voxel_color_sum: dict[tuple[int, int, int], Any] = {}
         voxel_color_cnt: dict[tuple[int, int, int], int] = {}
         world_from_cam_map: dict[int, Any] = {}
+        cameras_meta: list[dict[str, Any]] = []
         inv_voxel = 1.0 / float(voxel_size_m)
 
         for cam_idx, fr in enumerate(frames):
@@ -1057,12 +1063,22 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             K = fr["K"]
             T = fr["T_world_cam"]
             world_from_cam_map[cam_idx] = T
+            cameras_meta.append(
+                {
+                    "name": fr["camera"],
+                    "mount": fr["mount"],
+                    "pos_m": [round(float(v), 4) for v in T[:3, 3].tolist()],
+                    "T_world_cam": [[round(float(x), 5) for x in row] for row in T.tolist()],
+                    "fovy_deg": float(fr["fovy_deg"]),
+                    "aspect": float(fr["aspect"]),
+                }
+            )
             h, w = depth.shape
             uu = np.arange(0, w * stride, stride, dtype=np.float64)
             vv = np.arange(0, h * stride, stride, dtype=np.float64)
             u_grid, v_grid = np.meshgrid(uu, vv)
 
-            valid = np.isfinite(depth) & (depth > 0.08) & (depth < 2.2)
+            valid = np.isfinite(depth) & (depth > 0.04) & (depth < 2.2)
             z = depth[valid]
             x = (u_grid[valid] - K[0, 2]) * z / K[0, 0]
             y = (v_grid[valid] - K[1, 2]) * z / K[1, 1]
@@ -1205,6 +1221,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             "evidence_source": self.evidence_source,
             "step_seq": int(self._step_seq),
             "cameras_used": list(obs_by_cam.keys()),
+            "cameras": cameras_meta,
             "voxel_size_m": float(voxel_size_m),
             "total_surfels": total_surfels,
             "corroborated_surfels": corroborated_count,

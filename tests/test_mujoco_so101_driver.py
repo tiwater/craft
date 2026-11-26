@@ -58,15 +58,22 @@ def test_mujoco_so101_capabilities_ik_and_cameras() -> None:
             err_m = float(((tcp[0] - wx) ** 2 + (tcp[1] - wy) ** 2 + (tcp[2] - wz) ** 2) ** 0.5)
             assert err_m < 0.006, f"SO-101 IK error too large ({err_m:.4f}m) for {(wx, wy, wz)}"
 
-        # All 4 cameras including real SO-101 wrist camera render valid PNG/JPEG frames
+        # Realistic LeRobot 2-camera rig: global front_top + eye-in-hand wrist
         cams = driver.list_cameras()
-        assert set(cams) == {"overview", "overhead", "spout", "wrist"}
+        assert cams == ("front_top", "wrist")
         for cam in cams:
             rendered = driver.fetch_camera_image(cam)
             assert rendered is not None
             raw_bytes, mime = rendered
             assert len(raw_bytes) > 1000
             assert mime in ("image/jpeg", "image/png")
+
+        # EvidenceScene reconstruction fuses the exact 2-camera rig and exposes calibrated poses
+        recon = driver.reconstruct_scene_evidencescene()
+        assert recon["cameras_used"] == ["front_top", "wrist"]
+        assert len(recon["cameras"]) == 2
+        assert {c["mount"] for c in recon["cameras"]} == {"fixed_world", "eye_in_hand"}
+        assert recon["total_surfels"] > 100
     finally:
         driver.close()
 

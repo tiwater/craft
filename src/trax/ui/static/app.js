@@ -1,5 +1,5 @@
 let camList = [];
-let activeCam = 'overview';
+let activeCam = 'front_top';
 let camMode = 'single';
 let pumpRunning = false;
 let frameTimestamps = [];
@@ -586,6 +586,8 @@ function renderCameraShells() {
     el.style.background = isAct ? 'var(--cyan-bg)' : '';
     el.style.color = isAct ? 'var(--cyan)' : '';
   };
+  const gridBtn = document.getElementById('btn-mode-grid');
+  if (gridBtn) gridBtn.textContent = camList.length === 2 ? 'Dual' : (camList.length > 2 ? 'Quad' : 'Split');
   setModeActive('btn-mode-single', camMode === 'single');
   setModeActive('btn-mode-grid', camMode === 'grid');
   setModeActive('btn-mode-urdf', camMode === 'urdf');
@@ -605,6 +607,7 @@ function renderCameraShells() {
         </div>
         <div class="hud-tr" style="pointer-events:auto">
           <button id="tw-btn-surfels" class="twin-chip on" onclick="toggleTwinLayer('surfels')">Surfels</button>
+          <button id="tw-btn-cameras" class="twin-chip on" onclick="toggleTwinLayer('cameras')">Cameras</button>
           <button id="tw-btn-env" class="twin-chip on" onclick="toggleTwinLayer('env')">Envelope</button>
           <button id="tw-btn-traj" class="twin-chip on" onclick="toggleTwinLayer('traj')">3D Trail</button>
           <button id="tw-btn-tf" class="twin-chip on" onclick="toggleTwinLayer('tf')">TF Axes</button>
@@ -653,6 +656,7 @@ function renderCameraShells() {
       </div>`;
     if (camList.length > 1) {
       thumbs.style.display = 'grid';
+      thumbs.style.gridTemplateColumns = `repeat(${Math.min(camList.length, 4)}, 1fr)`;
       thumbs.innerHTML = camList.map(c => `
         <button class="thumb ${c === activeCam ? 'active' : ''}" onclick="selectCam('${c}')">
           <canvas data-thumb-canvas="${c}" width="320" height="180"></canvas>
@@ -1306,7 +1310,7 @@ async function refreshState() {
 
     if (JSON.stringify(st.cameras || []) !== JSON.stringify(camList)) {
       camList = st.cameras || [];
-      activeCam = camList.includes('overview') ? 'overview' : (camList[0] || '');
+      activeCam = camList.includes('front_top') ? 'front_top' : (camList.includes('overview') ? 'overview' : (camList[0] || ''));
       renderCameraShells();
     }
 

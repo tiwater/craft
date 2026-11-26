@@ -143,10 +143,13 @@
       this.refusalPoints = [];
       this.lastEeLocal = null;
 
-      this.layers = { surfels: true, env: true, traj: true, tf: true, urdf: true };
+      this.layers = { surfels: true, env: true, traj: true, tf: true, cameras: true, urdf: true };
       this.surfelBuffer = null;
       this.surfelCount = 0;
       this.reconMeta = null;
+      this.cameraMeta = [];
+      this.camBuf = null;
+      this.camCount = 0;
       this.envBuf = null;
       this.envCount = 0;
 
@@ -295,6 +298,50 @@
       this.envCount = pos.length / 3;
     }
 
+    _rebuildCameraFrustums() {
+      if (!this.gl) return;
+      const cams = Array.isArray(this.cameraMeta) ? this.cameraMeta : [];
+      if (!cams.length) { this.camBuf = null; this.camCount = 0; return; }
+      const pos = [], col = [];
+      const [bx, by, bz] = this.baseWorld;
+      const xf = (T, cx, cy, cz) => [
+        T[0][0] * cx + T[0][1] * cy + T[0][2] * cz + T[0][3] - bx,
+        T[1][0] * cx + T[1][1] * cy + T[1][2] * cz + T[1][3] - by,
+        T[2][0] * cx + T[2][1] * cy + T[2][2] * cz + T[2][3] - bz,
+      ];
+      const pushSeg = (a, b, rgb) => {
+        pos.push(a[0], a[1], a[2], b[0], b[1], b[2]);
+        col.push(rgb[0], rgb[1], rgb[2], rgb[0], rgb[1], rgb[2]);
+      };
+      for (const cam of cams) {
+        const T = cam.T_world_cam;
+        if (!Array.isArray(T) || T.length < 3) continue;
+        const isWrist = cam.mount === 'eye_in_hand' || cam.name === 'wrist';
+        const rgb = isWrist ? [0.98, 0.62, 0.12] : [0.06, 0.72, 0.98];
+        const rayRgb = isWrist ? [0.98, 0.74, 0.34] : [0.35, 0.82, 0.98];
+        const fovy = ((Number(cam.fovy_deg) || 58) * Math.PI) / 180;
+        const aspect = Number(cam.aspect) || (16 / 9);
+        const d = isWrist ? 0.065 : 0.135;
+        const hh = d * Math.tan(fovy * 0.5);
+        const hw = hh * aspect;
+        const o = xf(T, 0, 0, 0);
+        const tl = xf(T, -hw, -hh, d);
+        const tr = xf(T,  hw, -hh, d);
+        const br = xf(T,  hw,  hh, d);
+        const bl = xf(T, -hw,  hh, d);
+        const upTip = xf(T, 0, -hh * 1.28, d);
+        const rayEnd = xf(T, 0, 0, isWrist ? 0.16 : 0.44);
+        // Pyramid rays & image plane rectangle
+        pushSeg(o, tl, rgb); pushSeg(o, tr, rgb); pushSeg(o, br, rgb); pushSeg(o, bl, rgb);
+        pushSeg(tl, tr, rgb); pushSeg(tr, br, rgb); pushSeg(br, bl, rgb); pushSeg(bl, tl, rgb);
+        // Top-edge orientation chevron & optical axis
+        pushSeg(tl, upTip, rgb); pushSeg(tr, upTip, rgb);
+        pushSeg(o, rayEnd, rayRgb);
+      }
+      this.camBuf = this._uploadPoints(new Float32Array(pos), new Float32Array(col));
+      this.camCount = pos.length / 3;
+    }
+
     _bindPointer() {
       this.canvas.addEventListener('pointerdown', (e) => {
         this.dragging = true; this.lastX = e.clientX; this.lastY = e.clientY;
@@ -394,6 +441,8 @@
     setReconstruction(recon) {
       if (!recon || !Array.isArray(recon.surfels)) return;
       this.reconMeta = recon;
+      this.cameraMeta = Array.isArray(recon.cameras) ? recon.cameras : [];
+      this._rebuildCameraFrustums();
       const pts = recon.surfels;
       if (!this.gl || !pts.length) { this.surfelCount = 0; this._updateStatusText(); return; }
       const pos = new Float32Array(pts.length * 3);
@@ -422,7 +471,8 @@
       if (this.reconMeta) {
         const obs = this.reconMeta.observability || {};
         const pct = Math.round((this.reconMeta.corroborated_ratio || 0) * 100);
-        parts.push(`${this.reconMeta.engine}: ${this.reconMeta.total_surfels} surfels (${pct}% multi-cam)`);
+        const cams = (this.reconMeta.cameras_used || []).join('+');
+        parts.push(`${this.reconMeta.engine}: ${this.reconMeta.total_surfels} surfels (${pct}% 2-cam${cams ? ' · ' + cams : ''})`);
         if (obs.rank != null) parts.push(`Schur ${obs.rank}/${obs.required_rank || 6} ${String(obs.status || '').toUpperCase()}`);
       }
       parts.push('drag=orbit · scroll=zoom');
@@ -536,6 +586,15 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, this.envBuf.colBuf);
         gl.vertexAttribPointer(this.ploc.aCol, 3, gl.FLOAT, false, 0, 0);
         gl.drawArrays(gl.LINES, 0, this.envCount);
+      }
+
+      // 2b. Calibrated Camera Frustums (Global Front-Top + Moving Wrist Eye-in-Hand)
+      if (this.layers.cameras && this.camBuf && this.camCount > 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.camBuf.posBuf);
+        gl.vertexAttribPointer(this.ploc.aPos, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.camBuf.colBuf);
+        gl.vertexAttribPointer(this.ploc.aCol, 3, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.LINES, 0, this.camCount);
       }
 
       // 3. EvidenceScene Reconstructed 3D Surfels (Metric Point Cloud)
