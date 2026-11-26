@@ -30,6 +30,7 @@ AGNOSTIC_CORE_FILES = (
     "agent_engine.py",
     "knowledge_base.py",
     "llm.py",
+    "self_audit.py",
 )
 
 FORBIDDEN_DOMAIN_TOKENS = (

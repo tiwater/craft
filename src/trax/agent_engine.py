@@ -23,6 +23,7 @@ from .knowledge_base import AuditTraceStore, ExecutableKnowledgeBase
 from .llm import make_live_llm_fn
 from .mcp_protocol import MCPClient, MCP_PROTOCOL_VERSION, format_mcp_tools_for_prompt
 from .probing import analyze_policy_subroutines
+from .self_audit import profile_mcp_trace
 from .sandbox import (
     CancellationToken,
     ExecutionAbortedError,
@@ -711,12 +712,14 @@ class TraxAgentEngine:
                 )
                 dups = any(v > 1 for v in proxy.non_idempotent_counts.values())
                 passed = bool(verify_res.get("passed")) and (attr["layer"] == "none")
+                exec_profile = profile_mcp_trace(proxy.trace)
                 exec_res = {
                     "task_passed": passed,
                     "host_runtime_status": "completed" if passed else attr["code"],
                     "wall_s": wall_s,
                     "methods": list(proxy.methods),
                     "mcp_trace": list(proxy.trace),
+                    "profile": exec_profile,
                     "limit_refusals": list(proxy.limit_refusals),
                     "non_idempotent_counts": dict(proxy.non_idempotent_counts),
                     "duplicate_non_idempotent": dups,

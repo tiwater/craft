@@ -1,7 +1,7 @@
 PYTHON ?= .venv/bin/python
 TECTONIC ?= $(shell command -v tectonic 2>/dev/null || echo $(HOME)/.local/bin/tectonic)
 
-.PHONY: test check-stdlib check-arch demo artifacts tables figures paper check-site
+.PHONY: test check-stdlib check-arch self-audit demo artifacts tables figures paper check-site
 
 test:
 	$(PYTHON) -m pytest -q
@@ -20,6 +20,9 @@ print('Core stdlib invariant OK (optional sim drivers:', sorted(allowed_opt), ')
 
 check-arch:
 	$(PYTHON) tools/check_arch.py
+
+self-audit:
+	$(PYTHON) tools/self_audit.py
 
 demo:
 	$(PYTHON) -m trax demo --task combo --lost-receipt
