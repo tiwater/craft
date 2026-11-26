@@ -25,6 +25,7 @@ STDLIB_PLUS_LOCAL = set(sys.stdlib_module_names) | {"trax", "__future__"}
 AGNOSTIC_CORE_FILES = (
     "plugin.py",
     "mcp_protocol.py",
+    "spatial_contract.py",
     "sandbox.py",
     "attribution.py",
     "agent_engine.py",

@@ -16,6 +16,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 from .journal import Journal
 from .mcp_protocol import MCPClient
+from .spatial_contract import PERCEPTION_BLOCK_STATUSES, SceneCursor
 
 
 class ExecutionAbortedError(RuntimeError):
@@ -245,6 +246,11 @@ class GovernedMCPProxy:
         self.pending_unknown: bool = False
         self.queried_after_unknown: bool = True
         self.journal_entries: list[dict[str, Any]] = []
+        self.spatial_cursors: list[dict[str, Any]] = []
+        self.last_spatial_cursor: dict[str, Any] | None = None
+        self.perception_blocks: list[dict[str, Any]] = []
+        self._unresolved_perception_block: bool = False
+        self.acted_after_perception_block: bool = False
 
     def __getattr__(self, name: str) -> Callable[..., Any]:
         if name.startswith("_") or name not in self._tools_by_name:
@@ -268,10 +274,15 @@ class GovernedMCPProxy:
 
             journal_id: str | None = None
             if is_non_idempotent:
+                if self._unresolved_perception_block:
+                    self.acted_after_perception_block = True
                 self.non_idempotent_counts[name] = self.non_idempotent_counts.get(name, 0) + 1
                 journal_id = f"{self._run_tag}-{name}-{self.call_count}-{time.time_ns()}"
+                claim_payload: dict[str, Any] = {"tool": name, "arguments": call_args}
+                if self.last_spatial_cursor is not None:
+                    claim_payload["spatial_cursor"] = dict(self.last_spatial_cursor)
                 with Journal(self._journal_path) as journal:
-                    journal.claim(journal_id, {"tool": name, "arguments": call_args})
+                    journal.claim(journal_id, claim_payload)
 
             req_obj, resp_obj, ms = self._client.rpc("tools/call", {"name": name, "arguments": call_args})
             if self._on_wire is not None:
@@ -291,6 +302,54 @@ class GovernedMCPProxy:
 
             status_str = "done"
             if isinstance(payload, Mapping):
+                raw_cursor = payload.get("cursor")
+                if isinstance(raw_cursor, Mapping) and str(raw_cursor.get("scene_id") or "").strip():
+                    try:
+                        cur_dict = SceneCursor.from_mapping(raw_cursor).to_dict()
+                        self.last_spatial_cursor = cur_dict
+                        self.spatial_cursors.append({"step": self.call_count, "tool": name, "cursor": cur_dict})
+                    except (TypeError, ValueError):
+                        pass
+
+                p_status = str(payload.get("status") or "").strip().lower()
+                obs_map = payload.get("observability") if isinstance(payload.get("observability"), Mapping) else None
+                obs_st = str((obs_map or {}).get("status") or "").strip().lower()
+                is_perception_block = (
+                    p_status in PERCEPTION_BLOCK_STATUSES
+                    or obs_st in ("insufficient", "not_observable", "degenerate", "rejected")
+                    or bool(payload.get("resnapshot_required"))
+                )
+                if is_perception_block:
+                    if bool(payload.get("resnapshot_required")):
+                        block_code = "resnapshot_required"
+                    elif obs_st in ("insufficient", "not_observable", "degenerate", "rejected") and p_status in (
+                        "",
+                        "unsatisfied",
+                        "insufficient_observability",
+                    ):
+                        block_code = "insufficient_observability"
+                    elif p_status in PERCEPTION_BLOCK_STATUSES:
+                        block_code = p_status
+                    else:
+                        block_code = "insufficient_observability"
+                    self.perception_blocks.append(
+                        {
+                            "step": self.call_count,
+                            "tool": name,
+                            "code": block_code,
+                            "detail": str(
+                                payload.get("detail")
+                                or payload.get("reason")
+                                or (obs_map or {}).get("reason")
+                                or block_code
+                            ),
+                            "cursor": dict(self.last_spatial_cursor) if self.last_spatial_cursor else None,
+                        }
+                    )
+                    self._unresolved_perception_block = True
+                elif is_read_only and p_status in ("ok", "satisfied", "fresh", "ready"):
+                    self._unresolved_perception_block = False
+
                 if payload.get("status") == "limit_refusal":
                     status_str = f"LIMIT_REFUSAL: {payload.get('violated_limit', '')}"
                     self.limit_refusals.append(

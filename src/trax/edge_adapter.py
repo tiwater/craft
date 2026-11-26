@@ -31,6 +31,15 @@ import urllib.request
 from .config import SceneConfig
 from .contracts import Receipt, digest
 from .journal import Journal
+from .spatial_contract import (
+    ClockTimestamp,
+    LEGACY_WALL_CLOCK_ID,
+    SceneCursor,
+    check_cursor_continuity,
+    evaluate_freshness,
+    extract_entity_list,
+    parse_spatial_snapshot_meta,
+)
 
 
 class TransportError(RuntimeError):
@@ -128,7 +137,7 @@ class CapabilityCheckResult:
 
 @dataclass(frozen=True)
 class SceneObservationResult:
-    status: str  # ok | stale_evidence | missing_object | ambiguous_object | disconnected
+    status: str  # ok | stale_evidence | unknown_freshness | unknown_evidence | unavailable_evidence | resnapshot_required | insufficient_observability | missing_object | ambiguous_object | disconnected
     evidence_source: str
     snapshot_sha256: str | None = None
     timestamp_ns: int | None = None
@@ -136,6 +145,13 @@ class SceneObservationResult:
     bound_objects: Mapping[str, tuple[Mapping[str, Any], ...]] = field(default_factory=dict)
     raw_snapshot: Mapping[str, Any] | None = None
     detail: str = ""
+    cursor: SceneCursor | None = None
+    clock_id: str | None = None
+    observation_time_ns: int | None = None
+    revision_time_ns: int | None = None
+    freshness_status: str = "unknown"
+    observability_status: str = "unknown"
+    resnapshot_required: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -146,6 +162,13 @@ class SceneObservationResult:
             "age_ms": self.age_ms,
             "bound_objects": {k: [dict(o) for o in v] for k, v in self.bound_objects.items()},
             "detail": self.detail,
+            "cursor": self.cursor.to_dict() if self.cursor else None,
+            "clock_id": self.clock_id,
+            "observation_time_ns": self.observation_time_ns,
+            "revision_time_ns": self.revision_time_ns,
+            "freshness_status": self.freshness_status,
+            "observability_status": self.observability_status,
+            "resnapshot_required": self.resnapshot_required,
         }
 
 
@@ -263,8 +286,14 @@ class EdgeHostAdapter:
 
         return CapabilityCheckResult(status="ready", discovered=discovered, detail="Host capabilities verified")
 
-    def observe_scene(self, *, now_ns: int | None = None) -> SceneObservationResult:
-        """Read GET /edge-scene verbatim; validate freshness and object bindings without inference."""
+    def observe_scene(
+        self,
+        *,
+        now_ns: int | None = None,
+        reference_clock_id: str | None = None,
+        expected_cursor: SceneCursor | None = None,
+    ) -> SceneObservationResult:
+        """Read GET /edge-scene verbatim; validate clock-domain freshness, cursor continuity, and bindings without inference."""
         url = self._base + self.config.host.scene_path
         scope = self.config.budget.deployment_scope
         try:
@@ -273,87 +302,170 @@ class EdgeHostAdapter:
             return SceneObservationResult(status="disconnected", evidence_source=scope, detail=str(exc))
 
         snap_hash = digest(snapshot)
-        raw_ts = snapshot.get("timestamp_ns")
-        try:
-            ts_ns = int(raw_ts) if raw_ts is not None else 0
-        except (TypeError, ValueError):
-            ts_ns = 0
+        meta = parse_spatial_snapshot_meta(snapshot)
+        obs_ts = meta.observation_time
+        obs_ns = obs_ts.ns if obs_ts is not None else None
+        rev_ns = meta.revision_time.ns if meta.revision_time is not None else None
+        snap_clock_id = obs_ts.clock_id if obs_ts is not None else (str(snapshot.get("clock_id") or "").strip() or None)
+        base_meta: dict[str, Any] = {
+            "evidence_source": scope,
+            "snapshot_sha256": snap_hash,
+            "timestamp_ns": obs_ns,
+            "raw_snapshot": snapshot,
+            "cursor": meta.cursor,
+            "clock_id": snap_clock_id,
+            "observation_time_ns": obs_ns,
+            "revision_time_ns": rev_ns,
+            "observability_status": meta.observability.status,
+        }
+
+        # 1. Explicit upstream availability / discontinuity semantics (unknown != unavailable != resnapshot_required)
+        if meta.availability == "resnapshot_required":
+            return SceneObservationResult(
+                status="resnapshot_required",
+                resnapshot_required=True,
+                detail=meta.detail or "EvidenceScene reported resnapshot_required",
+                **base_meta,
+            )
+        if meta.availability == "unavailable":
+            return SceneObservationResult(
+                status="unavailable_evidence",
+                detail=meta.detail or "EvidenceScene reported spatial state unavailable",
+                **base_meta,
+            )
+        if meta.availability == "unknown":
+            return SceneObservationResult(
+                status="unknown_evidence",
+                detail=meta.detail or "EvidenceScene reported spatial state unknown (no supporting observation)",
+                **base_meta,
+            )
+
+        if expected_cursor is not None:
+            raw_earliest = snapshot.get("earliest_retained_revision")
+            earliest_ret = int(raw_earliest) if raw_earliest is not None else None
+            cont_status, cont_reason = check_cursor_continuity(
+                expected_cursor,
+                meta.cursor,
+                earliest_retained_revision=earliest_ret,
+            )
+            if cont_status == "resnapshot_required":
+                return SceneObservationResult(
+                    status="resnapshot_required",
+                    resnapshot_required=True,
+                    detail=f"Spatial cursor discontinuity requires resnapshot: {cont_reason}",
+                    **base_meta,
+                )
+
+        # 2. Clock-domain-safe freshness strictly against observation_time (never revision_time)
+        if obs_ts is None:
+            return SceneObservationResult(
+                status="stale_evidence",
+                age_ms=None,
+                freshness_status="unknown",
+                detail="EvidenceScene snapshot missing valid timestamp_ns / observation_time",
+                **base_meta,
+            )
 
         current_ns = time.time_ns() if now_ns is None else int(now_ns)
-        if ts_ns <= 0:
+        ref_clock = str(reference_clock_id or "").strip() or LEGACY_WALL_CLOCK_ID
+        ref_ts = ClockTimestamp(clock_id=ref_clock, ns=current_ns) if current_ns > 0 else None
+        fresh = evaluate_freshness(obs_ts, ref_ts, self.config.host.max_evidence_age_ms)
+
+        if fresh.status == "unknown":
             return SceneObservationResult(
-                status="stale_evidence",
-                evidence_source=scope,
-                snapshot_sha256=snap_hash,
-                timestamp_ns=None,
+                status="unknown_freshness",
                 age_ms=None,
-                raw_snapshot=snapshot,
-                detail="EvidenceScene snapshot missing valid timestamp_ns",
+                freshness_status="unknown",
+                detail=f"EvidenceScene freshness unknown: {fresh.reason}",
+                **base_meta,
             )
 
-        age_ms = round(max(0.0, (current_ns - ts_ns) / 1e6), 1)
-        if age_ms > self.config.host.max_evidence_age_ms:
+        if fresh.status == "stale":
             return SceneObservationResult(
                 status="stale_evidence",
-                evidence_source=scope,
-                snapshot_sha256=snap_hash,
-                timestamp_ns=ts_ns,
-                age_ms=age_ms,
-                raw_snapshot=snapshot,
+                age_ms=fresh.age_ms,
+                freshness_status="stale",
                 detail=(
-                    f"EvidenceScene snapshot is stale ({age_ms} ms > "
+                    f"EvidenceScene snapshot is stale ({fresh.age_ms} ms > "
                     f"{self.config.host.max_evidence_age_ms} ms)"
                 ),
+                **base_meta,
             )
 
-        raw_objects = list(snapshot.get("objects") or [])
+        # 3. Scene-level observability gate
+        if meta.observability.status == "insufficient":
+            return SceneObservationResult(
+                status="insufficient_observability",
+                age_ms=fresh.age_ms,
+                freshness_status="fresh",
+                detail=f"EvidenceScene observability insufficient: {meta.observability.reason or 'degenerate_pose'}",
+                **base_meta,
+            )
+
+        # 4. Bind entities/objects without fabricating missing state; ignore retired tombstones
+        raw_objects = [
+            obj
+            for obj in extract_entity_list(snapshot)
+            if str(obj.get("lifecycle") or "active").strip().lower() != "retired"
+        ]
         bound: dict[str, tuple[Mapping[str, Any], ...]] = {}
         for binding in self.config.objects:
             matches = tuple(
                 obj
                 for obj in raw_objects
-                if str(obj.get("semantic_class") or "") in binding.semantic_classes
+                if str(obj.get("semantic_class") or obj.get("semantic_label") or "") in binding.semantic_classes
                 and float(obj.get("confidence", 1.0)) >= binding.min_confidence
             )
             bound[binding.name] = matches
             if len(matches) < binding.required_count:
                 return SceneObservationResult(
                     status="missing_object",
-                    evidence_source=scope,
-                    snapshot_sha256=snap_hash,
-                    timestamp_ns=ts_ns,
-                    age_ms=age_ms,
+                    age_ms=fresh.age_ms,
                     bound_objects=bound,
-                    raw_snapshot=snapshot,
+                    freshness_status="fresh",
                     detail=(
                         f"Object binding {binding.name!r} expected at least "
                         f"{binding.required_count} match(es), found {len(matches)}"
                     ),
+                    **base_meta,
                 )
             if not binding.allow_ambiguous and len(matches) > binding.required_count:
                 return SceneObservationResult(
                     status="ambiguous_object",
-                    evidence_source=scope,
-                    snapshot_sha256=snap_hash,
-                    timestamp_ns=ts_ns,
-                    age_ms=age_ms,
+                    age_ms=fresh.age_ms,
                     bound_objects=bound,
-                    raw_snapshot=snapshot,
+                    freshness_status="fresh",
                     detail=(
                         f"Object binding {binding.name!r} is ambiguous: expected "
                         f"{binding.required_count}, found {len(matches)}"
                     ),
+                    **base_meta,
                 )
+            for match in matches:
+                ent_obs = match.get("observability")
+                if isinstance(ent_obs, Mapping):
+                    ent_st = str(ent_obs.get("status") or "").strip().lower()
+                    if ent_st in ("insufficient", "not_observable", "degenerate", "rejected"):
+                        return SceneObservationResult(
+                            status="insufficient_observability",
+                            age_ms=fresh.age_ms,
+                            bound_objects=bound,
+                            freshness_status="fresh",
+                            observability_status="insufficient",
+                            detail=(
+                                f"Bound entity for {binding.name!r} has insufficient observability: "
+                                f"{ent_obs.get('reason') or ent_st}"
+                            ),
+                            **{k: v for k, v in base_meta.items() if k != "observability_status"},
+                        )
 
         return SceneObservationResult(
             status="ok",
-            evidence_source=scope,
-            snapshot_sha256=snap_hash,
-            timestamp_ns=ts_ns,
-            age_ms=age_ms,
+            age_ms=fresh.age_ms,
             bound_objects=bound,
-            raw_snapshot=snapshot,
+            freshness_status="fresh",
             detail="Fresh EvidenceScene snapshot bound without inference",
+            **base_meta,
         )
 
     def execute_policy(
