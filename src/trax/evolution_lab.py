@@ -352,6 +352,19 @@ class EvolutionLabController:
                 "m1_archive": self._m1_archive,
             }
 
+    def set_driver(self, driver: SceneHostDriver, *, label: str = "") -> None:
+        """Hot-swap the underlying host driver when switching embodiments in the UI."""
+        with self._state_lock:
+            if self._busy:
+                raise RuntimeError("Cannot switch embodiment while an evolution step is running.")
+            self.driver = driver
+            self._probe_report = None
+            self._phase = "idle"
+            self._log(
+                "HOST",
+                f"Switched active embodiment -> {label or driver.driver_name} (driver={driver.driver_name}, evidence={driver.evidence_source}).",
+            )
+
     def select_iteration(self, index: int) -> dict[str, Any]:
         with self._state_lock:
             if 0 <= index < len(self._iterations):

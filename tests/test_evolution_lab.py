@@ -8,6 +8,7 @@ import time
 
 from trax.benchmark import builtin_reference_policy_source
 from trax.config import SceneConfig
+from trax.embodiments import EmbodimentManager, build_rax_coverage_matrix, load_archived_policy_comparison
 from trax.evolution_lab import EvolutionLabController
 from trax.host_driver import FixtureHostDriver
 
@@ -102,3 +103,38 @@ def test_closed_loop_explore_synthesize_execute_iterate_with_diff_and_journal() 
     assert st["executed_runs"][2]["stage"] == "03_policy_exec"
     assert st["executed_runs"][2]["source"].strip() == repaired_src.strip()
     assert st["executed_runs"][2]["task_passed"] is True
+
+
+def test_embodiment_manager_hot_switch_and_rax_matrix_and_comparator() -> None:
+    cfg = SceneConfig.from_file(Path("examples/single_cup_coffee_config.json"))
+    primary = FixtureHostDriver(cfg)
+    ws = Path("experiments/coffee-closed-loop-20261120")
+    mgr = EmbodimentManager(cfg, primary, ws)
+    snap0 = mgr.snapshot()
+    assert snap0["active_id"] == "primary_live"
+    assert len(snap0["rax_matrix"]) >= 10
+    families = {row["family"] for row in snap0["rax_matrix"]}
+    assert "Bimanual Arms" in families
+    assert "Dexterous Hand" in families
+    assert "Mobile Bimanual" in families
+    assert "Humanoid Whole-Body" in families
+
+    # Hot-switch to deterministic fixture preset cleanly
+    drv, meta = mgr.switch(target_id="fixture")
+    assert drv.driver_name == "fixture"
+    assert meta["evidence_source"] == "fixture"
+
+    # Real archived cross-method policy comparison (if LIBERO-Object blind archive exists in repo)
+    if "libero_object_blind" in snap0["experiment_catalog"]:
+        cmp_res = load_archived_policy_comparison(
+            ws,
+            suite_key="libero_object_blind",
+            task_key="libero_object_t1",
+            left_method="craft_full",
+            right_method="rax_protocol",
+        )
+        assert cmp_res["left"]["available"] is True
+        assert cmp_res["right"]["available"] is True
+        assert "def run_policy" in cmp_res["left"]["source"]
+        assert "def run_policy" in cmp_res["right"]["source"]
+        assert cmp_res["unified_diff"].startswith("---")

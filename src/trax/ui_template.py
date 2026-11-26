@@ -235,6 +235,30 @@ UI_HTML = r"""<!DOCTYPE html>
   .io-pre.code-snap { max-height: 315px; white-space: pre; word-break: normal; }
   .ln-num { display: inline-block; width: 32px; color: var(--dim); user-select: none; text-align: right; margin-right: 10px; }
 
+  /* Embodiment Switcher, RAX Matrix & Side-by-Side Policy Comparator */
+  .emb-select { width: auto; min-width: 215px; max-width: 265px; padding: 3px 8px; font-size: 11px; border-color: rgba(56,189,248,0.45); background: #0a1222; color: #e0f2fe; }
+  .http-bar {
+    display: grid; grid-template-columns: 1.4fr 150px 1.1fr auto; gap: 7px; align-items: center;
+    background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; margin-top: 8px;
+  }
+  @media (max-width: 980px) { .http-bar { grid-template-columns: 1fr; } }
+  input.txt-in {
+    width: 100%; background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border2); border-radius: 6px; padding: 5px 8px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .cmp-bar { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .cmp-bar select { width: auto; min-width: 170px; }
+  .hm-cell { cursor: pointer; text-align: center; font-weight: 700; border-radius: 4px; transition: opacity 0.12s; }
+  .hm-cell:hover { outline: 1px solid var(--cyan); }
+  .hm-hi { background: rgba(34,197,94,0.18); color: #86efac; }
+  .hm-mid { background: rgba(245,158,11,0.16); color: #fde047; }
+  .hm-zero { background: rgba(239,68,68,0.22); color: #fca5a5; }
+  .hm-sel { outline: 2px solid var(--cyan); }
+  .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  @media (max-width: 1050px) { .cmp-grid { grid-template-columns: 1fr; } }
+  .cmp-pre { max-height: 410px; }
+
   /* Right Pane: Oracle + Journal + Console */
   .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   .metric { background: var(--codebg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
@@ -285,6 +309,7 @@ UI_HTML = r"""<!DOCTYPE html>
   <div class="topbar-inner">
     <div class="brand-row">
       <span class="brand-title">TRAX</span>
+      <select id="emb-top-select" class="emb-select" onchange="switchEmbodiment(this.value)" title="Live robot embodiment / host target switcher"></select>
       <span id="pill-live" class="badge ok"><span class="pulse"></span>CONNECTING</span>
       <span id="pill-authority" class="badge">host=...</span>
       <span id="pill-evidence" class="badge">evidence=simulator</span>
@@ -303,7 +328,7 @@ UI_HTML = r"""<!DOCTYPE html>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="lab" onclick="switchTab('lab')">Closed-Loop Lab</button>
-      <button class="tab-btn" data-tab="m1" onclick="switchTab('m1')">M1 Benchmarks</button>
+      <button class="tab-btn" data-tab="m1" onclick="switchTab('m1')">Embodiments &amp; RAX Matrix</button>
       <button class="tab-btn" data-tab="gov" onclick="switchTab('gov')">Governance</button>
     </div>
   </div>
@@ -492,8 +517,89 @@ UI_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- TAB 2: ARCHIVED M1 BENCHMARKS -->
+  <!-- TAB 2: MULTI-EMBODIMENT RAX COVERAGE MATRIX & CROSS-METHOD COMPARATOR -->
   <div id="tab-m1" class="tab-panel">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">RAX (arXiv:2610.22496) Multi-Embodiment Coverage Matrix &mdash; Simulation &amp; Physical Robots</span>
+        <div style="display:flex;gap:5px;align-items:center">
+          <button id="mf-all" class="sm primary" onclick="setMatrixFilter('all')">All (11)</button>
+          <button id="mf-sim" class="sm" onclick="setMatrixFilter('simulation')">Simulation</button>
+          <button id="mf-phys" class="sm" onclick="setMatrixFilter('physical')">Physical Robot</button>
+        </div>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Embodiment Family</th>
+              <th>Robot / Suite</th>
+              <th>Domain / Evidence</th>
+              <th>RAX Paper Scope</th>
+              <th>TRAX Status &amp; Verified Result</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="rax-matrix-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="http-bar">
+        <input id="http-host-url" class="txt-in" placeholder="Physical robot or remote sim HTTP host (e.g. http://192.168.1.50:8890)" value="http://127.0.0.1:8880"/>
+        <select id="http-evidence">
+          <option value="physical_robot">physical_robot</option>
+          <option value="simulator">simulator</option>
+          <option value="recorded_data">recorded_data</option>
+        </select>
+        <input id="http-label" class="txt-in" placeholder="Embodiment label (e.g. Franka FR3 / Real SO-101 / RB-Y1)"/>
+        <button class="primary" onclick="connectCustomHost()">Probe &amp; Switch Live</button>
+      </div>
+      <div id="http-connect-msg" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Interactive Cross-Method Task &amp; Generated Python Policy Comparator (Real Archived Runs)</span>
+        <div style="display:flex;gap:5px;align-items:center">
+          <button id="cmp-mode-split" class="sm primary" onclick="setCompareMode('split')">Side-by-Side Code</button>
+          <button id="cmp-mode-diff" class="sm" onclick="setCompareMode('diff')">Unified Diff (B &rarr; A)</button>
+        </div>
+      </div>
+
+      <div class="cmp-bar">
+        <select id="cmp-suite" onchange="onCompareSuiteChange()"></select>
+        <select id="cmp-task" onchange="loadPolicyComparison()"></select>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--cyan)">Method A:</span>
+        <select id="cmp-left" onchange="loadPolicyComparison()"></select>
+        <span style="font-family:var(--mono);font-size:11px;color:#c084fc">vs Method B:</span>
+        <select id="cmp-right" onchange="loadPolicyComparison()"></select>
+      </div>
+
+      <div id="cmp-heatmap" style="overflow:auto;margin-bottom:8px"></div>
+      <div id="cmp-task-banner" class="io-meta">Select a benchmark suite and task above to compare exact generated Python policies side-by-side.</div>
+
+      <div id="cmp-split-view" class="cmp-grid">
+        <div class="io-block">
+          <div class="io-head">
+            <span id="cmp-left-head">Method A</span>
+            <span id="cmp-left-meta" style="color:var(--muted);font-weight:500">-</span>
+          </div>
+          <pre id="cmp-left-pre" class="io-pre code-snap cmp-pre"></pre>
+        </div>
+        <div class="io-block">
+          <div class="io-head resp">
+            <span id="cmp-right-head">Method B</span>
+            <span id="cmp-right-meta" style="color:var(--muted);font-weight:500">-</span>
+          </div>
+          <pre id="cmp-right-pre" class="io-pre code-snap cmp-pre"></pre>
+        </div>
+      </div>
+
+      <div id="cmp-diff-view" style="display:none;margin-top:8px">
+        <div id="cmp-diff-box" class="diff-view" style="height:410px"></div>
+      </div>
+    </div>
+
     <div class="panel">
       <div class="panel-head">
         <span class="panel-title">Zero-Leakage Robosuite v4 (4 Tasks &times; 20 Held-Out Seeds = 480 Rollouts &middot; evidence=simulator)</span>
@@ -579,6 +685,9 @@ let selectedExecRunIdx = -1;
 let lastLlmCount = 0;
 let lastExecCount = 0;
 let currentExecRawSource = '';
+let embSnapshot = null;
+let matrixFilter = 'all';
+let compareMode = 'split';
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -1222,9 +1331,230 @@ async function refreshState() {
 
     const evo = await api('api/evolve/state');
     updateLiveUI({ scene_observation: st.scene_observation, evolution: evo });
+    await loadEmbodiments();
   } catch (e) {
     document.getElementById('pill-live').textContent = 'OFFLINE';
     document.getElementById('pill-live').className = 'badge err';
+  }
+}
+
+async function loadEmbodiments() {
+  try {
+    embSnapshot = await api('api/embodiments');
+    const topSel = document.getElementById('emb-top-select');
+    if (topSel) {
+      topSel.innerHTML = (embSnapshot.targets || []).map(t =>
+        `<option value="${esc(t.id)}" ${t.active ? 'selected' : ''}>${esc(t.label)}</option>`
+      ).join('') + '<option value="__connect__">+ Connect Physical / Remote HTTP...</option>';
+      topSel.value = embSnapshot.active_id || '';
+    }
+    renderRaxMatrix();
+    renderComparatorCatalog();
+  } catch (_) {}
+}
+
+function setMatrixFilter(f) {
+  matrixFilter = f;
+  for (const [id, key] of [['mf-all','all'], ['mf-sim','simulation'], ['mf-phys','physical']]) {
+    const el = document.getElementById(id);
+    if (el) el.className = 'sm' + (matrixFilter === key ? ' primary' : '');
+  }
+  renderRaxMatrix();
+}
+
+function renderRaxMatrix() {
+  if (!embSnapshot) return;
+  const rows = (embSnapshot.rax_matrix || []).filter(r => matrixFilter === 'all' || r.domain === matrixFilter);
+  const statusCls = s => s === 'LIVE_SWITCHABLE' ? 'ok' : (s === 'BENCHMARK_VERIFIED' ? 'ok' : (s === 'HTTP_BRIDGE_READY' ? 'warn' : ''));
+  document.getElementById('rax-matrix-tbody').innerHTML = rows.map(r => {
+    let actBtn = '';
+    if (r.action_type === 'switch') {
+      const isAct = embSnapshot.active_id === r.action_target;
+      actBtn = `<button class="sm ${isAct ? 'ok' : 'primary'}" onclick="switchEmbodiment('${esc(r.action_target)}', true)">${isAct ? 'Active' : 'Switch Live'}</button>`;
+    } else if (r.action_type === 'compare') {
+      actBtn = `<button class="sm" onclick="jumpCompareSuite('${esc(r.action_target)}')">Compare Code</button>`;
+    } else {
+      actBtn = `<button class="sm" onclick="prefillHttpHost('${esc(r.action_target)}','${esc(r.evidence_source)}','${esc(r.platform)}')">Connect HTTP</button>`;
+    }
+    return `<tr>
+      <td><strong>${esc(r.family)}</strong></td>
+      <td>${esc(r.platform)}</td>
+      <td><span class="badge ${r.domain==='physical'?'warn':''}">${esc(r.domain)} / ${esc(r.evidence_source)}</span></td>
+      <td style="color:var(--muted)">${esc(r.rax_scope)}</td>
+      <td><span class="badge ${statusCls(r.trax_status)}">${esc(r.trax_status)}</span> <span style="margin-left:4px">${esc(r.trax_result)}</span></td>
+      <td>${actBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+function prefillHttpHost(url, ev, label) {
+  document.getElementById('http-host-url').value = url || '';
+  document.getElementById('http-evidence').value = ev || 'physical_robot';
+  document.getElementById('http-label').value = label || '';
+  document.getElementById('http-host-url').focus();
+  document.getElementById('http-connect-msg').textContent = `Prefilled HTTP bridge for ${label}. Start the host bridge and click Probe & Switch Live.`;
+}
+
+async function switchEmbodiment(targetId, goToLab = false) {
+  if (targetId === '__connect__') {
+    switchTab('m1');
+    document.getElementById('http-host-url').focus();
+    if (embSnapshot) document.getElementById('emb-top-select').value = embSnapshot.active_id;
+    return;
+  }
+  const msgEl = document.getElementById('http-connect-msg');
+  try {
+    if (msgEl) msgEl.textContent = `Switching embodiment -> ${targetId}...`;
+    cupTrail = [];
+    camList = [];
+    const res = await api('api/embodiment/switch', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ target_id: targetId }),
+    });
+    if (msgEl) msgEl.textContent = `Switched live to ${(res.active_embodiment||{}).label} (${(res.active_embodiment||{}).evidence_source}).`;
+    await refreshState();
+    if (goToLab) switchTab('lab');
+  } catch (e) {
+    if (msgEl) msgEl.textContent = `Switch failed: ${e.message}`;
+    if (embSnapshot) document.getElementById('emb-top-select').value = embSnapshot.active_id;
+  }
+}
+
+async function connectCustomHost() {
+  const url = document.getElementById('http-host-url').value.trim();
+  const ev = document.getElementById('http-evidence').value;
+  const lbl = document.getElementById('http-label').value.trim();
+  const msgEl = document.getElementById('http-connect-msg');
+  if (!url) { msgEl.textContent = 'Enter a host HTTP base URL first.'; return; }
+  msgEl.textContent = `Probing ${url}/api/capabilities ...`;
+  try {
+    cupTrail = [];
+    camList = [];
+    const res = await api('api/embodiment/switch', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ host_url: url, evidence_source: ev, label: lbl }),
+    });
+    msgEl.textContent = `Connected & switched live to ${(res.active_embodiment||{}).label} (authority=${(res.active_embodiment||{}).execution_authority}, evidence=${(res.active_embodiment||{}).evidence_source}).`;
+    await refreshState();
+    switchTab('lab');
+  } catch (e) {
+    msgEl.textContent = `Connection failed: ${e.message}`;
+  }
+}
+
+function setCompareMode(mode) {
+  compareMode = mode;
+  document.getElementById('cmp-mode-split').className = 'sm' + (mode === 'split' ? ' primary' : '');
+  document.getElementById('cmp-mode-diff').className = 'sm' + (mode === 'diff' ? ' primary' : '');
+  document.getElementById('cmp-split-view').style.display = mode === 'split' ? 'grid' : 'none';
+  document.getElementById('cmp-diff-view').style.display = mode === 'diff' ? 'block' : 'none';
+}
+
+function jumpCompareSuite(suiteKey) {
+  switchTab('m1');
+  const sel = document.getElementById('cmp-suite');
+  if (sel && [...sel.options].some(o => o.value === suiteKey)) {
+    sel.value = suiteKey;
+    onCompareSuiteChange();
+    sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function renderComparatorCatalog() {
+  if (!embSnapshot) return;
+  const cat = embSnapshot.experiment_catalog || {};
+  const keys = Object.keys(cat);
+  const sSel = document.getElementById('cmp-suite');
+  if (!sSel || !keys.length) return;
+  const prev = sSel.value;
+  if (sSel.options.length === 0) {
+    sSel.innerHTML = keys.map(k => `<option value="${esc(k)}">${esc(cat[k].label)}</option>`).join('');
+    sSel.value = prev && cat[prev] ? prev : keys[0];
+    onCompareSuiteChange();
+  }
+}
+
+function onCompareSuiteChange() {
+  if (!embSnapshot) return;
+  const cat = embSnapshot.experiment_catalog || {};
+  const suite = cat[document.getElementById('cmp-suite').value];
+  if (!suite) return;
+  const tSel = document.getElementById('cmp-task');
+  tSel.innerHTML = (suite.tasks || []).map(t =>
+    `<option value="${esc(t.task_key)}">${esc(t.task_key)} — ${esc(t.language.slice(0, 62))}</option>`
+  ).join('');
+  const mOpts = (suite.methods || []).map(m =>
+    `<option value="${esc(m)}">${esc(suite.method_labels[m] || m)}</option>`
+  ).join('');
+  const lSel = document.getElementById('cmp-left');
+  const rSel = document.getElementById('cmp-right');
+  lSel.innerHTML = mOpts;
+  rSel.innerHTML = mOpts;
+  lSel.value = suite.default_left;
+  rSel.value = suite.default_right;
+  renderTaskHeatmap(suite);
+  loadPolicyComparison();
+}
+
+function selectHeatmapCell(taskKey, methodKey) {
+  document.getElementById('cmp-task').value = taskKey;
+  if (methodKey !== document.getElementById('cmp-left').value) {
+    document.getElementById('cmp-right').value = methodKey;
+  }
+  loadPolicyComparison();
+}
+
+function renderTaskHeatmap(suite) {
+  const methods = suite.methods || [];
+  const head = `<tr><th>Task</th>${methods.map(m => `<th>${esc(suite.method_labels[m] || m)}</th>`).join('')}</tr>`;
+  const curTask = document.getElementById('cmp-task').value;
+  const body = (suite.tasks || []).map(t => {
+    const cells = methods.map(m => {
+      const sc = (t.scores || {})[m] || {};
+      const pr = sc.pass_rate != null ? Number(sc.pass_rate) : null;
+      const cls = pr == null ? '' : (pr >= 0.8 ? 'hm-hi' : (pr > 0 ? 'hm-mid' : 'hm-zero'));
+      const selCls = (t.task_key === curTask) ? ' hm-sel' : '';
+      const txt = sc.passed != null ? `${sc.passed}/${sc.total}` : '-';
+      return `<td class="hm-cell ${cls}${selCls}" onclick="selectHeatmapCell('${esc(t.task_key)}','${esc(m)}')" title="Click to compare ${esc(t.task_key)} · ${esc(m)}">${txt}</td>`;
+    }).join('');
+    return `<tr><td style="white-space:nowrap"><strong>${esc(t.task_key)}</strong> <span style="color:var(--dim)">${esc(t.language.slice(0, 42))}</span></td>${cells}</tr>`;
+  }).join('');
+  document.getElementById('cmp-heatmap').innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
+async function loadPolicyComparison() {
+  const suiteKey = document.getElementById('cmp-suite').value;
+  const taskKey = document.getElementById('cmp-task').value;
+  const leftM = document.getElementById('cmp-left').value;
+  const rightM = document.getElementById('cmp-right').value;
+  if (!suiteKey || !taskKey) return;
+  if (embSnapshot && embSnapshot.experiment_catalog[suiteKey]) {
+    renderTaskHeatmap(embSnapshot.experiment_catalog[suiteKey]);
+  }
+  try {
+    const q = new URLSearchParams({ suite: suiteKey, task: taskKey, left: leftM, right: rightM });
+    const data = await api('api/compare/policy?' + q.toString());
+    document.getElementById('cmp-task-banner').innerHTML = `
+      <span><strong>${esc(data.task_key)}</strong> &middot; ${esc(data.task_language)}</span>
+      <span>evidence=<code>${esc(data.evidence_source)}</code></span>
+    `;
+    const fillSide = (prefix, side) => {
+      const sc = side.task_score || {};
+      const scTxt = sc.passed != null ? `${sc.passed}/${sc.total} (${(Number(sc.pass_rate||0)*100).toFixed(0)}%)` : '-';
+      const astTxt = side.ast_check ? (side.ast_check.compliant ? 'AST OK' : 'AST ERR') : '-';
+      document.getElementById(prefix + '-head').textContent = `${side.label} (${scTxt})`;
+      document.getElementById(prefix + '-meta').textContent = side.available
+        ? `${side.file} · ${side.lines} lines · ${astTxt} · sha:${(side.source_sha256||'').slice(0,8)}`
+        : 'Policy file unavailable';
+      document.getElementById(prefix + '-pre').innerHTML = side.available
+        ? renderNumberedCode(side.source)
+        : '(no archived policy file for this task/method)';
+    };
+    fillSide('cmp-left', data.left);
+    fillSide('cmp-right', data.right);
+    document.getElementById('cmp-diff-box').innerHTML = renderDiffHtml(data.unified_diff || '');
+  } catch (e) {
+    document.getElementById('cmp-task-banner').textContent = `Compare error: ${e.message}`;
   }
 }
 

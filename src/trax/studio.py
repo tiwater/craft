@@ -13,7 +13,7 @@ from pathlib import Path
 import threading
 import time
 from typing import Any, Mapping, Sequence
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from .autonomy import AutonomyPromotionLedger
 from .benchmark import (
@@ -25,6 +25,7 @@ from .benchmark import (
 )
 from .coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
 from .config import SceneConfig
+from .embodiments import EmbodimentManager, load_archived_policy_comparison
 from .evolution_lab import EvolutionLabController
 from .host_driver import SceneHostDriver
 from .operations import run_continuous_shift
@@ -108,12 +109,44 @@ class TraxStudioApp:
             (pol.policy_id, pol.label, pol.source)
             for pol in self._policies.values()
         ]
+        self.embodiments = EmbodimentManager(self.config, self.driver, self.workspace_dir)
         self.evolution = EvolutionLabController(
             self.config,
             self.driver,
             self.workspace_dir,
             self._lock,
             seed_policies=seed_policies,
+        )
+
+    def switch_embodiment(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        with self._lock:
+            drv, meta = self.embodiments.switch(
+                target_id=body.get("target_id"),
+                host_url=body.get("host_url"),
+                evidence_source=body.get("evidence_source"),
+                label=body.get("label"),
+            )
+            self.driver = drv
+            self._cam_cache.clear()
+            self.evolution.set_driver(drv, label=str(meta.get("label") or drv.driver_name))
+        return {
+            "status": "switched",
+            "active_embodiment": meta,
+            "embodiments": self.embodiments.snapshot(),
+            "state": self.get_state(),
+        }
+
+    def compare_archived_policy(self, params: Mapping[str, list[str]]) -> dict[str, Any]:
+        suite_key = (params.get("suite") or [""])[0]
+        task_key = (params.get("task") or [""])[0]
+        left_m = (params.get("left") or ["craft_full"])[0]
+        right_m = (params.get("right") or ["rax_protocol"])[0]
+        return load_archived_policy_comparison(
+            self.workspace_dir,
+            suite_key=suite_key,
+            task_key=task_key,
+            left_method=left_m,
+            right_method=right_m,
         )
 
     def _active_release_id(self) -> str | None:
@@ -410,6 +443,15 @@ def create_studio_server(
             if path == "/api/evolve/state":
                 self._send_json(app.evolution.get_state())
                 return
+            if path == "/api/embodiments":
+                self._send_json(app.embodiments.snapshot())
+                return
+            if path == "/api/compare/policy":
+                try:
+                    self._send_json(app.compare_archived_policy(parse_qs(parsed.query)))
+                except KeyError as exc:
+                    self._send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                return
             def _find_report(*rel_candidates: str) -> Path | None:
                 roots = [app.workspace_dir, app.workspace_dir.parent / "goal-v2-20261122", app.workspace_dir.parent / "goal-v3-simex-parity"]
                 for root in roots:
@@ -512,6 +554,9 @@ def create_studio_server(
                     return
                 if path == "/api/shift/run":
                     self._send_json(app.run_studio_shift(body))
+                    return
+                if path == "/api/embodiment/switch":
+                    self._send_json(app.switch_embodiment(body))
                     return
                 if path == "/api/evolve/probe":
                     self._send_json(app.evolution.start_probe_async(body))
