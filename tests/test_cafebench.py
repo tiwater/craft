@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from trax.benchmark import PolicyEntry, builtin_reference_policy_source
-from trax.cafebench import cafebench_v1_scenarios, run_cafebench_v1
+from benchmarks.cafebench import cafebench_v1_scenarios, run_cafebench_v1
 from trax.config import SceneConfig
 from trax.host_driver import create_host_driver
 

@@ -9,7 +9,7 @@ import time
 from trax.benchmark import builtin_reference_policy_source
 from trax.config import SceneConfig
 from trax.embodiments import EmbodimentManager, build_rax_coverage_matrix, load_archived_policy_comparison
-from trax.evolution_lab import EvolutionLabController
+from benchmarks.evolution_lab import EvolutionLabController
 from trax.host_driver import FixtureHostDriver
 
 

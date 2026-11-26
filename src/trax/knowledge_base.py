@@ -226,8 +226,16 @@ class ExecutableKnowledgeBase:
     def begin_session_branch(self, embodiment_id: str, task_id: str) -> str:
         """Create and switch to an isolated `session/<embodiment>/<task>-<ts>` branch off `main`."""
         with self._lock:
+            # Guard against dirty working tree before switching branches
+            dirty = self._git("status", "--porcelain", check=False).stdout.strip()
+            if dirty:
+                self._git("add", "-A")
+                self._git("commit", "-m", "chore(kb): auto-save uncommitted session files before branch switch", check=False)
             self._git("checkout", "main")
             branch = f"session/{_slug(embodiment_id)}/{_slug(task_id)}-{_utc_compact()}"
+            # Ensure unique branch name if two sessions start within the same second
+            if self._git("show-ref", "--verify", "--quiet", f"refs/heads/{branch}", check=False).returncode == 0:
+                branch = f"{branch}-{digest(f'{branch}-{_utc_iso()}')[:4]}"
             self._git("checkout", "-b", branch)
             self._active_branch = branch
             return branch
@@ -405,10 +413,17 @@ class ExecutableKnowledgeBase:
         task_instruction: str,
         policy_source: str,
         verify_result: Mapping[str, Any],
+        urdf_sha256: str = "",
+        verified_seeds: Sequence[int] = (0,),
+        min_verified_seeds: int = 1,
     ) -> dict[str, Any]:
-        """Promote an independently verified policy into `skills/<embodiment>/<task_id>/` and merge `--no-ff` to `main`."""
+        """Stage a verified skill and merge `--no-ff` to `main` ONLY when the seed verification gate passes."""
         if not bool(verify_result.get("passed")):
             raise ValueError("Cannot promote unverified policy to main: independent verify_task did not pass.")
+
+        unique_seeds = sorted({int(s) for s in verified_seeds})
+        req_seeds = max(1, int(min_verified_seeds))
+        meets_main_gate = len(unique_seeds) >= req_seeds
 
         with self._lock:
             emb = _slug(embodiment_id)
@@ -417,13 +432,17 @@ class ExecutableKnowledgeBase:
             sk_dir.mkdir(parents=True, exist_ok=True)
 
             code_sha = digest(policy_source)[:16]
+            urdf_short = (urdf_sha256 or "")[:16]
             meta = {
                 "skill_name": sk_name,
                 "embodiment_id": emb,
                 "mcp_tools_sha256": mcp_tools_sha256[:16],
+                "urdf_sha256": urdf_short,
                 "evidence_source": evidence_source,
                 "code_sha256": code_sha,
                 "verified_utc": _utc_iso(),
+                "verified_seeds": unique_seeds,
+                "promotion_stage": "verified_main" if meets_main_gate else "candidate",
                 "verify_metrics": verify_result.get("metrics") or {},
                 "verify_detail": str(verify_result.get("detail") or ""),
             }
@@ -433,8 +452,11 @@ class ExecutableKnowledgeBase:
                     f"skill_name: {meta['skill_name']}",
                     f"embodiment_id: {meta['embodiment_id']}",
                     f"mcp_tools_sha256: {meta['mcp_tools_sha256']}",
+                    *([f"urdf_sha256: {urdf_short}"] if urdf_short else []),
                     f"evidence_source: {meta['evidence_source']}",
                     f"code_sha256: {meta['code_sha256']}",
+                    f"verified_seeds: {json.dumps(unique_seeds)}",
+                    f"promotion_stage: {meta['promotion_stage']}",
                     f"verified_utc: {meta['verified_utc']}",
                     "---",
                     "",
@@ -442,8 +464,10 @@ class ExecutableKnowledgeBase:
                     "",
                     f"- **Task Scope:** {task_instruction}",
                     f"- **Independent Verification:** `{meta['verify_detail']}`",
+                    f"- **Verified Seeds:** `{unique_seeds}` (required >= {req_seeds})",
                     f"- **Metrics:** `{json.dumps(meta['verify_metrics'], sort_keys=True)}`",
-                    f"- **Contract Binding:** Valid only while MCP `tools/list` digest equals `{meta['mcp_tools_sha256']}`.",
+                    f"- **Contract Binding:** Valid only while MCP `tools/list` digest equals `{meta['mcp_tools_sha256']}`"
+                    + (f" and URDF digest equals `{urdf_short}`." if urdf_short else "."),
                     "",
                 ]
             )
@@ -453,14 +477,28 @@ class ExecutableKnowledgeBase:
             self._rebuild_skill_index_unlocked(emb)
 
             cur_branch = self.current_branch()
-            self.commit_if_dirty(
-                f"skill({emb}/{sk_name}): promote verified executable skill (sha={code_sha[:8]})",
+            stage_word = "promote verified executable skill" if meets_main_gate else "stage candidate skill (awaiting multi-seed gate)"
+            commit_sha = self.commit_if_dirty(
+                f"skill({emb}/{sk_name}): {stage_word} (sha={code_sha[:8]})",
                 trailers={
                     "TRAX-Skill": sk_name,
                     "TRAX-MCP-Contract": mcp_tools_sha256[:16],
                     "TRAX-Evidence": evidence_source,
+                    "TRAX-Verified-Seeds": ",".join(str(s) for s in unique_seeds),
                 },
             )
+
+            if not meets_main_gate:
+                return {
+                    "promoted": False,
+                    "stage": "candidate",
+                    "branch": cur_branch,
+                    "commit": commit_sha or self._git("rev-parse", "--short", "HEAD").stdout.strip(),
+                    "tag": None,
+                    "verified_seeds": unique_seeds,
+                    "required_seeds": req_seeds,
+                    "skill_path": f"skills/{emb}/{sk_name}/SKILL.md",
+                }
 
             tag_name = f"verified/{emb}/{sk_name}-{_utc_compact()}"
             if cur_branch != "main":
@@ -471,10 +509,13 @@ class ExecutableKnowledgeBase:
             merge_sha = self._git("rev-parse", "--short", "HEAD").stdout.strip()
             return {
                 "promoted": True,
+                "stage": "verified_main",
                 "branch": "main",
                 "merged_from": cur_branch,
                 "commit": merge_sha,
                 "tag": tag_name,
+                "verified_seeds": unique_seeds,
+                "required_seeds": req_seeds,
                 "skill_path": f"skills/{emb}/{sk_name}/SKILL.md",
             }
 
@@ -500,24 +541,30 @@ class ExecutableKnowledgeBase:
         current_embodiment: str | None = None,
         current_tools_sha: str | None = None,
         current_evidence: str | None = None,
+        current_urdf_sha: str | None = None,
     ) -> list[dict[str, Any]]:
-        """List all promoted skills with automatic contract-drift & sim-to-real evidence-tier status."""
+        """List all promoted/candidate skills with contract-drift, URDF-drift, and sim-to-real checks."""
         out: list[dict[str, Any]] = []
         skills_root = self.repo_dir / "skills"
         if not skills_root.is_dir():
             return out
         cur_emb = _slug(current_embodiment) if current_embodiment else None
         cur_sha = (current_tools_sha or "")[:16]
+        cur_urdf = (current_urdf_sha or "")[:16]
         for meta_file in sorted(skills_root.glob("*/*/meta.json")):
             try:
                 m = json.loads(meta_file.read_text(encoding="utf-8"))
             except ValueError:
                 continue
             status = "active"
-            if cur_emb and m.get("embodiment_id") != cur_emb:
+            if m.get("promotion_stage") == "candidate":
+                status = "candidate"
+            elif cur_emb and m.get("embodiment_id") != cur_emb:
                 status = "other_embodiment"
             elif cur_sha and m.get("mcp_tools_sha256") != cur_sha:
                 status = "stale_contract"
+            elif cur_urdf and m.get("urdf_sha256") and m.get("urdf_sha256") != cur_urdf:
+                status = "stale_kinematics"
             elif current_evidence == "physical_robot" and m.get("evidence_source") != "physical_robot":
                 status = "advisory_sim_prior"
             rel_base = meta_file.parent.relative_to(self.repo_dir).as_posix()
@@ -537,6 +584,7 @@ class ExecutableKnowledgeBase:
         embodiment_id: str,
         mcp_tools_sha256: str,
         evidence_source: str,
+        urdf_sha256: str = "",
     ) -> str:
         """Render bounded, runtime-owned FACTS + FORBIDDEN + contract-valid skills for LLM grounding."""
         parts = []
@@ -550,6 +598,7 @@ class ExecutableKnowledgeBase:
             current_embodiment=embodiment_id,
             current_tools_sha=mcp_tools_sha256,
             current_evidence=evidence_source,
+            current_urdf_sha=urdf_sha256 or None,
         )
         usable = [s for s in skills if s["status"] in ("active", "advisory_sim_prior")]
         if usable:
@@ -641,6 +690,7 @@ class ExecutableKnowledgeBase:
         current_embodiment: str | None = None,
         current_tools_sha: str | None = None,
         current_evidence: str | None = None,
+        current_urdf_sha: str | None = None,
         trace_stats: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         with self._lock:
@@ -657,6 +707,7 @@ class ExecutableKnowledgeBase:
                     current_embodiment=current_embodiment,
                     current_tools_sha=current_tools_sha,
                     current_evidence=current_evidence,
+                    current_urdf_sha=current_urdf_sha,
                 ),
                 "git_log": self.git_log(25),
                 "workspace_stats": dict(trace_stats or {}),

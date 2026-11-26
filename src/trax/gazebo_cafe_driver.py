@@ -44,7 +44,7 @@ from .edge_adapter import (
     SceneObservationResult,
 )
 from .journal import Journal
-from .prior_work_bench import check_sandbox_ast_compliance
+from .sandbox import check_sandbox_ast_compliance
 
 
 GAZEBO_WORLD_NAME = "craft_cafe"

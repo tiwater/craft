@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 
 from trax.benchmark import builtin_reference_policy_source
-from trax.combo_bench import (
+from benchmarks.combo_bench import (
     ComboWorkstationHost,
     builtin_pipelined_combo_policy_source,
     builtin_sequential_combo_policy_source,
@@ -34,7 +34,7 @@ from trax.probing import (
 )
 from trax.regression import RegressionSuite
 from trax.repair_screener import RepairScreener, calibrate_simulator_alignment
-from trax.sim2sim_bench import run_sim2sim_adaptation_benchmark
+from benchmarks.sim2sim_bench import run_sim2sim_adaptation_benchmark
 from trax.skills import (
     SkillExperience,
     SkillExperienceStore,
@@ -67,7 +67,7 @@ def _fixture_cfg() -> SceneConfig:
 
 
 def test_zero_task_hint_leakage_in_robosuite_attribution_and_hypotheses() -> None:
-    from trax.robosuite_bench import _robo_craft_hypotheses, attribute_robosuite_failure
+    from benchmarks.robosuite_bench import _robo_craft_hypotheses, attribute_robosuite_failure
 
     # Verify Door & NutAssemblySquare hypotheses contain ZERO hardcoded oracle physics numbers
     door_fail = {
@@ -165,12 +165,12 @@ def test_probing_parsers_and_llm_hypothesis_extraction() -> None:
     assert "z_offset_m=0.025" in f_world.summary
     assert "NOT random object yaw" in f_world.summary
 
-    from trax.libero_bench import (
+    from benchmarks.libero_bench import (
         _build_libero_grasp_probe_source,
         _libero_rax_prompt,
         _libero_simex_prompt,
     )
-    from trax.robosuite_bench import check_robosuite_ast_compliance
+    from benchmarks.robosuite_bench import check_robosuite_ast_compliance
 
     probe_src = _build_libero_grasp_probe_source("target_obj_1")
     assert check_robosuite_ast_compliance(probe_src)["compliant"] is True
@@ -204,7 +204,7 @@ def test_probing_parsers_and_llm_hypothesis_extraction() -> None:
 def test_robosuite_real_active_probing_public_sdk() -> None:
     os.environ.setdefault("MUJOCO_GL", "egl")
     pytest.importorskip("robosuite")
-    from trax.robosuite_bench import check_robosuite_ast_compliance, run_robosuite_active_probe
+    from benchmarks.robosuite_bench import check_robosuite_ast_compliance, run_robosuite_active_probe
 
     assert check_robosuite_ast_compliance(build_grasp_offset_scan_probe_source())["compliant"] is True
     assert check_robosuite_ast_compliance(build_articulated_sweep_probe_source())["compliant"] is True
@@ -428,7 +428,7 @@ def test_combo_multi_appliance_interlocks_crash_recovery_and_throughput(tmp_path
 
 
 def test_selective_subroutine_analysis_and_adaptive_polish_escape() -> None:
-    from trax.robosuite_bench import _robo_craft_hypotheses, _robo_craft_prompt
+    from benchmarks.robosuite_bench import _robo_craft_hypotheses, _robo_craft_prompt
 
     sample_policy = """def grasp_obj(sdk, pos):
     sdk.move_to(pos, gripper="open")

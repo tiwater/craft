@@ -44,7 +44,7 @@ from .edge_adapter import (
     SceneObservationResult,
 )
 from .journal import Journal
-from .prior_work_bench import check_sandbox_ast_compliance
+from .sandbox import check_sandbox_ast_compliance
 
 
 # ---------------------------------------------------------------------------
@@ -1706,4 +1706,101 @@ class MuJoCoCafeHostDriver:
             status="reconciled",
             host_status=str(self._last_command.get("status", "idle")),
             detail="MuJoCo local host state reconciled",
+        )
+
+    def embodiment_manifest(self) -> Any:
+        from .plugin import EmbodimentManifest
+
+        return EmbodimentManifest(
+            embodiment_id="trax-mujoco-cafe-sim",
+            display_name="Tabletop 6-DoF Cafe Arm (MuJoCo Sim)",
+            evidence_source=self.evidence_source,
+            execution_authority="trax-mujoco-cafe-sim",
+            perception_owner="mujoco-cafe-sim",
+            kinematics_notes="MuJoCo rigid-body tabletop workstation with non-idempotent appliance and slip/timeout fault injection.",
+        )
+
+    def register_mcp(self, server: Any, lock: threading.RLock) -> None:
+        import json as _json
+        from .mcp_protocol import MCPResourceSpec, MCPToolSpec
+
+        def _exec_single(sdk_expr: str, command_id: str) -> dict[str, Any]:
+            src = f"def run_policy(sdk, params):\n    res = {sdk_expr}\n    return {{'status': 'completed', 'result': res}}\n"
+            sc = {"order_id": "A042", "target_slot": "$SLOT_PICKUP_1", "expect_status": "completed"}
+            with lock:
+                return self.run_policy_scenario(src, command_id=command_id, scenario=sc, journal=None)
+
+        server.register_tool(
+            MCPToolSpec(
+                name="observe_scene",
+                description="Read authoritative MuJoCo workstation scene snapshot.",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.observe_scene().raw_snapshot or self.observe_scene().to_dict(),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="reset_scenario",
+                description="Reset MuJoCo workstation scenario preset.",
+                input_schema={"type": "object", "properties": {"preset": {"type": "string", "default": "default"}}},
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: self.reset_scenario({"preset": str(args.get("preset") or "default")}),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="move_to_target",
+                description="Move arm end-effector to [x, y, z] world coordinates (m).",
+                input_schema={
+                    "type": "object",
+                    "required": ["target_world"],
+                    "properties": {
+                        "target_world": {"type": "array", "items": {"type": "number"}, "default": [0.35, 0.0, 1.15]},
+                        "command_id": {"type": "string", "default": "mcp-move-1"},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: _exec_single(
+                f"sdk.move_to_target({_json.dumps(list(args.get('target_world') or [0.35, 0.0, 1.15]))}, command_id={_json.dumps(str(args.get('command_id') or 'mcp-move-1'))})",
+                str(args.get("command_id") or f"mcp-move-{time.time_ns()}"),
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="start_coffee_machine",
+                description="NON-IDEMPOTENT: Trigger brew actuation once with a stable command_id.",
+                input_schema={"type": "object", "properties": {"command_id": {"type": "string", "default": "mcp-brew-1"}}},
+                read_only=False,
+                idempotent=False,
+                destructive=True,
+                requires_reconciliation=True,
+            ),
+            lambda args: _exec_single(
+                f"sdk.start_coffee_machine(command_id={_json.dumps(str(args.get('command_id') or 'mcp-brew-1'))})",
+                str(args.get("command_id") or f"mcp-brew-{time.time_ns()}"),
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="query_command_status",
+                description="Reconcile a prior non-idempotent command_id against the host ledger.",
+                input_schema={"type": "object", "required": ["command_id"], "properties": {"command_id": {"type": "string"}}},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.reconcile_command(str(args.get("command_id") or "")).to_dict(),
+        )
+        server.register_resource(
+            MCPResourceSpec(
+                uri="trax://scene/state",
+                name="Live MuJoCo Workstation State",
+                description="Authoritative host-owned scene observation JSON.",
+                mime_type="application/json",
+            ),
+            lambda: ("application/json", _json.dumps(self.observe_scene().raw_snapshot or self.observe_scene().to_dict(), indent=2)),
         )

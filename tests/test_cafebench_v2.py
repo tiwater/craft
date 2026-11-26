@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from trax.cafebench_v2 import (
+from benchmarks.cafebench_v2 import (
     cafebench_v2_dev_scenarios,
     cafebench_v2_eval_scenarios,
     run_cafebench_v2_comparison,

@@ -62,18 +62,27 @@ SO101_WORKSPACE_MAX_Z = TABLE_TOP_Z + 0.28
 
 
 def discover_so101_dir() -> Path:
-    """Locate bundled Apache-2.0 SO-101 Simulation/SO101 assets dynamically."""
+    """Locate bundled Apache-2.0 SO-101 robot assets under `assets/robots/so101/` (or env override)."""
     repo_root = Path(__file__).resolve().parents[2]
-    candidates = (
-        repo_root / "sim" / "so101",
-        Path.cwd() / "sim" / "so101",
+    env_dir = os.environ.get("TRAX_ROBOT_ASSETS_DIR", "").strip()
+    candidates: list[Path] = []
+    if env_dir:
+        candidates.append(Path(env_dir) / "so101")
+        candidates.append(Path(env_dir))
+    candidates.extend(
+        [
+            repo_root / "assets" / "robots" / "so101",
+            Path.cwd() / "assets" / "robots" / "so101",
+            repo_root / "sim" / "so101",
+            Path.cwd() / "sim" / "so101",
+        ]
     )
     for cand in candidates:
         if (cand / "so101_new_calib_camera.xml").is_file() and (cand / "assets").is_dir():
             return cand
     raise FileNotFoundError(
-        "SO-101 MuJoCo assets not found under sim/so101/. "
-        "Expected sim/so101/so101_new_calib_camera.xml and sim/so101/assets/*.stl."
+        "SO-101 robot assets not found under assets/robots/so101/. "
+        "Expected assets/robots/so101/so101_new_calib_camera.xml and assets/*.stl."
     )
 
 
@@ -963,3 +972,232 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             },
             "detail": f"zone_err={dist_mm}mm (<=32mm), released={released}, height={h_above*1000.0:.1f}mm",
         }
+
+    # -----------------------------------------------------------------------
+    # TRAX Embodiment Backend Plugin Contract (Manifest, URDF Assets, MCP)
+    # -----------------------------------------------------------------------
+
+    def set_realtime_pacing(self, enabled: bool) -> None:
+        self._realtime_pacing = bool(enabled)
+
+    def embodiment_manifest(self) -> Any:
+        from .plugin import EmbodimentManifest
+
+        urdf_path = self._so101_dir / "robot.urdf"
+        urdf_sha = digest(urdf_path.read_text(encoding="utf-8"))[:16] if urdf_path.is_file() else ""
+        return EmbodimentManifest(
+            embodiment_id="trax-mujoco-so101-sim",
+            display_name="LeRobot SO-101 (MuJoCo 6-DoF Simulator)",
+            evidence_source=self.evidence_source,
+            execution_authority="trax-mujoco-so101-sim",
+            perception_owner="mujoco-so101-sim",
+            urdf_uri="trax://robot/urdf" if urdf_path.is_file() else None,
+            urdf_sha256=urdf_sha,
+            mesh_base_url="/assets/robot/",
+            kinematics_notes="5-DoF arm (STS3215 servos) + 1-DoF moving jaw gripper + wrist camera mount.",
+            physics_approximations=(
+                "kinematic_proximity_grasp_attach_58mm: gripper closure attaches objects within 58mm XY radius rather than pure contact-friction grasping.",
+            ),
+        )
+
+    def resolve_robot_asset(self, rel_path: str) -> tuple[bytes, str, str] | None:
+        from .plugin import read_safe_robot_asset
+
+        return read_safe_robot_asset(self._so101_dir, rel_path)
+
+    def register_mcp(self, server: Any, lock: threading.RLock) -> None:
+        import json as _json
+        from .mcp_protocol import MCPResourceSpec, MCPToolSpec
+        from .plugin import rewrite_urdf_mesh_uris
+
+        server.set_embodiment_meta({"native_low_level": True})
+        server.register_tool(
+            MCPToolSpec(
+                name="get_robot_state",
+                description="Read current 5-DoF joint angles (rad), joint limits, 3D end-effector pose (m), gripper open ratio, grasped object, and workspace bounds.",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_get_robot_state(),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="get_scene_objects",
+                description="Read authoritative tabletop objects (`id`, `world_m`, `height_above_table_m`, `grasped`) and named target zones (`target_zone_a`, `target_zone_b`, `station_pad`).",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_get_scene_objects(),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="move_ee",
+                description="Move robot end-effector smoothly to Cartesian world pose [x, y, z] in meters via IK. Enforces workspace bounds and returns structured `limit_refusal` BEFORE moving if out of bounds.",
+                input_schema={
+                    "type": "object",
+                    "required": ["x", "y", "z"],
+                    "properties": {
+                        "x": {"type": "number", "default": 0.33, "description": "World X in meters"},
+                        "y": {"type": "number", "default": -0.02, "description": "World Y in meters"},
+                        "z": {"type": "number", "default": 1.15, "description": "World Z in meters (tabletop is ~1.00 m)"},
+                        "steps": {"type": "integer", "default": 36, "description": "Simulation integration steps (12..80)"},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_move_ee(
+                float(args.get("x", 0.33)),
+                float(args.get("y", -0.02)),
+                float(args.get("z", 1.15)),
+                steps=int(args.get("steps", 36)),
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="set_gripper",
+                description="Control SO-101 moving jaw gripper: open_ratio=1.0 (fully open / release) or 0.0 (closed / grasp nearby object within contact radius).",
+                input_schema={
+                    "type": "object",
+                    "required": ["open_ratio"],
+                    "properties": {
+                        "open_ratio": {"type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_set_gripper(float(args.get("open_ratio", 0.0))),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="move_joints",
+                description="Command 5-DoF arm joint angles [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll] in radians. Refuses out-of-range joints with `limit_refusal`.",
+                input_schema={
+                    "type": "object",
+                    "required": ["q_rad"],
+                    "properties": {
+                        "q_rad": {"type": "array", "items": {"type": "number"}, "minItems": 5, "maxItems": 5, "default": [0.0, -0.35, 0.55, 0.95, 0.0]},
+                        "steps": {"type": "integer", "default": 32},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_move_joints(list(args.get("q_rad") or [0.0, -0.35, 0.55, 0.95, 0.0]), steps=int(args.get("steps", 32))),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="go_home",
+                description="Retract the SO-101 arm safely to its neutral home joint configuration.",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_go_home(),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="reset_task",
+                description="Reset the tabletop environment for a specified task_id (`pick_and_place_zone`, `lift_red_object`, `place_and_activate_station`) and seed.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "task_id": {
+                            "type": "string",
+                            "default": "pick_and_place_zone",
+                            "enum": ["pick_and_place_zone", "lift_red_object", "place_and_activate_station"],
+                        },
+                        "seed": {"type": "integer", "default": 0},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_reset_task(str(args.get("task_id") or "pick_and_place_zone"), seed=int(args.get("seed", 0))),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="activate_workstation",
+                description="NON-IDEMPOTENT: Trigger external workstation actuator once. Must pass a stable `command_id` and reconcile via `query_command_status` if receipt is `unknown`.",
+                input_schema={
+                    "type": "object",
+                    "required": ["command_id"],
+                    "properties": {
+                        "command_id": {"type": "string", "default": "station-cmd-1"},
+                    },
+                },
+                read_only=False,
+                idempotent=False,
+                destructive=True,
+                requires_reconciliation=True,
+            ),
+            lambda args: self.low_level_activate_workstation(str(args.get("command_id") or "station-cmd-1")),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="query_command_status",
+                description="Query host ledger for a prior non-idempotent `command_id` to reconcile unknown receipts before any retry.",
+                input_schema={
+                    "type": "object",
+                    "required": ["command_id"],
+                    "properties": {"command_id": {"type": "string", "default": "station-cmd-1"}},
+                },
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_query_command_status(str(args.get("command_id") or "station-cmd-1")),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="verify_task",
+                description="Run independent physics-based verification for the active tabletop task.",
+                input_schema={
+                    "type": "object",
+                    "properties": {"task_id": {"type": "string", "default": "pick_and_place_zone"}},
+                },
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_verify_task(args.get("task_id")),
+        )
+        server.register_resource(
+            MCPResourceSpec(
+                uri="trax://scene/state",
+                name="Live Robot & Tabletop Scene State",
+                description="Authoritative SO-101 joint/EE state and tabletop object poses.",
+                mime_type="application/json",
+            ),
+            lambda: (
+                "application/json",
+                _json.dumps(
+                    {
+                        "robot": self.low_level_get_robot_state(),
+                        "scene": self.low_level_get_scene_objects(),
+                        "tasks": self.low_level_task_catalog(),
+                    },
+                    indent=2,
+                ),
+            ),
+        )
+        urdf_file = self._so101_dir / "robot.urdf"
+        if urdf_file.is_file():
+            server.register_resource(
+                MCPResourceSpec(
+                    uri="trax://robot/urdf",
+                    name="LeRobot SO-101 URDF Description",
+                    description="Authoritative SO-101 URDF XML with rewritten /assets/robot/ mesh URIs.",
+                    mime_type="application/xml",
+                ),
+                lambda p=urdf_file: (
+                    "application/xml",
+                    rewrite_urdf_mesh_uris(p.read_text(encoding="utf-8"), asset_url_prefix="/assets/robot"),
+                ),
+            )
+
+
+def create_so101_backend(config: SceneConfig) -> MuJoCoSO101HostDriver:
+    """Entry-point factory for `trax.backends` (`mujoco_so101`)."""
+    return MuJoCoSO101HostDriver(config)

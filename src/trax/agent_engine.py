@@ -10,64 +10,31 @@ a standard MCP JSON-RPC 2.0 backend (`tools/list`, `tools/call`, `resources/list
 """
 from __future__ import annotations
 
-import ast
 import difflib
 import json
-import math
 from pathlib import Path
 import threading
 import time
 from typing import Any, Callable, Mapping, Sequence
 
+from .attribution import classify_mcp_execution
 from .contracts import digest
-from .journal import Journal
 from .knowledge_base import AuditTraceStore, ExecutableKnowledgeBase
+from .llm import make_live_llm_fn
 from .mcp_protocol import MCPClient, MCP_PROTOCOL_VERSION, format_mcp_tools_for_prompt
-from .prior_work_bench import make_live_llm_fn
 from .probing import analyze_policy_subroutines
+from .sandbox import (
+    CancellationToken,
+    ExecutionAbortedError,
+    FORBIDDEN_CALLS as _FORBIDDEN_CALLS,
+    GovernedMCPProxy,
+    SAFE_BUILTINS as _SAFE_BUILTINS,
+    check_mcp_policy_ast,
+    execute_sandboxed_python as _execute_sandboxed_python,
+    extract_mcp_payload as _extract_mcp_payload,
+)
 
 LLMCallable = Callable[[str], dict[str, Any]]
-
-_SAFE_BUILTINS: dict[str, Any] = {
-    "abs": abs,
-    "all": all,
-    "any": any,
-    "bool": bool,
-    "chr": chr,
-    "dict": dict,
-    "divmod": divmod,
-    "enumerate": enumerate,
-    "filter": filter,
-    "float": float,
-    "int": int,
-    "isinstance": isinstance,
-    "iter": iter,
-    "len": len,
-    "list": list,
-    "map": map,
-    "max": max,
-    "min": min,
-    "next": next,
-    "ord": ord,
-    "pow": pow,
-    "range": range,
-    "reversed": reversed,
-    "round": round,
-    "set": set,
-    "sorted": sorted,
-    "str": str,
-    "sum": sum,
-    "tuple": tuple,
-    "zip": zip,
-    "math": math,
-    "Exception": Exception,
-    "ValueError": ValueError,
-    "RuntimeError": RuntimeError,
-    "KeyError": KeyError,
-    "TypeError": TypeError,
-}
-
-_FORBIDDEN_CALLS = frozenset({"eval", "exec", "compile", "open", "__import__", "getattr", "setattr", "delattr", "globals", "locals", "vars", "input", "breakpoint"})
 
 
 def _utc_hms() -> str:
@@ -89,303 +56,11 @@ def _compute_unified_diff(prev_source: str, new_source: str, prev_label: str, ne
     )
 
 
-def check_mcp_policy_ast(
-    source: str,
-    *,
-    allowed_tools: Sequence[str],
-    entry_fn: str = "run_policy",
-) -> dict[str, Any]:
-    """Static AST preflight gate grounded dynamically in the live MCP `tools/list` catalog."""
-    violations: list[str] = []
-    allowed_set = set(allowed_tools)
-    try:
-        tree = ast.parse(source)
-    except SyntaxError as exc:
-        return {"compliant": False, "violations": [f"SyntaxError line {exc.lineno}: {exc.msg}"], "called_tools": []}
-
-    found_entry = False
-    called_tools: set[str] = set()
-
-    for node in tree.body:
-        if isinstance(node, ast.FunctionDef) and node.name == entry_fn:
-            found_entry = True
-
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            violations.append(f"Line {getattr(node, 'lineno', '?')}: imports are forbidden inside TRAX AST sandbox")
-        elif isinstance(node, ast.Lambda):
-            violations.append(f"Line {getattr(node, 'lineno', '?')}: lambda expressions are forbidden (use named def)")
-        elif isinstance(node, ast.Name) and node.id.startswith("_"):
-            violations.append(f"Line {getattr(node, 'lineno', '?')}: private/dunder name `{node.id}` is forbidden")
-        elif isinstance(node, ast.Attribute) and node.attr.startswith("_"):
-            violations.append(f"Line {getattr(node, 'lineno', '?')}: private/dunder attribute `.{node.attr}` is forbidden")
-        elif isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Name) and node.func.id in _FORBIDDEN_CALLS:
-                violations.append(f"Line {getattr(node, 'lineno', '?')}: builtin `{node.func.id}` is forbidden")
-            if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
-                if node.func.value.id in ("mcp", "sdk"):
-                    tool_name = node.func.attr
-                    called_tools.add(tool_name)
-                    if allowed_set and tool_name not in allowed_set:
-                        violations.append(
-                            f"Line {getattr(node, 'lineno', '?')}: tool `{tool_name}` is not in live MCP tools/list"
-                        )
-
-    if not found_entry:
-        violations.insert(0, f"Missing required entry point `def {entry_fn}(mcp, ...):`")
-
-    return {
-        "compliant": len(violations) == 0,
-        "violations": violations,
-        "called_tools": sorted(called_tools),
-    }
-
-
-def _extract_mcp_payload(resp_obj: Mapping[str, Any]) -> Any:
-    if "error" in resp_obj:
-        raise RuntimeError(f"MCP error: {resp_obj['error'].get('message', resp_obj['error'])}")
-    result = resp_obj.get("result") or {}
-    if "structuredContent" in result:
-        return result["structuredContent"]
-    content = result.get("content") or []
-    if content and isinstance(content[0], Mapping) and "text" in content[0]:
-        txt = str(content[0]["text"])
-        try:
-            return json.loads(txt)
-        except ValueError:
-            return {"text": txt}
-    return result
-
-
-class GovernedMCPProxy:
-    """Dynamic Python proxy exposing every discovered MCP tool with SQLite Intent Journal governance."""
-
-    def __init__(
-        self,
-        client: MCPClient,
-        tools: Sequence[Mapping[str, Any]],
-        *,
-        journal_path: Path,
-        run_tag: str,
-        max_calls: int = 60,
-        on_wire: Callable[[dict[str, Any]], None] | None = None,
-    ) -> None:
-        self._client = client
-        self._tools_by_name: dict[str, dict[str, Any]] = {str(t["name"]): dict(t) for t in tools if t.get("name")}
-        self._journal_path = journal_path
-        self._run_tag = run_tag
-        self._max_calls = max_calls
-        self._on_wire = on_wire
-
-        self.call_count: int = 0
-        self.trace: list[dict[str, Any]] = []
-        self.methods: list[str] = []
-        self.non_idempotent_counts: dict[str, int] = {}
-        self.limit_refusals: list[dict[str, Any]] = []
-        self.unknown_events_observed: int = 0
-        self.pending_unknown: bool = False
-        self.queried_after_unknown: bool = True
-        self.journal_entries: list[dict[str, Any]] = []
-
-    def __getattr__(self, name: str) -> Callable[..., Any]:
-        if name.startswith("_") or name not in self._tools_by_name:
-            raise AttributeError(f"MCP tool `{name}` is not exposed by the active robot backend")
-        spec = self._tools_by_name[name]
-        prop_names = list(((spec.get("inputSchema") or {}).get("properties") or {}).keys())
-        ann = spec.get("annotations") or {}
-        is_non_idempotent = (ann.get("idempotentHint") is False) or bool(ann.get("destructiveHint"))
-        is_read_only = bool(ann.get("readOnlyHint"))
-
-        def _invoke(*args: Any, **kwargs: Any) -> Any:
-            if self.call_count >= self._max_calls:
-                raise RuntimeError(f"Exceeded max MCP tool call budget ({self._max_calls})")
-            self.call_count += 1
-            call_args: dict[str, Any] = {}
-            for pos_val, prop_k in zip(args, prop_names):
-                call_args[prop_k] = pos_val
-            call_args.update(kwargs)
-
-            journal_id: str | None = None
-            if is_non_idempotent:
-                self.non_idempotent_counts[name] = self.non_idempotent_counts.get(name, 0) + 1
-                journal_id = f"{self._run_tag}-{name}-{self.call_count}-{time.time_ns()}"
-                with Journal(self._journal_path) as journal:
-                    journal.claim(journal_id, {"tool": name, "arguments": call_args})
-
-            req_obj, resp_obj, ms = self._client.rpc("tools/call", {"name": name, "arguments": call_args})
-            if self._on_wire is not None:
-                self._on_wire(
-                    {
-                        "t": _utc_hms(),
-                        "method": f"tools/call:{name}",
-                        "latency_ms": ms,
-                        "ok": "error" not in resp_obj,
-                        "journal_id": journal_id,
-                        "request": req_obj,
-                        "response": resp_obj,
-                    }
-                )
-            payload = _extract_mcp_payload(resp_obj)
-            self.methods.append(name)
-
-            # Inspect receipt / safety status generically
-            status_str = "done"
-            if isinstance(payload, Mapping):
-                if payload.get("status") == "limit_refusal":
-                    status_str = f"LIMIT_REFUSAL: {payload.get('violated_limit', '')}"
-                    self.limit_refusals.append(
-                        {"tool": name, "arguments": call_args, "violated_limit": payload.get("violated_limit")}
-                    )
-                elif payload.get("receipt") == "unknown":
-                    status_str = "UNKNOWN (ack timeout)"
-                    self.unknown_events_observed += 1
-                    self.pending_unknown = True
-                    self.queried_after_unknown = False
-                elif payload.get("receipt"):
-                    status_str = str(payload["receipt"])
-                elif payload.get("status"):
-                    status_str = str(payload["status"])
-
-            if self.pending_unknown and ("query" in name or "status" in name or "reconcil" in name):
-                self.queried_after_unknown = True
-                self.pending_unknown = False
-                status_str = f"RECONCILED ({status_str})"
-
-            if journal_id is not None:
-                with Journal(self._journal_path) as journal:
-                    journal.record(journal_id, {"status": status_str, "latency_ms": ms})
-
-            compact_res = json.dumps(payload, ensure_ascii=False)
-            if len(compact_res) > 280:
-                compact_res = compact_res[:277] + "..."
-            entry = {
-                "step": self.call_count,
-                "action": name,
-                "arguments": call_args,
-                "state": status_str,
-                "latency_ms": ms,
-                "non_idempotent": is_non_idempotent,
-                "read_only": is_read_only,
-                "journal_id": journal_id,
-                "result_preview": compact_res,
-            }
-            self.trace.append(entry)
-            self.journal_entries.append(entry)
-            if journal_id is not None:
-                self.journal_entries.append(
-                    {
-                        "step": self.call_count,
-                        "action": f"sqlite.journal[{name}]",
-                        "state": f"COMMITTED ({status_str})",
-                        "latency_ms": 0.0,
-                        "non_idempotent": True,
-                        "journal_id": journal_id,
-                    }
-                )
-            return payload
-
-        return _invoke
-
-
-def _execute_sandboxed_python(
-    source: str,
-    proxy: GovernedMCPProxy,
-    *,
-    entry_fn: str,
-    params: Mapping[str, Any],
-) -> tuple[Any, str | None]:
-    """Execute AST-verified Python policy/probe inside a restricted stdlib-only namespace."""
-    ns: dict[str, Any] = {"__builtins__": dict(_SAFE_BUILTINS)}
-    try:
-        compiled = compile(source, f"<trax:{entry_fn}>", "exec")
-        exec(compiled, ns, ns)  # noqa: S102
-        fn = ns.get(entry_fn)
-        if not callable(fn):
-            return None, f"Entry point `{entry_fn}` not found or not callable"
-        code = fn.__code__
-        if code.co_argcount >= 2:
-            ret = fn(proxy, dict(params))
-        else:
-            ret = fn(proxy)
-        return ret, None
-    except Exception as exc:  # noqa: BLE001
-        return None, f"{type(exc).__name__}: {exc}"
-
-
-def classify_mcp_execution(
-    *,
-    ast_check: Mapping[str, Any],
-    proxy: GovernedMCPProxy | None,
-    verify_result: Mapping[str, Any] | None,
-    runtime_error: str | None,
-) -> dict[str, Any]:
-    """Generic 4-layer attribution over any MCP embodiment execution."""
-    if not ast_check.get("compliant"):
-        return {
-            "layer": "policy",
-            "code": "ast_sandbox_violation",
-            "recommended_owner": "trax_policy",
-            "auto_repair_eligible": True,
-            "summary": "; ".join(ast_check.get("violations") or ["AST violation"]),
-        }
-    if proxy is not None:
-        dups = {k: v for k, v in proxy.non_idempotent_counts.items() if v > 1}
-        if dups:
-            return {
-                "layer": "policy",
-                "code": "duplicate_non_idempotent",
-                "recommended_owner": "trax_policy",
-                "auto_repair_eligible": True,
-                "summary": f"Non-idempotent MCP tool invoked more than once: {dups}",
-            }
-        if proxy.unknown_events_observed > 0 and not proxy.queried_after_unknown:
-            return {
-                "layer": "policy",
-                "code": "unreconciled_unknown_ack",
-                "recommended_owner": "trax_policy",
-                "auto_repair_eligible": True,
-                "summary": "Observed `unknown` receipt on non-idempotent MCP tool without calling reconciliation/query tool.",
-            }
-        if proxy.limit_refusals:
-            first = proxy.limit_refusals[0]
-            return {
-                "layer": "control",
-                "code": "backend_limit_refusal",
-                "recommended_owner": "trax_policy",
-                "auto_repair_eligible": True,
-                "summary": f"Backend safeguard refused `{first['tool']}`: {first['violated_limit']}",
-            }
-    if runtime_error:
-        return {
-            "layer": "policy",
-            "code": "runtime_exception",
-            "recommended_owner": "trax_policy",
-            "auto_repair_eligible": True,
-            "summary": runtime_error,
-        }
-    if verify_result and bool(verify_result.get("passed")):
-        return {
-            "layer": "none",
-            "code": "passed",
-            "recommended_owner": "none",
-            "auto_repair_eligible": False,
-            "summary": str(verify_result.get("detail") or "Passed independent task verification."),
-        }
-    detail = str((verify_result or {}).get("detail") or "Task verification criteria not yet satisfied.")
-    return {
-        "layer": "control",
-        "code": "task_verification_failed",
-        "recommended_owner": "trax_policy",
-        "auto_repair_eligible": True,
-        "summary": detail,
-    }
-
-
 DEFAULT_TASK_PROFILES: dict[str, dict[str, str]] = {
     "pick_and_place_zone": {
         "label": "Pick Red Object -> Place on Target Zone A",
         "instruction": (
-            "Explore the SO-101 workspace and object pose, grasp `red_cylinder`, lift it cleanly "
+            "Explore the robot workspace and object pose, grasp `red_cylinder`, lift it cleanly "
             "above the tabletop, transport it to `target_zone_a`, release the gripper, and retract "
             "safely so `verify_task` passes."
         ),
@@ -393,8 +68,8 @@ DEFAULT_TASK_PROFILES: dict[str, dict[str, str]] = {
     "lift_red_object": {
         "label": "Grasp & Lift Red Object (>= 10 cm)",
         "instruction": (
-            "Explore SO-101 reachability and gripper closure around `red_cylinder`, then grasp and "
-            "lift `red_cylinder` at least 10 cm above the tabletop (z >= 1.13 m) without hitting "
+            "Explore robot end-effector reachability and gripper closure around `red_cylinder`, then grasp and "
+            "lift `red_cylinder` at least 10 cm above the tabletop without hitting "
             "workspace or joint limit refusals."
         ),
     },
@@ -435,6 +110,7 @@ class TraxAgentEngine:
         self._phase: str = "idle"
         self._busy: bool = False
         self._busy_detail: str = ""
+        self._cancel_token: CancellationToken | None = None
         self._task_id: str = "pick_and_place_zone"
         self._task_instruction: str = DEFAULT_TASK_PROFILES["pick_and_place_zone"]["instruction"]
         self._explore_rounds: int = 2
@@ -468,6 +144,22 @@ class TraxAgentEngine:
     def _active_evidence_source(self) -> str:
         info = self._server_info or {}
         return str(info.get("evidence_source") or "simulator")
+
+    def _active_urdf_sha(self) -> str:
+        info = self._server_info or {}
+        return str(info.get("urdf_sha256") or "")
+
+    def abort(self, reason: str = "Aborted by operator") -> dict[str, Any]:
+        """Cooperatively cancel any running exploration, LLM call, policy execution, or closed loop."""
+        with self._state_lock:
+            tok = self._cancel_token
+            was_busy = self._busy
+            if tok is not None:
+                tok.cancel(reason)
+            if was_busy:
+                self._busy_detail = f"Aborting: {reason}..."
+                self._log("ABORT", f"Operator abort requested: {reason}")
+        return {"aborted": True, "was_busy": was_busy, "reason": reason}
 
     def _log(self, tag: str, message: str) -> None:
         self._event_log.append({"t": _utc_hms(), "tag": tag, "msg": message})
@@ -690,6 +382,7 @@ class TraxAgentEngine:
                     journal_path=self._journal_path,
                     run_tag=f"probe-r{r}",
                     max_calls=35,
+                    cancel_token=self._cancel_token,
                     on_wire=self._emit_wire,
                 )
                 ret_val: Any = None
@@ -984,21 +677,28 @@ class TraxAgentEngine:
                     journal_path=self._journal_path,
                     run_tag=f"it{cur_idx}",
                     max_calls=60,
+                    cancel_token=self._cancel_token,
                     on_wire=self._emit_wire,
                 )
                 with self._state_lock:
                     self._log("EXEC", f"Running iter_{cur_idx} inside AST sandbox + SQLite MCP governance (task={self._task_id})...")
-                ret_val, runtime_err = _execute_sandboxed_python(
-                    source,
-                    proxy,
-                    entry_fn="run_policy",
-                    params={"task_id": self._task_id, "command_prefix": f"it{cur_idx}"},
-                )
+                aborted = False
+                try:
+                    ret_val, runtime_err = _execute_sandboxed_python(
+                        source,
+                        proxy,
+                        entry_fn="run_policy",
+                        params={"task_id": self._task_id, "command_prefix": f"it{cur_idx}"},
+                    )
+                except ExecutionAbortedError as abort_exc:
+                    aborted = True
+                    ret_val = None
+                    runtime_err = str(abort_exc)
                 verify_res: dict[str, Any] = {"passed": False, "detail": "No verifier exposed", "metrics": {}}
-                if "verify_task" in tool_names:
+                if not aborted and "verify_task" in tool_names:
                     _, v_resp, _ = client.rpc("tools/call", {"name": "verify_task", "arguments": {"task_id": self._task_id}})
                     verify_res = dict(_extract_mcp_payload(v_resp) or verify_res)
-                elif runtime_err is None and isinstance(ret_val, Mapping) and ret_val.get("status") in ("completed", "done"):
+                elif not aborted and runtime_err is None and isinstance(ret_val, Mapping) and ret_val.get("status") in ("completed", "done"):
                     verify_res = {"passed": True, "detail": "Policy completed cleanly", "metrics": dict(ret_val)}
 
                 wall_s = round(time.monotonic() - t0, 3)
@@ -1007,6 +707,7 @@ class TraxAgentEngine:
                     proxy=proxy,
                     verify_result=verify_res,
                     runtime_error=runtime_err,
+                    aborted=aborted,
                 )
                 dups = any(v > 1 for v in proxy.non_idempotent_counts.values())
                 passed = bool(verify_res.get("passed")) and (attr["layer"] == "none")
@@ -1068,10 +769,12 @@ class TraxAgentEngine:
                     embodiment_id=emb_id,
                     evidence_source=ev_src,
                     mcp_tools_sha256=self._mcp_tools_sha256,
+                    urdf_sha256=self._active_urdf_sha(),
                     task_id=self._task_id,
                     task_instruction=self._task_instruction,
                     policy_source=source,
                     verify_result=exec_res.get("verify_result") or {"passed": True},
+                    verified_seeds=(self._seed,),
                 )
 
             with self._state_lock:
@@ -1271,18 +974,24 @@ class TraxAgentEngine:
                 self._executed_runs = []
                 self._last_verify = None
             self._busy = True
+            self._cancel_token = CancellationToken()
             self._phase = "exploring"
             self._busy_detail = f"Closed Loop: Stage 1 Exploring ({rounds} rounds)..."
             self._log("LOOP", f"=== Starting MCP Closed Loop (task={self._task_id}, explore_rounds={rounds}, max_iters={max_iters}) ===")
 
         def _worker() -> None:
             try:
+                tok = self._cancel_token
                 self._run_explore_sync(rounds=rounds, task_id=self._task_id, seed=self._seed)
                 for step in range(1, max_iters + 1):
+                    if tok is not None:
+                        tok.raise_if_cancelled()
                     with self._state_lock:
                         self._phase = "synthesizing" if step == 1 else "iterating"
                         self._busy_detail = f"Iteration {step}/{max_iters}: LLM compiling/repairing Python policy..."
                     self._synthesize_sync(force_fresh=(step == 1))
+                    if tok is not None:
+                        tok.raise_if_cancelled()
 
                     with self._state_lock:
                         self._phase = "executing"
@@ -1294,6 +1003,10 @@ class TraxAgentEngine:
                             self._log("LOOP", f"=== Converged at iter_{it_rec['iter_index']} (PASS) ===")
                         return
                     attr = it_rec.get("attribution") or {}
+                    if attr.get("code") == "aborted_by_operator":
+                        with self._state_lock:
+                            self._phase = "aborted"
+                        return
                     with self._state_lock:
                         self._log(
                             "ITER",
@@ -1301,6 +1014,10 @@ class TraxAgentEngine:
                         )
                 with self._state_lock:
                     self._log("LOOP", f"=== Reached max_iters={max_iters} budget ===")
+            except ExecutionAbortedError as exc:
+                with self._state_lock:
+                    self._log("ABORT", f"Closed loop stopped cleanly: {exc}")
+                    self._phase = "aborted"
             except Exception as exc:  # noqa: BLE001
                 with self._state_lock:
                     self._log("ERROR", f"Closed loop aborted: {exc}")
@@ -1309,6 +1026,7 @@ class TraxAgentEngine:
                 with self._state_lock:
                     self._busy = False
                     self._busy_detail = ""
+                    self._cancel_token = None
 
         threading.Thread(target=_worker, daemon=True).start()
         return {"status": "started", "phase": "exploring", "explore_rounds": rounds, "max_iters": max_iters}
@@ -1318,10 +1036,12 @@ class TraxAgentEngine:
             emb = self._active_embodiment_id() if self._server_info else None
             sha = self._mcp_tools_sha256 or None
             ev = self._active_evidence_source() if self._server_info else None
+            urdf_sha = self._active_urdf_sha() or None
         return self.kb.snapshot(
             current_embodiment=emb,
             current_tools_sha=sha,
             current_evidence=ev,
+            current_urdf_sha=urdf_sha,
             trace_stats=self.traces.stats(),
         )
 

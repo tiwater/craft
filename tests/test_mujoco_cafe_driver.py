@@ -9,7 +9,7 @@ os.environ.setdefault("MUJOCO_GL", "egl")
 mujoco = pytest.importorskip("mujoco")
 
 from trax.benchmark import PolicyEntry, builtin_reference_policy_source
-from trax.cafebench import run_cafebench_v1
+from benchmarks.cafebench import run_cafebench_v1
 from trax.config import SceneConfig
 from trax.host_driver import create_host_driver
 from trax.journal import Journal

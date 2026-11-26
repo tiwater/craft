@@ -38,7 +38,7 @@ from .dev_loop import (
 )
 from .host_driver import SceneHostDriver
 from .journal import Journal
-from .prior_work_bench import check_sandbox_ast_compliance
+from .sandbox import check_sandbox_ast_compliance
 from .probing import build_llm_hypothesis_synthesis_prompt, parse_llm_hypotheses_json
 from .profiler import attribute_trial
 from .regression import RegressionCase, RegressionSuite

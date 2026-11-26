@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="lerobot_so101">
+  <material name="base_motor_holder_so101_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="base_so101_v2_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="motor_holder_so101_base_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="motor_holder_so101_wrist_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="moving_jaw_so101_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="rotation_pitch_so101_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="sts3215_03a_no_horn_v1_material">
+    <color rgba="0.1 0.1 0.1 1.0" />
+  </material>
+  <material name="sts3215_03a_v1_material">
+    <color rgba="0.1 0.1 0.1 1" />
+  </material>
+  <material name="under_arm_so101_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="upper_arm_so101_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="waveshare_mounting_plate_so101_v2_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="wrist_camera_mount_so101_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="wrist_camera_so101_v1_material">
+    <color rgba="0.1 0.1 0.1 1" />
+  </material>
+  <material name="wrist_roll_follower_so101_v1_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <material name="wrist_roll_pitch_so101_v2_material">
+    <color rgba="1 0.82 0.12 1" />
+  </material>
+  <link name="base">
+    <visual>
+      <origin xyz="-0.00636471 -9.94414e-05 -0.0024" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="assets/base_motor_holder_so101_v1.stl" />
+      </geometry>
+      <material name="base_motor_holder_so101_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="-0.00636471 -8.97657e-09 -0.0024" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="assets/base_so101_v2.stl" />
+      </geometry>
+      <material name="base_so101_v2_material" />
+    </visual>
+    <visual>
+      <origin xyz="0.0263353 -8.97657e-09 0.0437" rpy="-0.000000 -0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/sts3215_03a_v1.stl" />
+      </geometry>
+      <material name="sts3215_03a_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0309827 -0.000199441 0.0474" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="assets/waveshare_mounting_plate_so101_v2.stl" />
+      </geometry>
+      <material name="waveshare_mounting_plate_so101_v2_material" />
+    </visual>
+  </link>
+  <link name="shoulder">
+    <visual>
+      <origin xyz="-0.0303992 0.000422241 -0.0417" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="assets/sts3215_03a_v1.stl" />
+      </geometry>
+      <material name="sts3215_03a_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0675992 -0.000177759 0.0158499" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="assets/motor_holder_so101_base_v1.stl" />
+      </geometry>
+      <material name="motor_holder_so101_base_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="0.0122008 2.22413e-05 0.0464" rpy="-1.570796 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/rotation_pitch_so101_v1.stl" />
+      </geometry>
+      <material name="rotation_pitch_so101_v1_material" />
+    </visual>
+  </link>
+  <joint name="shoulder_pan" type="revolute">
+    <parent link="base" />
+    <child link="shoulder" />
+    <origin xyz="0.0388353 -8.97657e-09 0.0624" rpy="3.141593 -0.000000 -3.141593" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.919862" upper="1.919862" effort="2.94" velocity="3.0" />
+  </joint>
+  <link name="upper_arm">
+    <visual>
+      <origin xyz="-0.11257 -0.0155 0.0187" rpy="-3.141593 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="assets/sts3215_03a_v1.stl" />
+      </geometry>
+      <material name="sts3215_03a_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="-0.065085 0.012 0.0182" rpy="3.141593 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/upper_arm_so101_v1.stl" />
+      </geometry>
+      <material name="upper_arm_so101_v1_material" />
+    </visual>
+  </link>
+  <joint name="shoulder_lift" type="revolute">
+    <parent link="shoulder" />
+    <child link="upper_arm" />
+    <origin xyz="-0.0303992 -0.0182778 -0.0542" rpy="0.000000 -1.570796 0.000000" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.745329" upper="1.745329" effort="2.94" velocity="3.0" />
+  </joint>
+  <link name="lower_arm">
+    <visual>
+      <origin xyz="-0.0648499 -0.032 0.0182" rpy="3.141593 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/under_arm_so101_v1.stl" />
+      </geometry>
+      <material name="under_arm_so101_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0648499 -0.032 0.018" rpy="-3.141593 -0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/motor_holder_so101_wrist_v1.stl" />
+      </geometry>
+      <material name="motor_holder_so101_wrist_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="-0.1224 0.0052 0.0187" rpy="-3.141593 0.000000 3.141593" />
+      <geometry>
+        <mesh filename="assets/sts3215_03a_v1.stl" />
+      </geometry>
+      <material name="sts3215_03a_v1_material" />
+    </visual>
+  </link>
+  <joint name="elbow_flex" type="revolute">
+    <parent link="upper_arm" />
+    <child link="lower_arm" />
+    <origin xyz="-0.11257 -0.028 1.73763e-16" rpy="-0.000000 0.000000 1.570796" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.690000" upper="1.690000" effort="2.94" velocity="3.0" />
+  </joint>
+  <link name="wrist">
+    <visual>
+      <origin xyz="8.32667e-17 -0.0424 0.0306" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="assets/sts3215_03a_no_horn_v1.stl" />
+      </geometry>
+      <material name="sts3215_03a_no_horn_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="0 -0.028 0.0181" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="assets/wrist_roll_pitch_so101_v2.stl" />
+      </geometry>
+      <material name="wrist_roll_pitch_so101_v2_material" />
+    </visual>
+  </link>
+  <joint name="wrist_flex" type="revolute">
+    <parent link="lower_arm" />
+    <child link="wrist" />
+    <origin xyz="-0.1349 0.0052 3.62355e-17" rpy="0.000000 0.000000 -1.570796" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.658063" upper="1.658063" effort="2.94" velocity="3.0" />
+  </joint>
+  <link name="gripper">
+    <visual>
+      <origin xyz="0.0077 0.0001 -0.0234" rpy="-1.570796 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/sts3215_03a_v1.stl" />
+      </geometry>
+      <material name="sts3215_03a_v1_material" />
+    </visual>
+    <visual>
+      <origin xyz="8.32667e-17 -0.000218214 0.000949706" rpy="3.141593 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/wrist_roll_follower_so101_v1.stl" />
+      </geometry>
+      <material name="wrist_roll_follower_so101_v1_material" />
+    </visual>
+  </link>
+  <joint name="wrist_roll" type="revolute">
+    <parent link="wrist" />
+    <child link="gripper" />
+    <origin xyz="5.55112e-17 -0.0611 0.0181" rpy="1.570796 0.048680 3.141593" />
+    <axis xyz="0 0 1" />
+    <limit lower="-2.743847" upper="2.841206" effort="2.94" velocity="3.0" />
+  </joint>
+  <link name="wrist_camera_mount">
+    <visual>
+      <origin xyz="0 0 0" rpy="0.000000 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/wrist_camera_mount_so101_v1.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="wrist_camera_mount_so101_v1_material" />
+    </visual>
+  </link>
+  <joint name="gripper_to_wrist_camera_mount_fixed" type="fixed">
+    <parent link="gripper" />
+    <child link="wrist_camera_mount" />
+    <origin xyz="-0.0150 0.0240 -0.0315" rpy="-1.570800 -0.000800 -1.570800" />
+  </joint>
+  <link name="wrist_camera">
+    <visual>
+      <origin xyz="0 0 0" rpy="0.000000 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="assets/wrist_camera_so101_v1.stl" />
+      </geometry>
+      <material name="wrist_camera_so101_v1_material" />
+    </visual>
+  </link>
+  <joint name="wrist_camera_mount_to_wrist_camera_fixed" type="fixed">
+    <parent link="wrist_camera_mount" />
+    <child link="wrist_camera" />
+    <origin xyz="-0.04941 -0.03813 0.0175" rpy="3.141593 -1.570793 1.133993" />
+  </joint>
+  <link name="moving_jaw_so101_v1">
+    <visual>
+      <origin xyz="-5.55112e-17 -5.55112e-17 0.0189" rpy="-0.000000 0.000000 -0.000000" />
+      <geometry>
+        <mesh filename="assets/moving_jaw_so101_v1.stl" />
+      </geometry>
+      <material name="moving_jaw_so101_v1_material" />
+    </visual>
+  </link>
+  <joint name="gripper" type="revolute">
+    <parent link="gripper" />
+    <child link="moving_jaw_so101_v1" />
+    <origin xyz="0.0202 0.0188 -0.0234" rpy="1.570796 -0.000000 0.000000" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.174533" upper="1.745329" effort="2.94" velocity="3.0" />
+  </joint>
+</robot>

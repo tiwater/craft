@@ -32,19 +32,19 @@ from pathlib import Path
 import time
 from typing import Any, Callable, Mapping, Sequence
 
-from .benchmark import wilson_ci_95
+from trax.benchmark import wilson_ci_95
 from .cafebench import _git_provenance, _write_json_atomic
 from .cafebench_v2 import SHARED_CAFEBENCH_V2_CONTRACT, SHARED_CAFEBENCH_V2_REQUIREMENTS
-from .config import SceneConfig
-from .contracts import digest
-from .dev_loop import _strip_code_fence
-from .host_driver import SceneHostDriver
-from .journal import Journal
-from .operations import _run_driver_order, run_recorded_shadow_check
+from trax.config import SceneConfig
+from trax.contracts import digest
+from trax.dev_loop import _strip_code_fence
+from trax.host_driver import SceneHostDriver
+from trax.journal import Journal
+from trax.operations import _run_driver_order, run_recorded_shadow_check
 from .prior_work_bench import LLMGenerateFn, check_sandbox_ast_compliance, mcnemar_exact_p
-from .profiler import attribute_trial
-from .regression import RegressionSuite
-from .repair_screener import RepairScreener
+from trax.profiler import attribute_trial
+from trax.regression import RegressionSuite
+from trax.repair_screener import RepairScreener
 
 
 SIM2SIM_BENCH_VERSION = "TRAX-Sim2Sim-Stage2-v1.0"

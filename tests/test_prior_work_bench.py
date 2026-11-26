@@ -4,10 +4,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from trax.cafebench import cafebench_v1_scenarios
+from benchmarks.cafebench import cafebench_v1_scenarios
 from trax.config import SceneConfig
 from trax.host_driver import FixtureHostDriver
-from trax.prior_work_bench import (
+from benchmarks.prior_work_bench import (
     CapXSkillLibrary,
     PRIOR_WORK_LITERATURE_MATRIX,
     cafebench_dev_scenarios,

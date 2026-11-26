@@ -13,7 +13,7 @@ from trax.benchmark import (
 )
 from trax.config import SceneConfig
 from trax.host_driver import FixtureHostDriver, create_host_driver, list_host_drivers, register_host_driver
-from trax_ui import TraxUIApp, create_ui_server
+from trax.ui import TraxUIApp, create_ui_server
 
 
 BROKEN_NO_RECENTER_POLICY = """def run_policy(sdk, params):
@@ -98,8 +98,15 @@ def test_trax_ui_http_endpoints_standalone(tmp_path):
             assert st["driver"] == "fixture"
             assert st["evidence_source"] == "fixture"
             assert st["capability_check"]["status"] == "ready"
-            assert "open_oven_door" in st["oven_gap"]["missing_methods"]
             assert st["cameras"] == ["overhead"]
+
+        # Static CSS & JS assets served cleanly
+        with opener.open(base + "/static/app.css", timeout=5) as r:
+            assert r.status == 200
+            assert "text/css" in r.headers.get("Content-Type", "")
+        with opener.open(base + "/static/app.js", timeout=5) as r:
+            assert r.status == 200
+            assert "javascript" in r.headers.get("Content-Type", "")
 
         # Standalone SVG camera stream
         with opener.open(base + "/api/camera/overhead", timeout=5) as r:

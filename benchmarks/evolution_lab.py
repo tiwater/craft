@@ -12,10 +12,10 @@ import threading
 import time
 from typing import Any, Callable, Mapping, Sequence
 
-from .config import SceneConfig
-from .contracts import digest
-from .host_driver import SceneHostDriver
-from .journal import Journal
+from trax.config import SceneConfig
+from trax.contracts import digest
+from trax.host_driver import SceneHostDriver
+from trax.journal import Journal
 from .prior_work_bench import (
     SHARED_HOST_SDK_CONTRACT,
     SHARED_TASK_REQUIREMENTS,
@@ -23,8 +23,8 @@ from .prior_work_bench import (
     check_sandbox_ast_compliance,
     make_live_llm_fn,
 )
-from .probing import analyze_policy_subroutines
-from .profiler import attribute_trial
+from trax.probing import analyze_policy_subroutines
+from trax.profiler import attribute_trial
 
 LLMCallable = Callable[[str], dict[str, Any]]
 

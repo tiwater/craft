@@ -15,7 +15,7 @@ from typing import Any, Mapping
 from .config import HostConnectionConfig, SceneConfig
 from .contracts import digest
 from .host_driver import SceneHostDriver, create_host_driver
-from .prior_work_bench import check_sandbox_ast_compliance
+from .sandbox import check_sandbox_ast_compliance
 
 
 def _read_json(path: Path) -> dict[str, Any] | None:

@@ -22,11 +22,11 @@ import subprocess
 import time
 from typing import Any, Callable, Mapping, Sequence
 
-from .benchmark import BenchmarkScenario, PolicyEntry, percentile, summarize_benchmark, wilson_ci_95
-from .host_driver import SceneHostDriver
-from .journal import Journal
-from .portability import check_policy_portability
-from .profiler import aggregate_trial_profiles
+from trax.benchmark import BenchmarkScenario, PolicyEntry, percentile, summarize_benchmark, wilson_ci_95
+from trax.host_driver import SceneHostDriver
+from trax.journal import Journal
+from trax.portability import check_policy_portability
+from trax.profiler import aggregate_trial_profiles
 
 
 CAFEBENCH_VERSION = "TRAX-CafeBench-v1.0"

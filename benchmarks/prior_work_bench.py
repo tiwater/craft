@@ -36,16 +36,16 @@ from pathlib import Path
 import time
 from typing import Any, Callable, Mapping, Sequence
 
-from .backends import invoke_backend
-from .benchmark import BenchmarkScenario, percentile, wilson_ci_95
+from trax.backends import invoke_backend
+from trax.benchmark import BenchmarkScenario, percentile, wilson_ci_95
 from .cafebench import _git_provenance, _write_json_atomic, cafebench_v1_scenarios
-from .contracts import digest
-from .dev_loop import _strip_code_fence, validate_host_policy_syntax
-from .host_driver import SceneHostDriver
-from .journal import Journal
-from .portability import check_policy_portability
-from .profiler import aggregate_trial_profiles, attribute_trial
-from .regression import RegressionSuite
+from trax.contracts import digest
+from trax.dev_loop import _strip_code_fence, validate_host_policy_syntax
+from trax.host_driver import SceneHostDriver
+from trax.journal import Journal
+from trax.portability import check_policy_portability
+from trax.profiler import aggregate_trial_profiles, attribute_trial
+from trax.regression import RegressionSuite
 
 
 PRIOR_WORK_BENCH_VERSION = "TRAX-CafeBench-PriorWork-v1.1"

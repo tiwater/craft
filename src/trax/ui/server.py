@@ -1,8 +1,9 @@
-"""Standalone, host-independent web observer and operations interface (TRAX UI).
+"""Standalone, host-independent web observer and operations interface (`trax.ui`).
 
-Built purely on Python's stdlib ``http.server`` with zero external web dependencies.
-Consumes any ``SceneHostDriver`` (``fixture`` standalone or ``http`` live sim)
-read-only for perception/cameras and delegates all orchestration through TRAX APIs.
+Built purely on Python's stdlib ``http.server`` with real static frontend files under
+``trax/ui/static/`` (zero external web dependencies, zero core private-symbol coupling,
+zero built-in robot URDFs—URDF and meshes are fetched dynamically from the active
+embodiment host via MCP/HTTP with strict path-traversal and ETag handling).
 """
 from __future__ import annotations
 
@@ -14,31 +15,36 @@ import threading
 import time
 from typing import Any, Mapping, Sequence
 from urllib.parse import parse_qs, urlparse
+import urllib.request
 
 from trax.agent_engine import TraxAgentEngine
 from trax.autonomy import AutonomyPromotionLedger
 from trax.benchmark import (
     PolicyEntry,
     builtin_reference_policy_source,
-    default_coffee_benchmark_suite,
     render_benchmark_html,
-    run_paired_benchmark,
 )
-from trax.coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
 from trax.config import SceneConfig
 from trax.embodiments import EmbodimentManager, load_archived_policy_comparison
-from trax.evolution_lab import EvolutionLabController, load_m1_archive
 from trax.host_driver import SceneHostDriver
-from trax.mcp_protocol import MCPInspectorController
+from trax.mcp_protocol import MCPClient, MCPInspectorController
 from trax.operations import run_continuous_shift
+from trax.plugin import read_safe_robot_asset, rewrite_urdf_mesh_uris
 from trax.portability import check_policy_portability
 from trax.profiler import aggregate_trial_profiles
 from trax.regression import RegressionSuite
 from trax.release import ReleaseRegistry
-from trax.teaching import TeachingMaterial, build_task_specification
 
+_STATIC_DIR = Path(__file__).resolve().parent / "static"
+_STATIC_MIME: dict[str, str] = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+}
 
-from .template import UI_HTML
 
 def _read_optional_json(path: Path) -> dict[str, Any] | None:
     if not path.is_file():
@@ -49,8 +55,28 @@ def _read_optional_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
+def _load_m1_archive_summary(workspace_dir: Path) -> dict[str, Any]:
+    """Load optional archived cross-benchmark summary reports for UI comparison tab."""
+    cand_exp = workspace_dir.parent / "experiments"
+    exp_root = cand_exp if cand_exp.is_dir() else workspace_dir.parent
+    out: dict[str, Any] = {}
+    for key, rel in (
+        ("libero_spatial", "trax-2.0-m1/libero-spatial-full/libero_report.json"),
+        ("libero_object_blind", "trax-2.0-m1/libero-object-blind/libero_report.json"),
+        ("robosuite_v4", "trax-2.0-m1/robosuite-v4/robosuite_prior_work_report.json"),
+        ("cafebench_v2", "goal-v2-20261122/cafebench-v2/cafebench_v2_report.json"),
+    ):
+        data = _read_optional_json(exp_root / rel)
+        if data:
+            out[key] = {
+                "evidence_source": data.get("evidence_source", "simulator"),
+                "summary_by_method": data.get("summary_by_method") or {},
+            }
+    return out
+
+
 class TraxUIApp:
-    """Thread-safe controller backing TRAX UI HTTP endpoints."""
+    """Thread-safe controller backing optional TRAX UI HTTP endpoints."""
 
     def __init__(
         self,
@@ -59,13 +85,15 @@ class TraxUIApp:
         workspace_dir: str | Path,
         *,
         policies: Sequence[PolicyEntry] = (),
+        default_mcp_url: str | None = None,
+        default_mcp_stdio: str | None = None,
     ) -> None:
         self.config = config
         self.driver = driver
         self.workspace_dir = Path(workspace_dir)
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
-        self._bench_running = False
+        self._opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
         self._run_state: dict[str, Any] = {
             "running": False,
             "label": "",
@@ -76,6 +104,13 @@ class TraxUIApp:
         }
         self._cam_cache: dict[str, tuple[float, bytes, str]] = {}
         self._policies: dict[str, PolicyEntry] = {}
+        self._default_mcp_url = (default_mcp_url or "").strip() or None
+        self._default_mcp_stdio = [tok for tok in (default_mcp_stdio or "").split() if tok] or None
+        self._stdio_client: MCPClient | None = (
+            MCPClient(transport="stdio", command=self._default_mcp_stdio, timeout_s=15.0)
+            if self._default_mcp_stdio
+            else None
+        )
 
         seen_hashes: set[str] = set()
         reg_dir = self.workspace_dir / "registry"
@@ -107,33 +142,40 @@ class TraxUIApp:
         if ref.source_sha256 not in seen_hashes:
             self._policies[ref.policy_id] = ref
 
-        seed_policies = [
-            (pol.policy_id, pol.label, pol.source)
-            for pol in self._policies.values()
-        ]
         self.embodiments = EmbodimentManager(self.config, self.driver, self.workspace_dir)
-        self.evolution = EvolutionLabController(
-            self.config,
-            self.driver,
-            self.workspace_dir,
-            self._lock,
-            seed_policies=seed_policies,
-        )
         self.mcp = MCPInspectorController(
             self.workspace_dir,
             lambda: self.driver,
             self._lock,
         )
-        self._m1_archive = load_m1_archive(self.workspace_dir)
-
-        def _resolve_active_mcp():
-            client, label, _, _, _ = self.mcp._resolve_client({"transport": "auto"})
-            return client, label
-
+        self._m1_archive = _load_m1_archive_summary(self.workspace_dir)
         self.agent = TraxAgentEngine(
             self.workspace_dir,
-            _resolve_active_mcp,
+            self._resolve_active_mcp_client,
             on_wire=self.mcp.record_external_wire,
+        )
+
+    def close(self) -> None:
+        self.mcp.close()
+        if self._stdio_client is not None:
+            self._stdio_client.close()
+            self._stdio_client = None
+
+    def _resolve_active_mcp_client(self) -> tuple[MCPClient, str]:
+        if self._stdio_client is not None and self._default_mcp_stdio:
+            return self._stdio_client, " ".join(self._default_mcp_stdio)
+        if self._default_mcp_url:
+            return MCPClient(transport="http", url=self._default_mcp_url, timeout_s=15.0), self._default_mcp_url
+        drv = self.driver
+        if drv.driver_name == "http" and hasattr(drv, "config"):
+            base = drv.config.host.normalized_base_url  # type: ignore[attr-defined]
+            mcp_url = f"{base}/mcp"
+            return MCPClient(transport="http", url=mcp_url, timeout_s=15.0), f"Active HTTP Host ({mcp_url})"
+        from trax.mcp_protocol import build_driver_mcp_server
+
+        return (
+            MCPClient(transport="local", local_server=build_driver_mcp_server(drv, self._lock)),
+            f"In-Process Backend ({drv.driver_name})",
         )
 
     def get_agent_state(self) -> dict[str, Any]:
@@ -143,13 +185,47 @@ class TraxUIApp:
 
     def _fetch_live_mcp_telemetry(self) -> dict[str, Any] | None:
         try:
-            client, _, _, _, _ = self.mcp._resolve_client({"transport": "auto"})
+            client, _ = self._resolve_active_mcp_client()
             _, resp, _ = client.rpc("resources/read", {"uri": "trax://scene/state"})
-            contents = ((resp.get("result") or {}).get("contents") or [])
+            contents = (resp.get("result") or {}).get("contents") or []
             if contents and contents[0].get("text"):
                 return json.loads(str(contents[0]["text"]))
         except Exception:  # noqa: BLE001
             return None
+        return None
+
+    def fetch_robot_urdf(self) -> str | None:
+        """Fetch active embodiment URDF via MCP `trax://robot/urdf` and normalize mesh URLs for browser."""
+        try:
+            client, _ = self._resolve_active_mcp_client()
+            _, resp, _ = client.rpc("resources/read", {"uri": "trax://robot/urdf"})
+            contents = (resp.get("result") or {}).get("contents") or []
+            if contents and contents[0].get("text"):
+                raw_urdf = str(contents[0]["text"])
+                return rewrite_urdf_mesh_uris(raw_urdf, asset_url_prefix="api/robot/assets")
+        except Exception:  # noqa: BLE001
+            return None
+        return None
+
+    def fetch_robot_asset(self, rel_path: str) -> tuple[bytes, str, str] | None:
+        """Fetch validated binary robot asset (mesh/URDF) from local plugin or remote HTTP host."""
+        resolver = getattr(self.driver, "resolve_robot_asset", None)
+        if callable(resolver):
+            return resolver(rel_path)
+        if self.driver.driver_name == "http" and hasattr(self.driver, "config"):
+            cleaned = (rel_path or "").strip().lstrip("/")
+            if not cleaned or ".." in Path(cleaned).parts:
+                return None
+            base = self.driver.config.host.normalized_base_url  # type: ignore[attr-defined]
+            url = f"{base}/assets/robot/{cleaned}"
+            try:
+                with self._opener.open(url, timeout=8.0) as resp:
+                    data = resp.read()
+                    mime = resp.headers.get("Content-Type") or "application/octet-stream"
+                    etag = resp.headers.get("ETag") or ""
+                    return data, mime, etag
+            except Exception:  # noqa: BLE001
+                return None
         return None
 
     def switch_embodiment(self, body: Mapping[str, Any]) -> dict[str, Any]:
@@ -163,7 +239,6 @@ class TraxUIApp:
             self.driver = drv
             self._cam_cache.clear()
             lbl = str(meta.get("label") or drv.driver_name)
-            self.evolution.set_driver(drv, label=lbl)
             self.agent.set_backend_changed(lbl)
         return {
             "status": "switched",
@@ -220,7 +295,6 @@ class TraxUIApp:
         return img
 
     def get_live(self) -> dict[str, Any]:
-        """Lightweight high-frequency telemetry payload for smooth live HUD & step animation."""
         obs = self.driver.observe_scene()
         mcp_state = self._fetch_live_mcp_telemetry()
         return {
@@ -237,7 +311,6 @@ class TraxUIApp:
     def get_state(self) -> dict[str, Any]:
         cap = self.driver.discover_capabilities(allow_busy=True)
         obs = self.driver.observe_scene()
-        oven_gap = self.driver.check_missing_capabilities(OVEN_REQUIRED_METHODS)
         bm = self._load_benchmark()
         p2_tput = _read_optional_json(self.workspace_dir / "phase2_profile_and_throughput.json")
         if p2_tput and p2_tput.get("aggregate_profile"):
@@ -274,7 +347,6 @@ class TraxUIApp:
             "evidence_source": self.driver.evidence_source,
             "active_release": active_rel_id,
             "capability_check": cap.to_dict(),
-            "oven_gap": oven_gap,
             "scene_observation": {
                 **obs.to_dict(),
                 "raw_snapshot": obs.raw_snapshot,
@@ -284,47 +356,19 @@ class TraxUIApp:
             "cameras": list(self.driver.list_cameras()),
             "policies": [p.to_meta() for p in self._policies.values()],
             "benchmark": bm,
-            "benchmark_running": self._bench_running,
             "workspace_summary": _read_optional_json(self.workspace_dir / "summary.json"),
-            "v1_acceptance": _read_optional_json(self.workspace_dir / "v1_acceptance_report.json"),
-            "v2_acceptance": _read_optional_json(self.workspace_dir / "v2_acceptance_report.json"),
             "registry": _read_optional_json(self.workspace_dir / "registry" / "registry.json"),
-            "skills": _read_optional_json(self.workspace_dir / "skills.json"),
             "phase2_profiler": profiler_data,
-            "phase2_throughput": p2_tput,
             "regression_cases": reg_cases,
             "portability_checks": portability,
             "autonomy_physical_gate": promo_gate,
             "latest_shift_report": _read_optional_json(self.workspace_dir / "latest_shift_report.json"),
-            "latest_nightly_evolution": _read_optional_json(self.workspace_dir / "latest_nightly_evolution.json"),
             "screening_sessions": scr_sessions,
         }
 
     def get_policy(self, policy_id: str) -> dict[str, Any]:
         pol = self._policies[policy_id]
         return {**pol.to_meta(), "source": pol.source}
-
-    def preview_teaching_spec(self, instruction: str, video_ref: str = "") -> dict[str, Any]:
-        cap = self.driver.discover_capabilities(allow_busy=True)
-        discovered = cap.discovered.allowed_methods if cap.discovered else None
-        mats = []
-        if video_ref.strip():
-            mats.append(
-                TeachingMaterial(
-                    material_id="ui-video-ref",
-                    kind="video",
-                    summary="Operator video reference (non-authoritative teaching evidence)",
-                    source_ref=video_ref.strip(),
-                )
-            )
-        spec = build_task_specification(
-            self.config,
-            instruction,
-            materials=tuple(mats),
-            steps=default_coffee_teaching_steps(),
-            discovered_methods=discovered,
-        )
-        return spec.to_dict()
 
     def _build_scenario(self, body: Mapping[str, Any]) -> tuple[PolicyEntry, dict[str, Any]]:
         pol_id = str(body.get("policy_id") or "craft_reference")
@@ -352,37 +396,6 @@ class TraxUIApp:
             cmd_id = f"ui-{pol.policy_id}-{time.time_ns()}"
             return self.driver.run_policy_scenario(pol.source, command_id=cmd_id, scenario=scenario)
 
-    def start_scenario_async(self, body: Mapping[str, Any]) -> dict[str, Any]:
-        if self._run_state["running"]:
-            return {"status": "already_running"}
-        pol, scenario = self._build_scenario(body)
-        label = str(body.get("label") or scenario["preset"])
-        self._run_state = {
-            "running": True,
-            "label": label,
-            "started_at": time.monotonic(),
-            "elapsed_s": 0.0,
-            "last_result": None,
-            "error": None,
-        }
-
-        def _worker() -> None:
-            try:
-                with self._lock:
-                    self.driver.reset_scenario(scenario)
-                    cmd_id = f"ui-{pol.policy_id}-{time.time_ns()}"
-                    res = self.driver.run_policy_scenario(pol.source, command_id=cmd_id, scenario=scenario)
-                self._run_state["last_result"] = res
-            except Exception as exc:  # noqa: BLE001
-                self._run_state["error"] = str(exc)
-            finally:
-                if self._run_state["started_at"] is not None:
-                    self._run_state["elapsed_s"] = round(time.monotonic() - self._run_state["started_at"], 1)
-                self._run_state["running"] = False
-
-        threading.Thread(target=_worker, daemon=True).start()
-        return {"status": "started", "label": label}
-
     def run_ui_shift(self, body: Mapping[str, Any]) -> dict[str, Any]:
         pol_id = str(body.get("policy_id") or "craft_reference")
         pol = self._policies[pol_id]
@@ -398,26 +411,21 @@ class TraxUIApp:
                 enable_journal_proxy=bool(body.get("enable_journal_proxy", True)),
             )
 
-    def start_benchmark_async(self, repeats: int = 1) -> dict[str, Any]:
-        if self._bench_running:
-            return {"status": "already_running"}
-        self._bench_running = True
 
-        def _worker() -> None:
-            try:
-                with self._lock:
-                    run_paired_benchmark(
-                        self.driver,
-                        list(self._policies.values()),
-                        default_coffee_benchmark_suite(),
-                        self.workspace_dir / "benchmark",
-                        repeats=max(1, min(5, int(repeats))),
-                    )
-            finally:
-                self._bench_running = False
-
-        threading.Thread(target=_worker, daemon=True).start()
-        return {"status": "started", "repeats": repeats}
+def _read_static_asset(rel_name: str) -> tuple[bytes, str] | None:
+    cleaned = (rel_name or "").strip().lstrip("/")
+    if not cleaned or ".." in Path(cleaned).parts:
+        return None
+    root = _STATIC_DIR.resolve()
+    cand = (root / cleaned).resolve()
+    try:
+        cand.relative_to(root)
+    except ValueError:
+        return None
+    if not cand.is_file():
+        return None
+    mime = _STATIC_MIME.get(cand.suffix.lower(), "application/octet-stream")
+    return cand.read_bytes(), mime
 
 
 def create_ui_server(
@@ -441,10 +449,12 @@ def create_ui_server(
             self.end_headers()
             self.wfile.write(raw)
 
-        def _send_bytes(self, data: bytes, content_type: str, status: int = 200) -> None:
+        def _send_bytes(self, data: bytes, content_type: str, status: int = 200, *, cache_control: str = "no-store", etag: str = "") -> None:
             self.send_response(status)
             self.send_header("Content-Type", content_type)
-            self.send_header("Cache-Control", "no-store")
+            self.send_header("Cache-Control", cache_control)
+            if etag:
+                self.send_header("ETag", etag)
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
@@ -452,7 +462,7 @@ def create_ui_server(
         def _read_json(self) -> dict[str, Any]:
             length = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(length) if length > 0 else b"{}"
-            return json.loads(raw.decode("utf-8"))
+            return json.loads(raw.decode("utf-8")) if raw.strip() else {}
 
         def _strip_subpath(self, path: str) -> str:
             if path.startswith("/trax/"):
@@ -470,7 +480,19 @@ def create_ui_server(
                 return
             path = self._strip_subpath(raw_path)
             if path in ("/", "/index.html"):
-                self._send_bytes(UI_HTML.encode("utf-8"), "text/html; charset=utf-8")
+                asset = _read_static_asset("index.html")
+                if asset is None:
+                    self._send_json({"error": "index.html missing"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+                else:
+                    self._send_bytes(asset[0], asset[1])
+                return
+            if path.startswith("/static/"):
+                rel = path[len("/static/") :]
+                asset = _read_static_asset(rel)
+                if asset is None:
+                    self._send_json({"error": f"Static asset not found: {rel}"}, HTTPStatus.NOT_FOUND)
+                else:
+                    self._send_bytes(asset[0], asset[1], cache_control="public, max-age=60")
                 return
             if path == "/api/state":
                 self._send_json(app.get_state())
@@ -501,61 +523,34 @@ def create_ui_server(
                 rel = (qs.get("path") or [""])[0]
                 self._send_json({"path": rel, "content": app.agent.kb.read_text_file(rel)})
                 return
+            if path == "/api/robot/urdf":
+                urdf_xml = app.fetch_robot_urdf()
+                if urdf_xml is None:
+                    self._send_json({"error": "Active embodiment does not expose a URDF resource"}, HTTPStatus.NOT_FOUND)
+                else:
+                    self._send_bytes(urdf_xml.encode("utf-8"), "application/xml; charset=utf-8")
+                return
+            if path.startswith("/api/robot/assets/"):
+                rel = path[len("/api/robot/assets/") :]
+                asset = app.fetch_robot_asset(rel)
+                if asset is None:
+                    self._send_json({"error": f"Robot asset not found: {rel}"}, HTTPStatus.NOT_FOUND)
+                else:
+                    data, mime, etag = asset
+                    if etag and self.headers.get("If-None-Match") == etag:
+                        self.send_response(HTTPStatus.NOT_MODIFIED)
+                        self.send_header("ETag", etag)
+                        self.end_headers()
+                        return
+                    self._send_bytes(data, mime, cache_control="public, max-age=3600", etag=etag)
+                return
             if path == "/api/compare/policy":
                 try:
                     self._send_json(app.compare_archived_policy(parse_qs(parsed.query)))
                 except KeyError as exc:
                     self._send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
                 return
-            def _find_report(*rel_candidates: str) -> Path | None:
-                roots = [app.workspace_dir, app.workspace_dir.parent / "goal-v2-20261122", app.workspace_dir.parent / "goal-v3-simex-parity"]
-                for root in roots:
-                    for rel in rel_candidates:
-                        p = root / rel
-                        if p.is_file():
-                            return p
-                return None
-
-            if path == "/robosuite_v2_report.html":
-                rb2_html = _find_report("robosuite-parity-v3/robosuite_prior_work_report.html", "robosuite-parity-v2/robosuite_prior_work_report.html")
-                if rb2_html is not None:
-                    self._send_bytes(rb2_html.read_bytes(), "text/html; charset=utf-8")
-                else:
-                    self._send_bytes(b"<h3>No Robosuite Parity report generated yet.</h3>", "text/html; charset=utf-8", 404)
-                return
-            if path == "/cafebench_v2_report.html":
-                cb2_html = _find_report("cafebench-v2/cafebench_v2_report.html")
-                if cb2_html is not None:
-                    self._send_bytes(cb2_html.read_bytes(), "text/html; charset=utf-8")
-                else:
-                    self._send_bytes(b"<h3>No CafeBench v2 report generated yet.</h3>", "text/html; charset=utf-8", 404)
-                return
-            if path == "/sim2sim_report.html":
-                s2s_html = _find_report("sim2sim-stage2/sim2sim_report.html", "sim2sim_report.html")
-                if s2s_html is not None:
-                    self._send_bytes(s2s_html.read_bytes(), "text/html; charset=utf-8")
-                else:
-                    self._send_bytes(b"<h3>No Sim2Sim Stage-2 report generated yet.</h3>", "text/html; charset=utf-8", 404)
-                return
-            if path == "/robosuite_report.html":
-                rb_html = app.workspace_dir / "robosuite-parity-v1" / "robosuite_prior_work_report.html"
-                if rb_html.is_file():
-                    self._send_bytes(rb_html.read_bytes(), "text/html; charset=utf-8")
-                else:
-                    self._send_bytes(b"<h3>No Robosuite parity report generated yet.</h3>", "text/html; charset=utf-8", 404)
-                return
-            if path == "/prior_work_report.html":
-                pw_html = app.workspace_dir / "cafebench-v1-prior-work" / "prior_work_report.html"
-                if pw_html.is_file():
-                    self._send_bytes(pw_html.read_bytes(), "text/html; charset=utf-8")
-                else:
-                    self._send_bytes(b"<h3>No prior-work comparison report generated yet.</h3>", "text/html; charset=utf-8", 404)
-                return
             if path == "/benchmark_report.html":
-                cb_html = app.workspace_dir / "cafebench-v1" / "cafebench_report.html"
-                if cb_html.is_file():
-                    self._send_bytes(cb_html.read_bytes(), "text/html; charset=utf-8")
-                    return
                 bm = app._load_benchmark()
                 if bm:
                     self._send_bytes(render_benchmark_html(bm).encode("utf-8"), "text/html; charset=utf-8")
@@ -583,14 +578,6 @@ def create_ui_server(
             path = self._strip_subpath(urlparse(self.path).path)
             try:
                 body = self._read_json()
-                if path == "/api/teaching/spec":
-                    self._send_json(
-                        app.preview_teaching_spec(
-                            str(body.get("instruction", "")),
-                            str(body.get("video_ref", "")),
-                        )
-                    )
-                    return
                 if path == "/api/confirm":
                     self._send_json(app.driver.confirm_object(str(body.get("object_id", ""))))
                     return
@@ -600,12 +587,6 @@ def create_ui_server(
                     return
                 if path == "/api/run":
                     self._send_json(app.run_single_scenario(body))
-                    return
-                if path == "/api/run/start":
-                    self._send_json(app.start_scenario_async(body))
-                    return
-                if path == "/api/benchmark/start":
-                    self._send_json(app.start_benchmark_async(int(body.get("repeats", 1))))
                     return
                 if path == "/api/shift/run":
                     self._send_json(app.run_ui_shift(body))
@@ -636,6 +617,9 @@ def create_ui_server(
                     return
                 if path == "/api/evolve/auto":
                     self._send_json(app.agent.start_closed_loop_async(body))
+                    return
+                if path == "/api/evolve/abort":
+                    self._send_json(app.agent.abort(str(body.get("reason") or "Aborted by operator")))
                     return
                 if path == "/api/evolve/select":
                     self._send_json(app.agent.select_iteration(int(body.get("iter_index", 0))))

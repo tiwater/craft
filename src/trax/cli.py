@@ -13,7 +13,6 @@ from .benchmark import (
     default_coffee_benchmark_suite,
     run_paired_benchmark,
 )
-from .cafebench import run_cafebench_v1
 from .coffee_loop import check_oven_capability_gap, run_coffee_closed_loop
 from .config import SceneConfig
 from .edge_adapter import EdgeHostAdapter
@@ -24,7 +23,7 @@ from .journal import Journal
 from .runtime import execute
 
 
-def _override_config(
+def override_scene_config(
     cfg: SceneConfig,
     *,
     edge_base: str | None = None,
@@ -56,7 +55,7 @@ def _override_config(
     return SceneConfig.from_dict(data)
 
 
-def _parse_policy_specs(specs: list[str], *, include_builtin_ref: bool = True) -> list[PolicyEntry]:
+def parse_policy_specs(specs: list[str], *, include_builtin_ref: bool = True) -> list[PolicyEntry]:
     entries: list[PolicyEntry] = []
     if include_builtin_ref:
         entries.append(
@@ -77,6 +76,11 @@ def _parse_policy_specs(specs: list[str], *, include_builtin_ref: bool = True) -
         source = Path(path_str).read_text(encoding="utf-8")
         entries.append(PolicyEntry(policy_id=pid, label=label, source=source, origin="file"))
     return entries
+
+
+# Internal backward-compatibility aliases
+_override_config = override_scene_config
+_parse_policy_specs = parse_policy_specs
 
 
 def main() -> None:
@@ -367,6 +371,7 @@ def main() -> None:
         return
 
     if args.command == "cafebench":
+        from benchmarks.cafebench import run_cafebench_v1
         cfg = _override_config(
             SceneConfig.from_file(args.config),
             edge_base=args.edge_base,
@@ -411,7 +416,7 @@ def main() -> None:
         return
 
     if args.command == "prior-work-bench":
-        from .prior_work_bench import make_live_llm_fn, run_prior_work_comparison
+        from .llm import make_live_llm_fn, run_prior_work_comparison
 
         cfg = _override_config(
             SceneConfig.from_file(args.config),
@@ -453,8 +458,8 @@ def main() -> None:
         return
 
     if args.command == "cafebench-v2":
-        from .cafebench_v2 import run_cafebench_v2_comparison
-        from .prior_work_bench import make_live_llm_fn
+        from benchmarks.cafebench_v2 import run_cafebench_v2_comparison
+        from .llm import make_live_llm_fn
 
         cfg = _override_config(
             SceneConfig.from_file(args.config),
@@ -498,8 +503,8 @@ def main() -> None:
         return
 
     if args.command == "robosuite-bench":
-        from .prior_work_bench import make_live_llm_fn
-        from .robosuite_bench import run_robosuite_parity_benchmark
+        from .llm import make_live_llm_fn
+        from benchmarks.robosuite_bench import run_robosuite_parity_benchmark
 
         tasks = tuple(x.strip() for x in args.tasks.split(",") if x.strip())
         dev_seeds = tuple(int(x.strip()) for x in args.dev_seeds.split(",") if x.strip())
@@ -600,8 +605,8 @@ def main() -> None:
         return
 
     if args.command == "sim2sim-bench":
-        from .prior_work_bench import make_live_llm_fn
-        from .sim2sim_bench import run_sim2sim_adaptation_benchmark
+        from .llm import make_live_llm_fn
+        from benchmarks.sim2sim_bench import run_sim2sim_adaptation_benchmark
 
         cfg = _override_config(
             SceneConfig.from_file(args.config),
@@ -651,7 +656,7 @@ def main() -> None:
         return
 
     if args.command == "combo-bench":
-        from .combo_bench import run_combo_operations_benchmark
+        from benchmarks.combo_bench import run_combo_operations_benchmark
 
         report = run_combo_operations_benchmark(args.output)
         print(
@@ -667,8 +672,8 @@ def main() -> None:
         return
 
     if args.command == "libero-bench":
-        from .libero_bench import run_libero_benchmark
-        from .prior_work_bench import make_live_llm_fn
+        from benchmarks.libero_bench import run_libero_benchmark
+        from .llm import make_live_llm_fn
 
         task_ids = tuple(int(x.strip()) for x in args.tasks.split(",") if x.strip())
         llm_fn = make_live_llm_fn(provider=args.provider, model=args.model, reasoning_effort=args.effort)

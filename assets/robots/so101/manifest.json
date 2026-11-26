@@ -1,0 +1,18 @@
+{
+  "robot_id": "lerobot_so101",
+  "display_name": "LeRobot SO-101 (6-DoF Articulated Arm)",
+  "license": "Apache-2.0",
+  "upstream": "TheRobotStudio/SO-ARM100/Simulation/SO101",
+  "urdf": "robot.urdf",
+  "urdf_sha256": "8c3fda50aa8c7f7d69b2f22f487c2ef599f92730078bf5d7a32649a089498225",
+  "mjcf": "so101_new_calib_camera.xml",
+  "mesh_root": "assets",
+  "joints": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll",
+    "gripper"
+  ]
+}

@@ -486,6 +486,176 @@ class FixtureHostDriver:
             )
         return ReconciliationResult(status="still_unknown", command_id=command_id, detail="Unknown fixture command")
 
+    def embodiment_manifest(self) -> Any:
+        from .plugin import EmbodimentManifest
+
+        return EmbodimentManifest(
+            embodiment_id="trax-fixture-sim",
+            display_name="Deterministic Protocol Sandbox (Fixture)",
+            evidence_source=self.evidence_source,
+            execution_authority="craft-fixture-sim",
+            perception_owner="fixture-sim",
+            kinematics_notes="Deterministic in-memory protocol state machine (no rigid-body physics).",
+        )
+
+    def register_mcp(self, server: Any, lock: Any) -> None:
+        import json as _json
+        from .mcp_protocol import MCPResourceSpec, MCPToolSpec
+
+        def _exec_single(sdk_expr: str, command_id: str) -> dict[str, Any]:
+            src = f"def run_policy(sdk, params):\n    res = {sdk_expr}\n    return {{'status': 'completed', 'result': res}}\n"
+            sc = {"order_id": "A042", "target_slot": "$SLOT_PICKUP_1", "expect_status": "completed"}
+            with lock:
+                return self.run_policy_scenario(src, command_id=command_id, scenario=sc, journal=None)
+
+        server.register_tool(
+            MCPToolSpec(
+                name="observe_scene",
+                description="Read authoritative fixture scene observation snapshot.",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.observe_scene().raw_snapshot or self.observe_scene().to_dict(),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="discover_capabilities",
+                description="Query host execution authority, perception owner, allowed SDK methods, and contract digest.",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.discover_capabilities(allow_busy=True).to_dict(),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="reset_scenario",
+                description="Reset fixture environment to a named scenario preset.",
+                input_schema={
+                    "type": "object",
+                    "properties": {"preset": {"type": "string", "default": "default", "enum": ["default", "sim_pose_offset", "sim_dual_cup"]}},
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: self.reset_scenario({"preset": str(args.get("preset") or "default")}),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="get_order",
+                description="Fetch active fixture order details.",
+                input_schema={"type": "object", "properties": {"order_id": {"type": "string", "default": "A042"}}},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: _exec_single(f"sdk.get_order({_json.dumps(str(args.get('order_id') or 'A042'))})", f"mcp-order-{time.time_ns()}"),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="move_to_target",
+                description="Move fixture end-effector to Cartesian target [x, y, z] in meters.",
+                input_schema={
+                    "type": "object",
+                    "required": ["target_world"],
+                    "properties": {
+                        "target_world": {"type": "array", "items": {"type": "number"}, "default": [0.35, 0.0, 1.15]},
+                        "command_id": {"type": "string", "default": "mcp-move-1"},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: _exec_single(
+                f"sdk.move_to_target({_json.dumps(list(args.get('target_world') or [0.35, 0.0, 1.15]))}, command_id={_json.dumps(str(args.get('command_id') or 'mcp-move-1'))})",
+                str(args.get("command_id") or f"mcp-move-{time.time_ns()}"),
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="place_cup_under_machine",
+                description="Place fixture target cup under the pouring spout.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "cup_id": {"type": "string", "default": "obj-cup-a"},
+                        "command_id": {"type": "string", "default": "mcp-place-1"},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: _exec_single(
+                f"sdk.place_cup_under_machine({_json.dumps(str(args.get('cup_id') or 'obj-cup-a'))}, command_id={_json.dumps(str(args.get('command_id') or 'mcp-place-1'))})",
+                str(args.get("command_id") or f"mcp-place-{time.time_ns()}"),
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="recenter_cup_under_spout",
+                description="Recenter fixture cup under spout after slip.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "cup_id": {"type": "string", "default": "obj-cup-a"},
+                        "command_id": {"type": "string", "default": "mcp-recenter-1"},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: _exec_single(
+                f"sdk.recenter_cup_under_spout({_json.dumps(str(args.get('cup_id') or 'obj-cup-a'))}, command_id={_json.dumps(str(args.get('command_id') or 'mcp-recenter-1'))})",
+                str(args.get("command_id") or f"mcp-recenter-{time.time_ns()}"),
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="start_coffee_machine",
+                description="NON-IDEMPOTENT: Trigger fixture brew actuation (requires SQLite Journal + reconciliation on unknown receipt).",
+                input_schema={
+                    "type": "object",
+                    "properties": {"command_id": {"type": "string", "default": "mcp-brew-1"}},
+                },
+                read_only=False,
+                idempotent=False,
+                destructive=True,
+                requires_reconciliation=True,
+            ),
+            lambda args: _exec_single(
+                f"sdk.start_coffee_machine(command_id={_json.dumps(str(args.get('command_id') or 'mcp-brew-1'))})",
+                str(args.get("command_id") or f"mcp-brew-{time.time_ns()}"),
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="query_command_status",
+                description="Query host ledger for a prior non-idempotent command_id.",
+                input_schema={"type": "object", "required": ["command_id"], "properties": {"command_id": {"type": "string"}}},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.reconcile_command(str(args.get("command_id") or "")).to_dict(),
+        )
+        server.register_resource(
+            MCPResourceSpec(
+                uri="trax://scene/state",
+                name="Live Fixture Scene Snapshot",
+                description="Current fixture-owned scene observation JSON.",
+                mime_type="application/json",
+            ),
+            lambda: ("application/json", _json.dumps(self.observe_scene().raw_snapshot or self.observe_scene().to_dict(), indent=2)),
+        )
+        server.register_resource(
+            MCPResourceSpec(
+                uri="trax://capabilities/contract",
+                name="Host Capability Contract",
+                description="Authoritative capability discovery receipt and SHA-256 contract digest.",
+                mime_type="application/json",
+            ),
+            lambda: ("application/json", _json.dumps(self.discover_capabilities(allow_busy=True).to_dict(), indent=2)),
+        )
+
 
 class HttpHostDriver:
     """Generic config-driven HTTP host driver (zero dependency on any specific host package)."""
@@ -712,39 +882,36 @@ _DRIVER_REGISTRY: dict[str, DriverFactory] = {
 
 
 def register_host_driver(name: str, factory: DriverFactory) -> None:
-    """Register an external SceneHostDriver plugin (dependency inversion: hosts depend on TRAX)."""
-    if not name or not name.strip():
-        raise ValueError("Driver name must be non-empty")
+    """Register an external SceneHostDriver plugin via `trax.plugin`."""
+    from .plugin import register_backend_plugin
+
+    register_backend_plugin(name, factory)
     _DRIVER_REGISTRY[name.strip()] = factory
 
 
 def _discover_entrypoint_drivers() -> dict[str, DriverFactory]:
-    discovered: dict[str, DriverFactory] = {}
-    try:
-        eps = importlib_metadata.entry_points(group="craft.drivers")
-    except TypeError:
-        eps = importlib_metadata.entry_points().get("craft.drivers", ())  # type: ignore[arg-type]
-    for ep in eps:
-        try:
-            discovered[ep.name] = ep.load()
-        except Exception:  # noqa: BLE001
-            continue
-    return discovered
+    from .plugin import discover_entrypoint_backends
+
+    return discover_entrypoint_backends()
 
 
 def list_host_drivers() -> tuple[str, ...]:
-    """List built-in, runtime-registered, and entry-point ('craft.drivers') host drivers."""
-    names = set(_DRIVER_REGISTRY.keys()) | set(_discover_entrypoint_drivers().keys())
+    """List built-in, runtime-registered, and entry-point (`trax.backends`) host drivers."""
+    from .plugin import list_backend_plugins
+
+    names = set(_DRIVER_REGISTRY.keys()) | set(list_backend_plugins())
     return tuple(sorted(names))
 
 
 def create_host_driver(driver_type: str, config: SceneConfig) -> SceneHostDriver:
-    """Instantiate a SceneHostDriver by registered name or Python entry point ('craft.drivers')."""
+    """Instantiate a SceneHostDriver by `trax.backends` plugin entry point or registered name."""
+    from .plugin import resolve_backend_factory
+
+    factory = resolve_backend_factory(driver_type)
+    if factory is not None:
+        return factory(config)
     if driver_type in _DRIVER_REGISTRY:
         return _DRIVER_REGISTRY[driver_type](config)
-    ep_drivers = _discover_entrypoint_drivers()
-    if driver_type in ep_drivers:
-        return ep_drivers[driver_type](config)
     raise ValueError(
         f"Unknown TRAX host driver: {driver_type!r}. "
         f"Available drivers: {', '.join(list_host_drivers())}"

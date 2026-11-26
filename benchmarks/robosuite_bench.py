@@ -33,23 +33,23 @@ from typing import Any, Callable, Mapping, Sequence
 if not os.environ.get("MUJOCO_GL") and not os.environ.get("DISPLAY"):
     os.environ["MUJOCO_GL"] = "egl"
 
-from .benchmark import percentile, wilson_ci_95
+from trax.benchmark import percentile, wilson_ci_95
 from .cafebench import _git_provenance, _write_json_atomic
-from .contracts import digest
+from trax.contracts import digest
 from .prior_work_bench import (
     CapXSkillLibrary,
     LLMGenerateFn,
     make_live_llm_fn,
     mcnemar_exact_p,
 )
-from .probing import (
+from trax.probing import (
     ProbeReport,
     analyze_policy_subroutines,
     build_articulated_sweep_probe_source,
     build_grasp_offset_scan_probe_source,
     parse_probe_telemetry,
 )
-from .skills import SkillExperience, SkillExperienceStore, validate_skill_code_snippet
+from trax.skills import SkillExperience, SkillExperienceStore, validate_skill_code_snippet
 
 
 ROBOSUITE_BENCH_VERSION = "TRAX-Robosuite-Parity-v3.0"

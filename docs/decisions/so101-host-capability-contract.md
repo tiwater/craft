@@ -1,7 +1,7 @@
 # SO-101 (LeRobot / SO-ARM100) Host Capability Contract
 
 - **Date:** 2026-11-25
-- **Scope:** First cross-embodiment low-cost manipulator integration in MuJoCo simulation (`driver="mujoco_so101"`, `evidence_source="simulator"`), using the official Apache-2.0 `TheRobotStudio/SO-ARM100/Simulation/SO101` model (`so101_new_calib_camera.xml` + STL meshes under `sim/so101/`).
+- **Scope:** First cross-embodiment low-cost manipulator integration in MuJoCo simulation (`driver="mujoco_so101"`, `evidence_source="simulator"`), using the official Apache-2.0 `TheRobotStudio/SO-ARM100/Simulation/SO101` model (`so101_new_calib_camera.xml`, generated `robot.urdf`, and STL meshes under `assets/robots/so101/`).
 - **Evidence Boundary:** All runs under `driver="mujoco_so101"` carry explicit `evidence_source="simulator"`. Passing MuJoCo SO-101 tests is **not** physical-robot safety approval or hardware qualification for a physical LeRobot SO-101 arm.
 
 ---

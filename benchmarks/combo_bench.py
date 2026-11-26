@@ -26,12 +26,12 @@ from pathlib import Path
 import time
 from typing import Any, Callable, Mapping, Sequence
 
-from .benchmark import wilson_ci_95
+from trax.benchmark import wilson_ci_95
 from .cafebench import _git_provenance, _write_json_atomic
-from .config import SceneConfig
-from .contracts import digest
-from .dev_loop import _strip_code_fence
-from .journal import Journal
+from trax.config import SceneConfig
+from trax.contracts import digest
+from trax.dev_loop import _strip_code_fence
+from trax.journal import Journal
 from .prior_work_bench import LLMGenerateFn, check_sandbox_ast_compliance, mcnemar_exact_p
 
 

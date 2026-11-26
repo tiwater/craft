@@ -21,7 +21,15 @@ robosuite = ["mujoco>=3.1,<3.4", "numpy>=1.24,<2.3", "Pillow>=10.0", "scipy>=1.1
 
 [project.scripts]
 trax = "trax.cli:main"
-trax-ui = "trax_ui.cli:main"
+trax-ui = "trax.ui.cli:main"
+
+[project.entry-points."trax.backends"]
+fixture = "trax.host_driver:FixtureHostDriver"
+http = "trax.host_driver:HttpHostDriver"
+recorded = "trax.recorded_driver:RecordedDataHostDriver"
+mujoco_so101 = "trax.mujoco_so101_driver:create_so101_backend"
+mujoco_cafe = "trax.mujoco_cafe_driver:MuJoCoCafeHostDriver"
+gazebo_cafe = "trax.gazebo_cafe_driver:GazeboCafeHostDriver"
 
 [project.urls]
 Homepage = "https://tiwater.github.io/trax/"
@@ -33,8 +41,8 @@ Issues = "https://github.com/tiwater/trax/issues"
 where = ["src"]
 
 [tool.setuptools.package-data]
-trax = ["py.typed"]
+trax = ["py.typed", "ui/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]

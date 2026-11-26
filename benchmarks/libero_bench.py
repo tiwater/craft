@@ -32,11 +32,11 @@ from typing import Any, Callable, Mapping, Sequence
 if not os.environ.get("MUJOCO_GL") and not os.environ.get("DISPLAY"):
     os.environ["MUJOCO_GL"] = "egl"
 
-from .benchmark import percentile, wilson_ci_95
+from trax.benchmark import percentile, wilson_ci_95
 from .cafebench import _git_provenance, _write_json_atomic
-from .contracts import digest
+from trax.contracts import digest
 from .prior_work_bench import LLMGenerateFn, mcnemar_exact_p
-from .probing import ProbeReport, analyze_policy_subroutines, parse_probe_telemetry
+from trax.probing import ProbeReport, analyze_policy_subroutines, parse_probe_telemetry
 from .robosuite_bench import (
     _ROBO_SAFE_GLOBALS,
     _extract_verified_helper_snippet,
@@ -44,7 +44,7 @@ from .robosuite_bench import (
     _wrap_angle,
     check_robosuite_ast_compliance,
 )
-from .skills import SkillExperience, SkillExperienceStore, validate_skill_code_snippet
+from trax.skills import SkillExperience, SkillExperienceStore, validate_skill_code_snippet
 
 
 LIBERO_BENCH_VERSION = "TRAX-LIBERO-v1.1"
@@ -1011,7 +1011,7 @@ def run_libero_benchmark(
             cmd = [
                 sys.executable,
                 "-m",
-                "trax.libero_bench",
+                "benchmarks.libero_bench",
                 "--suite",
                 suite_name,
                 "--task-id",

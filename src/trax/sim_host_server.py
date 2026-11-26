@@ -218,6 +218,27 @@ def create_sim_host_server(
                 else:
                     self._send_bytes(img[0], img[1])
                 return
+            if path.startswith("/assets/robot/"):
+                rel = path[len("/assets/robot/") :]
+                resolver = getattr(app.driver, "resolve_robot_asset", None)
+                asset = resolver(rel) if callable(resolver) else None
+                if asset is None:
+                    self._send_json({"error": f"Robot asset not found: {rel}"}, HTTPStatus.NOT_FOUND)
+                else:
+                    data, content_type, etag = asset
+                    if self.headers.get("If-None-Match") == etag:
+                        self.send_response(HTTPStatus.NOT_MODIFIED)
+                        self.send_header("ETag", etag)
+                        self.end_headers()
+                        return
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header("Content-Type", content_type)
+                    self.send_header("ETag", etag)
+                    self.send_header("Cache-Control", "public, max-age=3600")
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                return
             if path == "/health":
                 self._send_json({"status": "ok", "driver": app.driver.driver_name, "evidence_source": app.driver.evidence_source})
                 return
