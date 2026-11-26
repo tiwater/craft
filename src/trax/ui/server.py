@@ -215,6 +215,20 @@ class TraxUIApp:
             "manifest": self.fetch_embodiment_manifest(),
         }
 
+    def fetch_scene_reconstruction(self) -> dict[str, Any] | None:
+        """Fetch EvidenceScene 3D surfel reconstruction & observability from active host."""
+        fn = getattr(self.driver, "reconstruct_scene_evidencescene", None)
+        if callable(fn):
+            return fn()
+        if self.driver.driver_name == "http" and hasattr(self.driver, "config"):
+            base = self.driver.config.host.normalized_base_url  # type: ignore[attr-defined]
+            try:
+                with self._opener.open(f"{base}/scene/reconstruction", timeout=10.0) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except Exception:  # noqa: BLE001
+                return None
+        return None
+
     def fetch_robot_urdf(self) -> str | None:
         """Fetch active embodiment URDF via MCP `trax://robot/urdf` and normalize mesh URLs for browser."""
         try:
@@ -553,6 +567,13 @@ def create_ui_server(
                     self._send_json({"error": "Active embodiment does not expose a URDF resource"}, HTTPStatus.NOT_FOUND)
                 else:
                     self._send_bytes(urdf_xml.encode("utf-8"), "application/xml; charset=utf-8")
+                return
+            if path == "/api/scene/reconstruction":
+                recon = app.fetch_scene_reconstruction()
+                if recon is None:
+                    self._send_json({"error": "Scene reconstruction unavailable on active backend"}, HTTPStatus.NOT_FOUND)
+                else:
+                    self._send_json(recon)
                 return
             if path.startswith("/api/robot/assets/"):
                 rel = path[len("/api/robot/assets/") :]

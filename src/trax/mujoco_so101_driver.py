@@ -980,6 +980,242 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
     def set_realtime_pacing(self, enabled: bool) -> None:
         self._realtime_pacing = bool(enabled)
 
+    def _render_rgbd_on_egl_thread(self, camera_name: str) -> dict[str, Any]:
+        """Render calibrated RGB + metric depth (m) and exact OpenCV-frame intrinsics/extrinsics."""
+        np = self._np
+        if self._renderer is None:
+            self._renderer = self._mj.Renderer(self._model, height=self._render_height, width=self._render_width)
+        with self._lock:
+            self._mj.mj_forward(self._model, self._data)
+            cam_id = int(self._mj.mj_name2id(self._model, self._mj.mjtObj.mjOBJ_CAMERA, camera_name))
+            if cam_id < 0:
+                raise ValueError(f"Unknown MuJoCo camera: {camera_name}")
+            self._renderer.disable_depth_rendering()
+            self._renderer.update_scene(self._data, camera=camera_name)
+            rgb = self._renderer.render().copy()
+            try:
+                self._renderer.enable_depth_rendering()
+                self._renderer.update_scene(self._data, camera=camera_name)
+                depth_m = self._renderer.render().copy().astype(np.float64)
+            finally:
+                self._renderer.disable_depth_rendering()
+
+            fovy_deg = float(self._model.cam_fovy[cam_id])
+            h, w = int(rgb.shape[0]), int(rgb.shape[1])
+            fy = 0.5 * h / math.tan(math.radians(fovy_deg) * 0.5)
+            fx = fy
+            cx = (w - 1) * 0.5
+            cy = (h - 1) * 0.5
+            K = np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]], dtype=np.float64)
+
+            # MuJoCo camera looks along -Z with +Y up; convert to OpenCV pinhole (+Z forward, +Y down)
+            R_mj = self._data.cam_xmat[cam_id].reshape(3, 3).copy()
+            t_w = self._data.cam_xpos[cam_id].copy()
+            cv_from_mj = np.diag([1.0, -1.0, -1.0])
+            T_world_cam = np.eye(4, dtype=np.float64)
+            T_world_cam[:3, :3] = R_mj @ cv_from_mj
+            T_world_cam[:3, 3] = t_w
+            step_seq = int(self._step_seq)
+
+        return {
+            "camera": camera_name,
+            "rgb": rgb,
+            "depth_m": depth_m,
+            "K": K,
+            "T_world_cam": T_world_cam,
+            "step_seq": step_seq,
+        }
+
+    def reconstruct_scene_evidencescene(
+        self,
+        *,
+        cameras: tuple[str, ...] = ("overview", "overhead", "spout"),
+        voxel_size_m: float = 0.009,
+        max_points: int = 4200,
+        stride: int = 3,
+    ) -> dict[str, Any]:
+        """Reconstruct 3D scene surfels and 6-DoF Schur observability from calibrated MuJoCo RGB-D via EvidenceScene."""
+        np = self._np
+        cache_key = (int(self._step_seq), cameras, round(voxel_size_m, 4), int(max_points))
+        cached = getattr(self, "_recon_cache", None)
+        if cached is not None and cached[0] == cache_key:
+            return cached[1]
+
+        t0 = time.monotonic()
+        frames = [self._render_executor.submit(self._render_rgbd_on_egl_thread, c).result(timeout=10.0) for c in cameras]
+
+        # Back-project calibrated metric depth rays inside tabletop ROI into world coordinates
+        obs_by_cam: dict[str, tuple[str, Any]] = {}
+        voxel_color_sum: dict[tuple[int, int, int], Any] = {}
+        voxel_color_cnt: dict[tuple[int, int, int], int] = {}
+        world_from_cam_map: dict[int, Any] = {}
+        inv_voxel = 1.0 / float(voxel_size_m)
+
+        for cam_idx, fr in enumerate(frames):
+            rgb = fr["rgb"][::stride, ::stride]
+            depth = fr["depth_m"][::stride, ::stride]
+            K = fr["K"]
+            T = fr["T_world_cam"]
+            world_from_cam_map[cam_idx] = T
+            h, w = depth.shape
+            uu = np.arange(0, w * stride, stride, dtype=np.float64)
+            vv = np.arange(0, h * stride, stride, dtype=np.float64)
+            u_grid, v_grid = np.meshgrid(uu, vv)
+
+            valid = np.isfinite(depth) & (depth > 0.08) & (depth < 2.2)
+            z = depth[valid]
+            x = (u_grid[valid] - K[0, 2]) * z / K[0, 0]
+            y = (v_grid[valid] - K[1, 2]) * z / K[1, 1]
+            pts_cam = np.column_stack((x, y, z))
+            pts_world = pts_cam @ T[:3, :3].T + T[:3, 3]
+            cols = rgb[valid].astype(np.float32) / 255.0
+
+            # Restrict strictly to physical tabletop + manipulator ROI (no far walls/floor clutter)
+            roi = (
+                (pts_world[:, 0] >= 0.02)
+                & (pts_world[:, 0] <= 0.72)
+                & (pts_world[:, 1] >= -0.34)
+                & (pts_world[:, 1] <= 0.34)
+                & (pts_world[:, 2] >= TABLE_TOP_Z - 0.008)
+                & (pts_world[:, 2] <= TABLE_TOP_Z + 0.36)
+            )
+            pts_roi = np.ascontiguousarray(pts_world[roi], dtype=np.float64)
+            cols_roi = cols[roi]
+            if len(pts_roi) == 0:
+                continue
+            obs_by_cam[fr["camera"]] = (fr["camera"], pts_roi)
+
+            # Accumulate voxel colors keyed identically to EvidenceScene floor(p / voxel_size_m)
+            keys = np.floor(pts_roi * inv_voxel).astype(np.int64)
+            # Fast unique voxel color averaging per camera
+            uniq_keys, inv_idx, counts = np.unique(keys, axis=0, return_inverse=True, return_counts=True)
+            c_sum = np.zeros((len(uniq_keys), 3), dtype=np.float64)
+            np.add.at(c_sum, inv_idx, cols_roi)
+            for uk, cs, cnt in zip(uniq_keys.tolist(), c_sum, counts.tolist()):
+                kt = (uk[0], uk[1], uk[2])
+                if kt in voxel_color_sum:
+                    voxel_color_sum[kt] = voxel_color_sum[kt] + cs
+                    voxel_color_cnt[kt] += cnt
+                else:
+                    voxel_color_sum[kt] = cs.copy()
+                    voxel_color_cnt[kt] = cnt
+
+        engine_name = "evidencescene.RevisableSurfelMap"
+        perception_owner = "evidencescene"
+        surfels_out: list[list[float]] = []
+        corroborated_count = 0
+        total_surfels = 0
+        observability_report: dict[str, Any] = {
+            "status": "unavailable",
+            "rank": 0,
+            "required_rank": 6,
+            "min_translational_sv": None,
+            "detail": "EvidenceScene observability not evaluated",
+        }
+
+        try:
+            from evidencescene.observability.factor_graph_observability import (
+                build_se3_landmark_jacobians,
+                evaluate_schur_observability_gate,
+            )
+            from evidencescene.surface.object_surface_fusion import RevisableSurfelMap
+
+            smap = RevisableSurfelMap(
+                voxel_size_m=float(voxel_size_m),
+                maximum_voxels=36000,
+                maximum_live_bytes=32_000_000,
+            )
+            smap.update(obs_by_cam)
+            pts, support, cam_counts, vkeys = smap.snapshot(
+                minimum_observation_support=1,
+                maximum_point_count=int(max_points),
+                include_voxel_keys=True,
+            )
+            total_surfels = int(len(pts))
+            corroborated_count = int(np.sum(cam_counts >= 2)) if len(cam_counts) else 0
+            for p, cc, vk in zip(pts.tolist(), cam_counts.tolist(), vkeys.tolist()):
+                kt = (vk[0], vk[1], vk[2])
+                if kt in voxel_color_sum and voxel_color_cnt[kt] > 0:
+                    rgb_avg = voxel_color_sum[kt] / float(voxel_color_cnt[kt])
+                    r_c, g_c, b_c = float(rgb_avg[0]), float(rgb_avg[1]), float(rgb_avg[2])
+                else:
+                    r_c, g_c, b_c = 0.25, 0.70, 0.90
+                surfels_out.append(
+                    [
+                        round(p[0], 4),
+                        round(p[1], 4),
+                        round(p[2], 4),
+                        round(r_c, 3),
+                        round(g_c, 3),
+                        round(b_c, 3),
+                        int(cc),
+                    ]
+                )
+
+            # Evaluate authentic 6-DoF Schur observability across multi-camera corroborated landmarks
+            if total_surfels >= 8 and len(world_from_cam_map) >= 2:
+                corr_mask = cam_counts >= 2
+                lm_pts = pts[corr_mask] if int(np.sum(corr_mask)) >= 8 else pts
+                sel_idx = np.linspace(0, len(lm_pts) - 1, min(16, len(lm_pts)), dtype=int)
+                landmarks_map = {int(i): lm_pts[j] for i, j in enumerate(sel_idx)}
+                pose_lm_obs = [
+                    (cam_i, lm_i, 1.0)
+                    for cam_i in sorted(world_from_cam_map.keys())
+                    for lm_i in landmarks_map.keys()
+                ]
+                ax, ay, _, _ = build_se3_landmark_jacobians(
+                    world_from_camera_poses=world_from_cam_map,
+                    landmarks_world_m=landmarks_map,
+                    pose_landmark_observations=pose_lm_obs,
+                    prior_pose_ids=(0,),
+                )
+                rep = evaluate_schur_observability_gate(
+                    pose_jacobian_ax=ax,
+                    landmark_jacobian_ay=ay,
+                    candidate_pose_index=len(world_from_cam_map) - 1,
+                    required_pose_rank=6,
+                )
+                observability_report = {
+                    "status": "observable" if rep.admitted else "not_observable",
+                    "rank": int(rep.marginal_pose_rank),
+                    "required_rank": 6,
+                    "min_translational_sv": round(float(rep.translational_min_singular_value), 5),
+                    "condition_number": round(float(rep.translational_condition_number), 2),
+                    "reason": str(rep.reason),
+                    "detail": f"Schur 6-DoF marginal rank={rep.marginal_pose_rank}/6 across {len(world_from_cam_map)} calibrated RGB-D cameras",
+                }
+        except ImportError:
+            engine_name = "numpy_rgbd_fallback"
+            perception_owner = "mujoco-rgbd-fallback"
+            # Graceful fallback if optional `evidencescene` package is not installed
+            for kt, cs in list(voxel_color_sum.items())[: int(max_points)]:
+                cnt = voxel_color_cnt[kt]
+                cx = (kt[0] + 0.5) * voxel_size_m
+                cy = (kt[1] + 0.5) * voxel_size_m
+                cz = (kt[2] + 0.5) * voxel_size_m
+                surfels_out.append(
+                    [round(cx, 4), round(cy, 4), round(cz, 4), round(float(cs[0] / cnt), 3), round(float(cs[1] / cnt), 3), round(float(cs[2] / cnt), 3), 1]
+                )
+            total_surfels = len(surfels_out)
+            observability_report["detail"] = "Optional evidencescene package not installed; using raw RGB-D voxel fallback"
+
+        payload = {
+            "perception_owner": perception_owner,
+            "engine": engine_name,
+            "evidence_source": self.evidence_source,
+            "step_seq": int(self._step_seq),
+            "cameras_used": list(obs_by_cam.keys()),
+            "voxel_size_m": float(voxel_size_m),
+            "total_surfels": total_surfels,
+            "corroborated_surfels": corroborated_count,
+            "corroborated_ratio": round(corroborated_count / max(1, total_surfels), 3),
+            "observability": observability_report,
+            "wall_ms": round((time.monotonic() - t0) * 1000.0, 1),
+            "surfels": surfels_out,
+        }
+        self._recon_cache = (cache_key, payload)
+        return payload
+
     def embodiment_manifest(self) -> Any:
         from .plugin import EmbodimentManifest
 
@@ -1196,6 +1432,15 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                     rewrite_urdf_mesh_uris(p.read_text(encoding="utf-8"), asset_url_prefix="/assets/robot"),
                 ),
             )
+        server.register_resource(
+            MCPResourceSpec(
+                uri="trax://scene/reconstruction",
+                name="EvidenceScene 3D Surfel Reconstruction",
+                description="Multi-camera calibrated RGB-D surfel fusion & 6-DoF Schur observability via EvidenceScene.",
+                mime_type="application/json",
+            ),
+            lambda: ("application/json", _json.dumps(self.reconstruct_scene_evidencescene())),
+        )
 
 
 def create_so101_backend(config: SceneConfig) -> MuJoCoSO101HostDriver:

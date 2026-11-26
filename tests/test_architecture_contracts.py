@@ -1,6 +1,7 @@
 """Production architecture & contract tests for TRAX plugin ABI, persistent stdio MCP, URDF, abort, and KB gates."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -118,6 +119,9 @@ def test_urdf_uri_rewriting_and_asset_path_traversal_protection(tmp_path: Path) 
 
 def test_so101_plugin_serves_urdf_manifest_and_assets_over_http() -> None:
     """Built-in SO-101 plugin owns and serves its URDF, manifest, physics approximations, and STL meshes."""
+    import os
+
+    os.environ.setdefault("MUJOCO_GL", "egl")
     pytest.importorskip("mujoco")
     from trax.mujoco_so101_driver import MuJoCoSO101HostDriver
 
@@ -152,6 +156,15 @@ def test_so101_plugin_serves_urdf_manifest_and_assets_over_http() -> None:
         with pytest.raises(urllib.error.HTTPError) as exc_info:
             opener.open(f"http://127.0.0.1:{port}/assets/robot/../../pyproject.toml", timeout=5)
         assert exc_info.value.code == 404
+
+        with opener.open(f"http://127.0.0.1:{port}/scene/reconstruction", timeout=10) as r:
+            assert r.status == 200
+            recon = json.loads(r.read().decode("utf-8"))
+            assert recon["total_surfels"] > 100
+            assert recon["evidence_source"] == "simulator"
+            if recon["perception_owner"] == "evidencescene":
+                assert recon["observability"]["status"] == "observable"
+                assert recon["observability"]["rank"] == 6
     finally:
         server.shutdown()
         server.server_close()

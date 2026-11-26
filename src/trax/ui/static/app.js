@@ -18,6 +18,9 @@ let embSnapshot = null;
 let matrixFilter = 'all';
 let compareMode = 'split';
 let urdfViewer = null;
+let lastMcpTelemetry = null;
+let lastReconStepSeq = -1;
+let reconInFlight = false;
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -532,7 +535,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setCamMode(mode) { camMode = mode; renderCameraShells(); }
 function selectCam(name) { activeCam = name; camMode = 'single'; renderCameraShells(); }
-function clearTrail() { cupTrail = []; if (lastLiveScene) renderSpatialRadar(lastLiveScene); }
+function clearTrail() {
+  cupTrail = [];
+  if (urdfViewer) urdfViewer.clearTrail();
+  if (lastLiveScene) renderSpatialRadar(lastLiveScene);
+}
+
+function toggleTwinLayer(key) {
+  if (!urdfViewer) return;
+  const on = urdfViewer.toggleLayer(key);
+  const el = document.getElementById('tw-btn-' + key);
+  if (el) el.className = 'twin-chip' + (on ? ' on' : '');
+}
+
+async function refreshSceneReconstruction(force) {
+  if (!urdfViewer || reconInFlight) return;
+  const seq = (lastMcpTelemetry && lastMcpTelemetry.robot && lastMcpTelemetry.robot.step_seq != null)
+    ? Number(lastMcpTelemetry.robot.step_seq) : 0;
+  if (!force && seq === lastReconStepSeq) return;
+  reconInFlight = true;
+  try {
+    const recon = await api('api/scene/reconstruction');
+    lastReconStepSeq = recon.step_seq != null ? Number(recon.step_seq) : seq;
+    if (urdfViewer) urdfViewer.setReconstruction(recon);
+    const badge = document.getElementById('hud-es-obs');
+    if (badge && recon) {
+      const obs = recon.observability || {};
+      const ok = obs.status === 'observable';
+      badge.textContent = `EvidenceScene: ${recon.total_surfels} surfels · rank ${obs.rank ?? '-'}/6`;
+      badge.className = 'hud-pill ' + (ok ? 'ok' : 'warn');
+    }
+  } catch (_) {
+  } finally {
+    reconInFlight = false;
+  }
+}
 
 function renderCameraShells() {
   const stage = document.getElementById('cam-stage');
@@ -563,18 +600,27 @@ function renderCameraShells() {
       <div class="urdf-shell">
         <canvas id="urdf-canvas"></canvas>
         <div class="hud-tl">
-          <span class="hud-pill">3D URDF (WebGL)</span>
-          <span class="hud-pill" id="hud-phase">phase: idle</span>
+          <span class="hud-pill">3D DIGITAL TWIN</span>
+          <span class="hud-pill" id="hud-es-obs">EvidenceScene: loading...</span>
         </div>
-        <div class="hud-tr"><span class="hud-pill" id="hud-l2">joints: live</span></div>
-        <div id="urdf-status" class="urdf-status">Loading URDF...</div>
+        <div class="hud-tr" style="pointer-events:auto">
+          <button id="tw-btn-surfels" class="twin-chip on" onclick="toggleTwinLayer('surfels')">Surfels</button>
+          <button id="tw-btn-env" class="twin-chip on" onclick="toggleTwinLayer('env')">Envelope</button>
+          <button id="tw-btn-traj" class="twin-chip on" onclick="toggleTwinLayer('traj')">3D Trail</button>
+          <button id="tw-btn-tf" class="twin-chip on" onclick="toggleTwinLayer('tf')">TF Axes</button>
+          <button class="twin-chip" onclick="refreshSceneReconstruction(true)">Rescan</button>
+        </div>
+        <div id="urdf-status" class="urdf-status">Loading URDF + EvidenceScene RGB-D reconstruction...</div>
       </div>`;
     thumbs.style.display = 'none';
     const cv = document.getElementById('urdf-canvas');
     const st = document.getElementById('urdf-status');
     if (cv && window.TraxURDFViewer) {
       urdfViewer = new window.TraxURDFViewer(cv, st);
+      if (lastMcpTelemetry) urdfViewer.setTelemetry(lastMcpTelemetry);
       urdfViewer.loadUrdf('api/robot/urdf?t=' + Date.now());
+      lastReconStepSeq = -1;
+      refreshSceneReconstruction(true);
     }
     return;
   }
@@ -1208,6 +1254,7 @@ function updateLiveUI(live) {
   const obs = live.scene_observation || {};
   lastLiveScene = obs;
   const mcpTel = live.mcp_telemetry || null;
+  if (mcpTel) lastMcpTelemetry = mcpTel;
   const robot = (mcpTel && mcpTel.robot) || null;
   const evo = live.evolution;
 
@@ -1239,7 +1286,10 @@ function updateLiveUI(live) {
   if (ha && evo) ha.textContent = evo.busy ? evo.busy_detail : `phase=${evo.phase} | iters=${(evo.iterations||[]).length} | llm_calls=${(evo.llm_calls||[]).length}`;
 
   if (evo) renderEvolution(evo);
-  if (urdfViewer && mcpTel) urdfViewer.setTelemetry(mcpTel);
+  if (urdfViewer && mcpTel) {
+    urdfViewer.setTelemetry(mcpTel);
+    refreshSceneReconstruction(false);
+  }
   renderSpatialRadar(obs, mcpTel);
 }
 
