@@ -216,6 +216,39 @@ UI_HTML = r"""<!DOCTYPE html>
     padding: 10px 11px; font-family: var(--mono); font-size: 12px; line-height: 1.5;
     tab-size: 4; white-space: pre; overflow: auto;
   }
+  /* Synchronized Syntax-Highlighted Python Editor */
+  .py-editor-wrap {
+    position: relative; flex: 1 1 auto; min-height: 220px; height: 100%;
+    display: flex; background: var(--codebg); border: 1px solid var(--border);
+    border-radius: 7px; overflow: hidden;
+  }
+  .py-gutter {
+    flex: 0 0 42px; overflow: hidden; background: #090f1d;
+    border-right: 1px solid var(--border); padding: 10px 6px 10px 0;
+    text-align: right; font-family: var(--mono); font-size: 12px; line-height: 1.5;
+    color: var(--dim); user-select: none; white-space: pre;
+  }
+  .py-stage { position: relative; flex: 1 1 auto; min-width: 0; height: 100%; overflow: hidden; }
+  .py-hl, textarea.py-ta {
+    position: absolute; inset: 0; margin: 0; width: 100%; height: 100%;
+    padding: 10px 12px; border: none; outline: none; resize: none;
+    font-family: var(--mono); font-size: 12px; line-height: 1.5;
+    tab-size: 4; white-space: pre; letter-spacing: 0; font-variant-ligatures: none;
+  }
+  .py-hl { overflow: hidden; pointer-events: none; color: #e2e8f0; background: transparent; }
+  textarea.py-ta {
+    overflow: auto; background: transparent; color: transparent;
+    caret-color: var(--cyan); -webkit-text-fill-color: transparent;
+  }
+  textarea.py-ta::selection { background: rgba(56,189,248,0.28); }
+  .tok-kw { color: #c084fc; font-weight: 600; }
+  .tok-bi { color: #38bdf8; }
+  .tok-fn { color: #fbbf24; font-weight: 600; }
+  .tok-call { color: #60a5fa; }
+  .tok-sdk { color: #22d3ee; font-weight: 600; }
+  .tok-str { color: #86efac; }
+  .tok-num { color: #fdba74; }
+  .tok-cm { color: #64748b; font-style: italic; }
   .diff-view {
     flex: 1 1 auto; min-height: 220px; height: 100%; overflow: auto; background: var(--codebg);
     border: 1px solid var(--border); border-radius: 7px;
@@ -476,7 +509,13 @@ UI_HTML = r"""<!DOCTYPE html>
           </div>
 
           <div id="pane-code" class="code-pane">
-            <textarea id="code-editor" class="code-editor" spellcheck="false"></textarea>
+            <div class="py-editor-wrap">
+              <div id="code-gutter" class="py-gutter">1</div>
+              <div class="py-stage">
+                <pre id="code-highlight" class="py-hl" aria-hidden="true"></pre>
+                <textarea id="code-editor" class="py-ta" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+              </div>
+            </div>
           </div>
           <div id="pane-llm" class="code-pane" style="display:none">
             <div id="llm-call-strip" class="run-strip"></div>
@@ -846,6 +885,66 @@ function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+const PY_KEYWORDS = new Set([
+  'def','return','if','elif','else','for','in','while','not','and','or','is',
+  'try','except','finally','raise','pass','break','continue','with','as',
+  'import','from','class','yield','assert','lambda','None','True','False',
+]);
+const PY_BUILTINS = new Set([
+  'len','float','int','str','dict','list','tuple','set','bool','range',
+  'min','max','abs','round','sum','sorted','enumerate','any','all','isinstance','zip','print',
+]);
+const PY_TOK_RE = /(#[^\n]*)|([frbuFRBU]{0,2}(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'))|(\bdef\s+)([A-Za-z_]\w*)|(\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|(\b[A-Za-z_]\w*\b)(?=\s*\()|(\b[A-Za-z_]\w*\b)/g;
+
+function highlightPython(src) {
+  const s = String(src ?? '');
+  let out = '';
+  let last = 0;
+  PY_TOK_RE.lastIndex = 0;
+  let m;
+  while ((m = PY_TOK_RE.exec(s)) !== null) {
+    if (m.index > last) out += esc(s.slice(last, m.index));
+    if (m[1]) {
+      out += `<span class="tok-cm">${esc(m[1])}</span>`;
+    } else if (m[2]) {
+      out += m[2].split('\n').map(l => `<span class="tok-str">${esc(l)}</span>`).join('\n');
+    } else if (m[3] && m[4]) {
+      out += `<span class="tok-kw">${esc(m[3])}</span><span class="tok-fn">${esc(m[4])}</span>`;
+    } else if (m[5]) {
+      out += `<span class="tok-num">${esc(m[5])}</span>`;
+    } else if (m[6]) {
+      const id = m[6];
+      const cls = PY_KEYWORDS.has(id) ? 'tok-kw' : (PY_BUILTINS.has(id) ? 'tok-bi' : 'tok-call');
+      out += `<span class="${cls}">${esc(id)}</span>`;
+    } else if (m[7]) {
+      const id = m[7];
+      if (PY_KEYWORDS.has(id)) out += `<span class="tok-kw">${esc(id)}</span>`;
+      else if (id === 'sdk') out += `<span class="tok-sdk">${esc(id)}</span>`;
+      else if (PY_BUILTINS.has(id)) out += `<span class="tok-bi">${esc(id)}</span>`;
+      else out += esc(id);
+    }
+    last = PY_TOK_RE.lastIndex;
+  }
+  if (last < s.length) out += esc(s.slice(last));
+  return out;
+}
+
+function syncCodeEditorHighlight() {
+  const ed = document.getElementById('code-editor');
+  const hl = document.getElementById('code-highlight');
+  const gt = document.getElementById('code-gutter');
+  if (!ed || !hl || !gt) return;
+  const val = ed.value || '';
+  hl.innerHTML = highlightPython(val) + '\n';
+  const nLines = val.split('\n').length;
+  let nums = '';
+  for (let i = 1; i <= nLines; i++) nums += i + '\n';
+  gt.textContent = nums;
+  hl.scrollTop = ed.scrollTop;
+  hl.scrollLeft = ed.scrollLeft;
+  gt.scrollTop = ed.scrollTop;
+}
+
 function copyElem(id) {
   const el = document.getElementById(id);
   if (el && navigator.clipboard) navigator.clipboard.writeText(el.textContent || '');
@@ -1094,7 +1193,25 @@ function inspectProbeCode() {
 
 document.addEventListener('DOMContentLoaded', () => {
   const ed = document.getElementById('code-editor');
-  if (ed) ed.addEventListener('input', () => { editorDirty = true; });
+  if (ed) {
+    ed.addEventListener('input', () => { editorDirty = true; syncCodeEditorHighlight(); });
+    ed.addEventListener('scroll', () => {
+      const hl = document.getElementById('code-highlight');
+      const gt = document.getElementById('code-gutter');
+      if (hl) { hl.scrollTop = ed.scrollTop; hl.scrollLeft = ed.scrollLeft; }
+      if (gt) { gt.scrollTop = ed.scrollTop; }
+    });
+    ed.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const st = ed.selectionStart, en = ed.selectionEnd;
+        ed.value = ed.value.slice(0, st) + '    ' + ed.value.slice(en);
+        ed.selectionStart = ed.selectionEnd = st + 4;
+        editorDirty = true;
+        syncCodeEditorHighlight();
+      }
+    });
+  }
 });
 
 function setCamMode(mode) { camMode = mode; renderCameraShells(); }
@@ -1367,6 +1484,7 @@ function renderEvolution(evo) {
       ed.value = cur.source || '';
       lastLoadedIterSha = cur.source_sha256 || '';
       editorDirty = false;
+      syncCodeEditorHighlight();
     }
     const ast = cur.ast_check || {};
     const ab = document.getElementById('ast-badge');
@@ -1435,8 +1553,9 @@ function renderEvolution(evo) {
 }
 
 function renderNumberedCode(src) {
-  const lines = String(src || '').split('\n');
-  return lines.map((ln, idx) => `<span class="ln-num">${idx + 1}</span>${esc(ln)}`).join('\n');
+  const highlighted = highlightPython(src || '');
+  const lines = highlighted.split('\n');
+  return lines.map((ln, idx) => `<span class="ln-num">${idx + 1}</span>${ln}`).join('\n');
 }
 
 function renderLlmInspector(evo) {
