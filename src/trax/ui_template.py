@@ -249,6 +249,9 @@ UI_HTML = r"""<!DOCTYPE html>
   .tok-str { color: #86efac; }
   .tok-num { color: #fdba74; }
   .tok-cm { color: #64748b; font-style: italic; }
+  .tok-jkey { color: #38bdf8; }
+  .tok-jbool { color: #c084fc; font-weight: 600; }
+  .tok-jnull { color: #fca5a5; font-style: italic; }
   .diff-view {
     flex: 1 1 auto; min-height: 220px; height: 100%; overflow: auto; background: var(--codebg);
     border: 1px solid var(--border); border-radius: 7px;
@@ -945,6 +948,33 @@ function syncCodeEditorHighlight() {
   gt.scrollTop = ed.scrollTop;
 }
 
+const JSON_TOK_RE = /("(?:\\.|[^"\\])*")(\s*:)?|(\btrue\b|\bfalse\b)|(\bnull\b)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g;
+
+function highlightJson(val) {
+  const raw = typeof val === 'string' ? val : JSON.stringify(val, null, 2);
+  if (raw == null) return '';
+  let out = '';
+  let last = 0;
+  JSON_TOK_RE.lastIndex = 0;
+  let m;
+  while ((m = JSON_TOK_RE.exec(raw)) !== null) {
+    if (m.index > last) out += esc(raw.slice(last, m.index));
+    if (m[1]) {
+      if (m[2]) out += `<span class="tok-jkey">${esc(m[1])}</span>${esc(m[2])}`;
+      else out += `<span class="tok-str">${esc(m[1])}</span>`;
+    } else if (m[3]) {
+      out += `<span class="tok-jbool">${esc(m[3])}</span>`;
+    } else if (m[4]) {
+      out += `<span class="tok-jnull">${esc(m[4])}</span>`;
+    } else if (m[5]) {
+      out += `<span class="tok-num">${esc(m[5])}</span>`;
+    }
+    last = JSON_TOK_RE.lastIndex;
+  }
+  if (last < raw.length) out += esc(raw.slice(last));
+  return out;
+}
+
 function copyElem(id) {
   const el = document.getElementById(id);
   if (el && navigator.clipboard) navigator.clipboard.writeText(el.textContent || '');
@@ -1091,11 +1121,11 @@ function renderMcpSelectedTool() {
     <span><strong>${esc(t.name)}</strong> &middot; ${esc(t.description || '')}</span>
     <span>endpoint=<code>${esc(mcpState.endpoint_label || '-')}</code></span>
   `;
-  document.getElementById('mcp-schema-pre').textContent = JSON.stringify({
+  document.getElementById('mcp-schema-pre').innerHTML = highlightJson({
     name: t.name,
     annotations: ann,
     inputSchema: t.inputSchema || {},
-  }, null, 2);
+  });
   document.getElementById('mcp-args-input').value = JSON.stringify(defaultArgsFromSchema(t.inputSchema), null, 2);
 }
 
@@ -1121,7 +1151,7 @@ async function invokeSelectedMcpTool() {
     mcpState = res.state;
     const jTxt = res.journal_id ? ` · SQLite journal=${res.journal_id}` : '';
     document.getElementById('mcp-call-meta').textContent = `${res.latency_ms}ms${jTxt}`;
-    document.getElementById('mcp-call-result').textContent = JSON.stringify(res.response, null, 2);
+    document.getElementById('mcp-call-result').innerHTML = highlightJson(res.response);
     renderMcpWire();
   } catch (e) {
     document.getElementById('mcp-call-meta').textContent = 'error';
@@ -1144,9 +1174,10 @@ async function readMcpResource(uri) {
     if (contents.length && contents[0].blob && String(contents[0].mimeType || '').startsWith('image/')) {
       box.innerHTML = `<img class="mcp-res-img" src="data:${esc(contents[0].mimeType)};base64,${contents[0].blob}"/>`;
     } else if (contents.length && contents[0].text != null) {
-      box.innerHTML = `<pre class="io-pre" style="padding:0">${esc(contents[0].text)}</pre>`;
+      const isJson = String(contents[0].mimeType || '').includes('json') || String(contents[0].text).trim().startsWith('{');
+      box.innerHTML = `<pre class="io-pre" style="padding:0">${isJson ? highlightJson(contents[0].text) : esc(contents[0].text)}</pre>`;
     } else {
-      box.innerHTML = `<pre class="io-pre" style="padding:0">${esc(JSON.stringify(res.response, null, 2))}</pre>`;
+      box.innerHTML = `<pre class="io-pre" style="padding:0">${highlightJson(res.response)}</pre>`;
     }
     renderMcpWire();
   } catch (e) {
@@ -1167,7 +1198,7 @@ function renderMcpWire() {
           <span class="badge ${w.ok ? 'ok' : 'err'}">${w.ok ? 'OK' : 'ERR'} · ${esc(w.latency_ms)}ms</span>
         </span>
       </div>
-      <pre class="mcp-wire-pre">REQ: ${esc(JSON.stringify(w.request))}\nRES: ${esc(JSON.stringify(w.response, null, 2))}</pre>
+      <pre class="mcp-wire-pre"><span style="color:var(--dim)">REQ:</span> ${highlightJson(JSON.stringify(w.request))}\n<span style="color:var(--dim)">RES:</span> ${highlightJson(w.response)}</pre>
     </div>
   `).join('') || '<div style="font-family:var(--mono);font-size:11px;color:var(--dim)">No JSON-RPC messages yet.</div>';
 }
@@ -1501,7 +1532,7 @@ function renderEvolution(evo) {
       subroutines: cur.subroutines,
       stage1_probe_report: pr || null,
     };
-    document.getElementById('subr-view').textContent = JSON.stringify(subPayload, null, 2);
+    document.getElementById('subr-view').innerHTML = highlightJson(subPayload);
 
     // Right pane: Oracle & Attribution & Journal
     const ex = cur.execution;
