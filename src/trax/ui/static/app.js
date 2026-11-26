@@ -17,6 +17,7 @@ let currentExecRawSource = '';
 let embSnapshot = null;
 let matrixFilter = 'all';
 let compareMode = 'split';
+let urdfViewer = null;
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -134,6 +135,9 @@ function switchTab(name) {
   if (name === 'kb') {
     loadKnowledgeBase();
   }
+  if (name === 'gov') {
+    loadGovernanceLedger();
+  }
 }
 
 let kbState = null;
@@ -195,7 +199,29 @@ async function loadKnowledgeBase() {
 function selectKbSkill(idx) {
   if (!kbState || !kbState.skills || !kbState.skills[idx]) return;
   selectedKbSkill = kbState.skills[idx];
+  const runBtn = document.getElementById('btn-kb-run-skill');
+  if (runBtn) runBtn.disabled = false;
   openKbSkillFile('py');
+}
+
+async function runSkillDirect(skillPyPath, taskId) {
+  if (!skillPyPath) return;
+  try {
+    cupTrail = [];
+    await api('api/kb/run_skill', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ skill_py_path: skillPyPath, task_id: taskId || '' }),
+    });
+    switchTab('lab');
+    await pollLiveOnce();
+  } catch (e) {
+    alert('Run skill failed: ' + e.message);
+  }
+}
+
+async function runSelectedKbSkill() {
+  if (!selectedKbSkill) return;
+  await runSkillDirect(selectedKbSkill.skill_py_path, selectedKbSkill.skill_name);
 }
 
 async function openKbSkillFile(kind) {
@@ -519,6 +545,34 @@ function renderCameraShells() {
   if (!camList.includes(activeCam)) activeCam = camList[0];
   document.getElementById('btn-mode-single').style.borderColor = camMode === 'single' ? 'var(--cyan)' : 'var(--border2)';
   document.getElementById('btn-mode-grid').style.borderColor = camMode === 'grid' ? 'var(--cyan)' : 'var(--border2)';
+  const urdfBtn = document.getElementById('btn-mode-urdf');
+  if (urdfBtn) urdfBtn.style.borderColor = camMode === 'urdf' ? 'var(--cyan)' : 'var(--border2)';
+
+  if (camMode !== 'urdf' && urdfViewer) {
+    urdfViewer.dispose();
+    urdfViewer = null;
+  }
+
+  if (camMode === 'urdf') {
+    stage.innerHTML = `
+      <div class="urdf-shell">
+        <canvas id="urdf-canvas"></canvas>
+        <div class="hud-tl">
+          <span class="hud-pill">3D URDF (WebGL)</span>
+          <span class="hud-pill" id="hud-phase">phase: idle</span>
+        </div>
+        <div class="hud-tr"><span class="hud-pill" id="hud-l2">joints: live</span></div>
+        <div id="urdf-status" class="urdf-status">Loading URDF...</div>
+      </div>`;
+    thumbs.style.display = 'none';
+    const cv = document.getElementById('urdf-canvas');
+    const st = document.getElementById('urdf-status');
+    if (cv && window.TraxURDFViewer) {
+      urdfViewer = new window.TraxURDFViewer(cv, st);
+      urdfViewer.loadUrdf('api/robot/urdf?t=' + Date.now());
+    }
+    return;
+  }
 
   if (camMode === 'grid' && camList.length > 1) {
     stage.innerHTML = '<div class="cam-grid-4">' + camList.map(c => `
@@ -837,6 +891,16 @@ function renderEvolution(evo) {
       document.getElementById('m-oracle').textContent = vmParts.length ? vmParts.join(' · ') : (ex.verify_result ? ex.verify_result.detail : '-');
       const niTotal = Object.values(ex.non_idempotent_counts || {}).reduce((a, b) => a + Number(b || 0), 0);
       document.getElementById('m-brew').textContent = `${(ex.methods||[]).length} calls · ni=${niTotal} · dup=${ex.duplicate_non_idempotent ? 1 : 0}`;
+      const prof = ex.profile || null;
+      const ps = document.getElementById('prof-summary');
+      if (ps) {
+        if (prof) {
+          const hint = (prof.optimization_hints && prof.optimization_hints[0]) ? ` · ${prof.optimization_hints[0]}` : '';
+          ps.textContent = `wall=${ex.wall_s}s · mcp=${prof.total_mcp_ms}ms · p95=${prof.p95_call_ms}ms · bottleneck=${prof.bottleneck_tool || '-'}${hint}`;
+        } else {
+          ps.textContent = `wall=${ex.wall_s}s · ${(ex.methods||[]).length} MCP calls`;
+        }
+      }
     } else {
       vp.textContent = 'UNEXECUTED';
       vp.className = 'badge';
@@ -844,6 +908,8 @@ function renderEvolution(evo) {
       document.getElementById('m-code').textContent = '-';
       document.getElementById('m-oracle').textContent = '-';
       document.getElementById('m-brew').textContent = '-';
+      const ps = document.getElementById('prof-summary');
+      if (ps) ps.textContent = 'No execution profile yet.';
     }
 
     const jrows = cur.journal_entries || [];
@@ -879,6 +945,71 @@ function renderEvolution(evo) {
     for (const id of ['m-layer','m-code','m-oracle','m-brew']) document.getElementById(id).textContent = '-';
     document.getElementById('journal-count').textContent = '0 ops';
     document.getElementById('journal-tbody').innerHTML = '<tr><td colspan="3" style="color:var(--dim)">Click 1. Agent Explore (MCP+LLM) or Run Closed Loop (1->4).</td></tr>';
+  }
+
+  // Enable/disable Abort, Speed Opt, and Multi-Seed buttons honestly
+  const busyNow = Boolean(evo.busy);
+  const btnAbort = document.getElementById('btn-abort');
+  if (btnAbort) btnAbort.disabled = !busyNow;
+  const itersAll = evo.iterations || [];
+  const activeIt = (evo.active_iter_index >= 0 && evo.active_iter_index < itersAll.length) ? itersAll[evo.active_iter_index] : null;
+  const activePassed = Boolean(activeIt && activeIt.execution && activeIt.execution.task_passed);
+  const btnOpt = document.getElementById('btn-opt-speed');
+  if (btnOpt) btnOpt.disabled = busyNow || !activePassed;
+  const btnMseed = document.getElementById('btn-verify-seeds');
+  if (btnMseed) btnMseed.disabled = busyNow || !activeIt;
+
+  // Step-by-Step Value Progression Strip
+  const sv = evo.step_value_summary || {};
+  const setVal = (id, text, cls) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'val-cell' + (cls ? ' ' + cls : '');
+    const v = el.querySelector('.val-v');
+    if (v) v.textContent = text;
+  };
+  setVal(
+    'vs-explore',
+    sv.explore_rounds_done ? `${sv.explore_rounds_done}R · ${sv.explore_mcp_calls} calls · ${sv.explore_refusals_found} lim` : (evo.phase === 'exploring' ? 'probing...' : 'idle'),
+    sv.explore_rounds_done ? 'done' : (evo.phase === 'exploring' ? 'active' : '')
+  );
+  setVal(
+    'vs-compile',
+    itersAll.length ? `${itersAll.length} iters (${sv.ast_blocked_iters || 0} AST blk)` : (evo.phase === 'synthesizing' ? 'compiling...' : '-'),
+    itersAll.length ? 'done' : (evo.phase === 'synthesizing' ? 'active' : '')
+  );
+  setVal(
+    'vs-pass',
+    sv.first_pass_wall_s != null ? `it=${sv.first_pass_iter} · ${sv.first_pass_wall_s}s (${sv.first_pass_calls}c)` : (evo.phase === 'executing' ? 'running...' : '-'),
+    sv.first_pass_wall_s != null ? 'done' : (evo.phase === 'executing' ? 'active' : '')
+  );
+  setVal(
+    'vs-opt',
+    sv.optimized_wall_s != null
+      ? `${sv.optimized_wall_s}s (${sv.optimized_speedup_pct != null ? (sv.optimized_speedup_pct >= 0 ? '-' + sv.optimized_speedup_pct + '%' : '+' + Math.abs(sv.optimized_speedup_pct) + '%') : 'opt'})`
+      : (activePassed ? 'ready' : '-'),
+    sv.optimized_wall_s != null ? 'done' : ''
+  );
+  const lsr = sv.last_skill_replay;
+  const availSkills = evo.available_skills || [];
+  setVal(
+    'vs-skill',
+    lsr ? `${lsr.task_passed ? 'PASS' : 'FAIL'} · ${lsr.wall_s}s (0 LLM)` : (availSkills.length ? `${availSkills.length} ready (0 LLM)` : '-'),
+    lsr && lsr.task_passed ? 'done' : (availSkills.length ? 'active' : '')
+  );
+
+  // Quick One-Click 0-LLM Verified Action Library Bar right inside Closed-Loop Lab
+  const sbar = document.getElementById('lab-skills-bar');
+  if (sbar) {
+    const usable = availSkills.filter(s => s.status === 'active' || s.status === 'advisory_sim_prior' || s.status === 'candidate');
+    if (usable.length) {
+      sbar.style.display = 'flex';
+      sbar.innerHTML = `<strong style="color:var(--green-txt)">ACTION LIBRARY (0-LLM):</strong>` + usable.map(s =>
+        `<button class="sm ok" ${busyNow ? 'disabled' : ''} onclick="runSkillDirect('${esc(s.skill_py_path)}','${esc(s.skill_name)}')" title="${esc(s.verify_detail || '')}">&#9654; ${esc(s.skill_name)} [${esc(s.status)}]</button>`
+      ).join('');
+    } else {
+      sbar.style.display = 'none';
+    }
   }
 
   // Console log
@@ -1103,6 +1234,7 @@ function updateLiveUI(live) {
   if (ha && evo) ha.textContent = evo.busy ? evo.busy_detail : `phase=${evo.phase} | iters=${(evo.iterations||[]).length} | llm_calls=${(evo.llm_calls||[]).length}`;
 
   if (evo) renderEvolution(evo);
+  if (urdfViewer && mcpTel) urdfViewer.setTelemetry(mcpTel);
   renderSpatialRadar(obs, mcpTel);
 }
 
@@ -1128,16 +1260,7 @@ async function refreshState() {
     document.getElementById('cap-pill').className = 'badge ' + (ok ? 'ok' : 'err');
     document.getElementById('cap-meta').textContent = `authority=${d.execution_authority||'-'} · perception=${d.perception_owner||'-'} · contract_sha256=${(d.sdk_contract_sha256||'').slice(0,16)}`;
     document.getElementById('cap-ok-chips').innerHTML = (d.allowed_methods || []).map(m => `<span class="chip ok">${esc(m)}</span>`).join('');
-    document.getElementById('cap-miss-chips').innerHTML = ((st.oven_gap || {}).missing_methods || []).map(m => `<span class="chip miss">${esc(m)}</span>`).join('') || '<span class="chip ok">none</span>';
-
-    const skills = Object.values(st.skills || {});
-    const hist = (st.registry && st.registry.history) || [];
-    document.getElementById('gov-skills').innerHTML = `
-      <div style="font-size:10.5px;font-family:var(--mono);color:var(--cyan);font-weight:700">VERIFIED SKILLS (${skills.length})</div>
-      ${skills.map(s => `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:11.5px;font-family:var(--mono)"><strong>${esc(s.title)}</strong> <span class="badge ok">${esc(s.evidence_source)}</span></div>`).join('') || '<div style="font-size:11px;color:var(--dim)">None</div>'}
-      <div style="font-size:10.5px;font-family:var(--mono);color:var(--cyan);font-weight:700;margin-top:10px">RELEASE LEDGER (${hist.length})</div>
-      ${hist.map(h => `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;font-family:var(--mono);color:var(--muted)"><strong>${esc(h.event)}</strong> &rarr; <code>${esc(h.version)}</code> (${esc(h.deployment_scope||'-')}) &middot; ${esc(h.at_utc||'')}</div>`).join('') || '<div style="font-size:11px;color:var(--dim)">None</div>'}
-    `;
+    loadGovernanceLedger();
 
     const evo = await api('api/evolve/state');
     updateLiveUI({ scene_observation: st.scene_observation, evolution: evo });
@@ -1424,6 +1547,78 @@ async function runClosedLoop() {
     }),
   });
   await pollLiveOnce();
+}
+
+async function runOptimizeSpeed() {
+  cupTrail = [];
+  editorDirty = false;
+  switchCodeTab('diff');
+  try {
+    await api('api/evolve/optimize_speed', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({}),
+    });
+    await pollLiveOnce();
+  } catch (e) {
+    alert('Speed optimization: ' + e.message);
+  }
+}
+
+async function runVerifyMultiSeed() {
+  cupTrail = [];
+  try {
+    await api('api/evolve/verify_seeds', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        task_id: document.getElementById('scenario-select').value,
+        seeds: [0, 1, 2],
+      }),
+    });
+    await pollLiveOnce();
+  } catch (e) {
+    alert('Multi-seed verification: ' + e.message);
+  }
+}
+
+async function abortRun() {
+  try {
+    await api('api/evolve/abort', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ reason: 'Operator E-Stop from TRAX UI' }),
+    });
+    await pollLiveOnce();
+  } catch (_) {}
+}
+
+async function loadGovernanceLedger() {
+  try {
+    const data = await api('api/audit/ledger');
+    const mp = document.getElementById('gov-manifest-pre');
+    if (mp) {
+      mp.innerHTML = data.manifest ? highlightJson(data.manifest) : '(active backend exposes no trax://embodiment/manifest resource)';
+    }
+    const lb = document.getElementById('gov-audit-ledger');
+    if (lb) {
+      const rows = (data.records || []).slice().reverse();
+      if (!rows.length) {
+        lb.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--dim)">No self-audit ledger records yet. Run <code>make self-audit</code>.</div>';
+      } else {
+        lb.innerHTML = `<table><thead><tr><th>UTC</th><th>SHA</th><th>Suite</th><th>Acc</th><th>p95 (ms)</th><th>Verdict</th></tr></thead><tbody>` +
+          rows.map(r => {
+            const d = r.decision || {};
+            const cls = d.accepted ? 'ok' : 'err';
+            return `<tr>
+              <td>${esc((r.recorded_utc || '').slice(11, 19))}</td>
+              <td><code>${esc(r.git_sha || '-')}</code></td>
+              <td>${esc(r.suite || '-')}</td>
+              <td>${r.passed}/${r.total} (${((r.accuracy || 0) * 100).toFixed(0)}%)</td>
+              <td>${Number(r.p95_ms || 0).toFixed(1)}</td>
+              <td><span class="badge ${cls}">${esc(d.reason_code || '-')}</span></td>
+            </tr>`;
+          }).join('') + '</tbody></table>';
+      }
+    }
+  } catch (_) {}
 }
 
 async function selectIter(idx) {

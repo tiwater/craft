@@ -23,7 +23,7 @@ from .knowledge_base import AuditTraceStore, ExecutableKnowledgeBase
 from .llm import make_live_llm_fn
 from .mcp_protocol import MCPClient, MCP_PROTOCOL_VERSION, format_mcp_tools_for_prompt
 from .probing import analyze_policy_subroutines
-from .self_audit import profile_mcp_trace
+from .self_audit import evaluate_pareto_gate, percentile, profile_mcp_trace
 from .sandbox import (
     CancellationToken,
     ExecutionAbortedError,
@@ -130,6 +130,8 @@ class TraxAgentEngine:
         self._executed_runs: list[dict[str, Any]] = []
         self._event_log: list[dict[str, str]] = []
         self._last_verify: dict[str, Any] | None = None
+        self._last_skill_replay: dict[str, Any] | None = None
+        self._last_multiseed: dict[str, Any] | None = None
 
         self._log("INIT", f"TRAX MCP Agent Engine + Git Knowledge Base ready (branch={self.kb.current_branch()}).")
 
@@ -1034,6 +1036,389 @@ class TraxAgentEngine:
         threading.Thread(target=_worker, daemon=True).start()
         return {"status": "started", "phase": "exploring", "explore_rounds": rounds, "max_iters": max_iters}
 
+    def run_skill_sync(self, *, skill_py_path: str, task_id: str | None = None, seed: int = 0) -> dict[str, Any]:
+        """Execute a verified skill directly from the Knowledge Base with ZERO LLM calls."""
+        with self._exec_lock:
+            src = self.kb.read_text_file(skill_py_path)
+            if not src.strip():
+                raise FileNotFoundError(f"Skill file not found in knowledge base: {skill_py_path}")
+            client, _, info, tools, _ = self._discover_mcp_sync()
+            tool_names = [str(t["name"]) for t in tools]
+            tid = str(task_id or Path(skill_py_path).parent.name or self._task_id)
+            ast_res = check_mcp_policy_ast(src, allowed_tools=tool_names, entry_fn="run_policy")
+            if not ast_res["compliant"]:
+                raise RuntimeError(f"Skill failed AST preflight: {ast_res['violations']}")
+
+            self._reset_backend_if_supported(client, tools, tid, int(seed))
+            cmd_id = f"trax-skill-{tid}-{time.time_ns()}"
+            t0 = time.monotonic()
+            proxy = GovernedMCPProxy(
+                client,
+                tools,
+                journal_path=self._journal_path,
+                run_tag=f"skill-{tid}",
+                max_calls=60,
+                cancel_token=self._cancel_token,
+                on_wire=self._emit_wire,
+            )
+            with self._state_lock:
+                self._log("SKILL", f"Executing verified skill `{skill_py_path}` (0 LLM calls, governed MCP + SQLite Journal)...")
+            aborted = False
+            try:
+                ret_val, runtime_err = _execute_sandboxed_python(
+                    src,
+                    proxy,
+                    entry_fn="run_policy",
+                    params={"task_id": tid, "command_prefix": f"skill-{tid}"},
+                )
+            except ExecutionAbortedError as abort_exc:
+                aborted = True
+                ret_val = None
+                runtime_err = str(abort_exc)
+
+            verify_res: dict[str, Any] = {"passed": False, "detail": "No verifier exposed", "metrics": {}}
+            if not aborted and "verify_task" in tool_names:
+                _, v_resp, _ = client.rpc("tools/call", {"name": "verify_task", "arguments": {"task_id": tid}})
+                verify_res = dict(_extract_mcp_payload(v_resp) or verify_res)
+            elif not aborted and runtime_err is None and isinstance(ret_val, Mapping) and ret_val.get("status") in ("completed", "done"):
+                verify_res = {"passed": True, "detail": "Skill completed cleanly", "metrics": dict(ret_val)}
+
+            wall_s = round(time.monotonic() - t0, 3)
+            attr = classify_mcp_execution(
+                ast_check=ast_res,
+                proxy=proxy,
+                verify_result=verify_res,
+                runtime_error=runtime_err,
+                aborted=aborted,
+            )
+            dups = any(v > 1 for v in proxy.non_idempotent_counts.values())
+            passed = bool(verify_res.get("passed")) and (attr["layer"] == "none")
+            prof = profile_mcp_trace(proxy.trace)
+            replay_rec = {
+                "skill_py_path": skill_py_path,
+                "task_id": tid,
+                "seed": int(seed),
+                "llm_calls": 0,
+                "task_passed": passed,
+                "wall_s": wall_s,
+                "calls": len(proxy.methods),
+                "methods": list(proxy.methods),
+                "profile": prof,
+                "non_idempotent_counts": dict(proxy.non_idempotent_counts),
+                "duplicate_non_idempotent": dups,
+                "verify_result": verify_res,
+                "attribution": attr,
+                "journal_entries": list(proxy.journal_entries),
+                "executed_utc": _utc_hms(),
+            }
+            self.traces.save_recording(cmd_id, {"stage": "skill_replay", **replay_rec})
+            with self._state_lock:
+                self._last_skill_replay = replay_rec
+                self._last_verify = verify_res
+                self._executed_runs.append(
+                    {
+                        "run_index": len(self._executed_runs) + 1,
+                        "stage": "04_skill_replay",
+                        "label": f"Skill Replay (0-LLM · {tid})",
+                        "iter_index": None,
+                        "command_id": cmd_id,
+                        "scenario_key": tid,
+                        "source": src,
+                        "source_sha256": digest(src),
+                        "ast_check": ast_res,
+                        "methods": list(proxy.methods),
+                        "status": "completed" if passed else attr["code"],
+                        "task_passed": passed,
+                        "wall_s": wall_s,
+                        "profile": prof,
+                        "executed_utc": _utc_hms(),
+                    }
+                )
+                self._phase = "verified" if passed else ("aborted" if aborted else "attributed")
+                verdict = "PASS" if passed else f"FAIL ({attr['code']})"
+                self._log(
+                    "SKILL",
+                    f"Skill `{tid}` (0-LLM) -> {verdict} in {wall_s}s ({len(proxy.methods)} MCP calls, "
+                    f"bottleneck={prof.get('bottleneck_tool') or '-'}) | {verify_res.get('detail', '')}",
+                )
+            return replay_rec
+
+    def start_run_skill_async(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        skill_path = str(body.get("skill_py_path") or "").strip()
+        if not skill_path:
+            raise ValueError("skill_py_path is required")
+        tid = body.get("task_id")
+        seed = int(body.get("seed", 0))
+        with self._state_lock:
+            if self._busy:
+                return {"status": "busy", "detail": self._busy_detail}
+            self._busy = True
+            self._cancel_token = CancellationToken()
+            self._phase = "executing"
+            self._busy_detail = f"Running Verified Skill (0-LLM): {skill_path}..."
+
+        def _worker() -> None:
+            try:
+                self.run_skill_sync(skill_py_path=skill_path, task_id=str(tid) if tid else None, seed=seed)
+            except Exception as exc:  # noqa: BLE001
+                with self._state_lock:
+                    self._log("ERROR", f"Skill replay failed: {exc}")
+                    self._phase = "idle"
+            finally:
+                with self._state_lock:
+                    self._busy = False
+                    self._busy_detail = ""
+                    self._cancel_token = None
+
+        threading.Thread(target=_worker, daemon=True).start()
+        return {"status": "started", "skill_py_path": skill_path, "llm_calls": 0}
+
+    def verify_multiseed_sync(self, *, seeds: Sequence[int] = (0, 1, 2), task_id: str | None = None) -> dict[str, Any]:
+        """Verify active policy across multiple seeds and promote `--no-ff` to `main` only if all pass."""
+        with self._exec_lock:
+            client, _, info, tools, _ = self._discover_mcp_sync()
+            tool_names = [str(t["name"]) for t in tools]
+            with self._state_lock:
+                cur_idx = self._active_iter_idx
+                if not (0 <= cur_idx < len(self._iterations)):
+                    raise ValueError("No policy iteration available to verify across seeds.")
+                src = str(self._iterations[cur_idx]["source"])
+                tid = str(task_id or self._task_id)
+
+            ast_res = check_mcp_policy_ast(src, allowed_tools=tool_names, entry_fn="run_policy")
+            if not ast_res["compliant"]:
+                raise RuntimeError(f"Policy failed AST gate: {ast_res['violations']}")
+
+            seed_list = [int(s) for s in seeds]
+            results: list[dict[str, Any]] = []
+            latencies_ms: list[float] = []
+            passed_seeds: list[int] = []
+            for s in seed_list:
+                if self._cancel_token is not None:
+                    self._cancel_token.raise_if_cancelled()
+                with self._state_lock:
+                    self._busy_detail = f"Multi-Seed Verification: seed={s} ({len(results)+1}/{len(seed_list)})..."
+                self._reset_backend_if_supported(client, tools, tid, s)
+                t0 = time.monotonic()
+                proxy = GovernedMCPProxy(
+                    client,
+                    tools,
+                    journal_path=self._journal_path,
+                    run_tag=f"mseed-s{s}",
+                    max_calls=60,
+                    cancel_token=self._cancel_token,
+                    on_wire=self._emit_wire,
+                )
+                ret_val, runtime_err = _execute_sandboxed_python(
+                    src,
+                    proxy,
+                    entry_fn="run_policy",
+                    params={"task_id": tid, "command_prefix": f"mseed-s{s}", "seed": s},
+                )
+                verify_res: dict[str, Any] = {"passed": False, "detail": "No verifier exposed", "metrics": {}}
+                if "verify_task" in tool_names:
+                    _, v_resp, _ = client.rpc("tools/call", {"name": "verify_task", "arguments": {"task_id": tid}})
+                    verify_res = dict(_extract_mcp_payload(v_resp) or verify_res)
+                elif runtime_err is None and isinstance(ret_val, Mapping) and ret_val.get("status") in ("completed", "done"):
+                    verify_res = {"passed": True, "detail": "Completed", "metrics": dict(ret_val)}
+                wall_s = round(time.monotonic() - t0, 3)
+                latencies_ms.append(wall_s * 1000.0)
+                attr = classify_mcp_execution(ast_check=ast_res, proxy=proxy, verify_result=verify_res, runtime_error=runtime_err)
+                ok = bool(verify_res.get("passed")) and (attr["layer"] == "none")
+                if ok:
+                    passed_seeds.append(s)
+                results.append({"seed": s, "passed": ok, "wall_s": wall_s, "calls": len(proxy.methods), "detail": verify_res.get("detail", "")})
+
+            all_passed = len(passed_seeds) == len(seed_list)
+            promo: dict[str, Any] | None = None
+            if passed_seeds:
+                promo = self.kb.promote_verified_skill_to_main(
+                    embodiment_id=self._active_embodiment_id(),
+                    evidence_source=self._active_evidence_source(),
+                    mcp_tools_sha256=self._mcp_tools_sha256,
+                    urdf_sha256=self._active_urdf_sha(),
+                    task_id=tid,
+                    task_instruction=self._task_instruction,
+                    policy_source=src,
+                    verify_result={
+                        "passed": True,
+                        "detail": f"Multi-seed {len(passed_seeds)}/{len(seed_list)} PASS | p95={round(percentile(latencies_ms, 95.0)/1000.0, 2)}s",
+                        "metrics": {"passed_seeds": len(passed_seeds), "total_seeds": len(seed_list), "p95_s": round(percentile(latencies_ms, 95.0)/1000.0, 3)},
+                    },
+                    verified_seeds=passed_seeds,
+                    min_verified_seeds=len(seed_list),
+                )
+            summary = {
+                "task_id": tid,
+                "seeds": seed_list,
+                "passed_seeds": passed_seeds,
+                "all_passed": all_passed,
+                "p50_s": round(percentile(latencies_ms, 50.0) / 1000.0, 3),
+                "p95_s": round(percentile(latencies_ms, 95.0) / 1000.0, 3),
+                "results": results,
+                "promotion": promo,
+            }
+            with self._state_lock:
+                self._last_multiseed = summary
+                self._phase = "verified" if all_passed else "attributed"
+                self._log(
+                    "VERIFY",
+                    f"Multi-seed gate ({tid}): {len(passed_seeds)}/{len(seed_list)} PASS | p95={summary['p95_s']}s | "
+                    f"stage={(promo or {}).get('stage', 'failed')}",
+                )
+            return summary
+
+    def start_verify_multiseed_async(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        raw_seeds = body.get("seeds") or [0, 1, 2]
+        seeds = [int(s) for s in raw_seeds][:5]
+        tid = body.get("task_id")
+        with self._state_lock:
+            if self._busy:
+                return {"status": "busy", "detail": self._busy_detail}
+            self._busy = True
+            self._cancel_token = CancellationToken()
+            self._phase = "executing"
+            self._busy_detail = f"Running {len(seeds)}-seed verification gate..."
+
+        def _worker() -> None:
+            try:
+                self.verify_multiseed_sync(seeds=seeds, task_id=str(tid) if tid else None)
+            except ExecutionAbortedError as exc:
+                with self._state_lock:
+                    self._log("ABORT", f"Multi-seed verification stopped: {exc}")
+                    self._phase = "aborted"
+            except Exception as exc:  # noqa: BLE001
+                with self._state_lock:
+                    self._log("ERROR", f"Multi-seed verification failed: {exc}")
+                    self._phase = "idle"
+            finally:
+                with self._state_lock:
+                    self._busy = False
+                    self._busy_detail = ""
+                    self._cancel_token = None
+
+        threading.Thread(target=_worker, daemon=True).start()
+        return {"status": "started", "seeds": seeds}
+
+    def optimize_speed_sync(self) -> dict[str, Any]:
+        """Pareto Speed Refinement: streamline a passing policy using Profiler diagnostics and re-verify."""
+        with self._exec_lock:
+            client, _, info, tools, _ = self._discover_mcp_sync()
+            tool_names = [str(t["name"]) for t in tools]
+            with self._state_lock:
+                cur_idx = self._active_iter_idx
+                if not (0 <= cur_idx < len(self._iterations)):
+                    raise ValueError("No policy iteration exists yet. Run Closed Loop first.")
+                base_iter = self._iterations[cur_idx]
+                base_ex = base_iter.get("execution") or {}
+                if not base_ex.get("task_passed"):
+                    raise ValueError("Speed optimization requires a currently PASSING policy iteration.")
+                base_src = str(base_iter["source"])
+                base_prof = base_ex.get("profile") or profile_mcp_trace(base_ex.get("mcp_trace") or [])
+                base_wall_s = float(base_ex.get("wall_s") or 0.0)
+
+            prompt = "\n".join(
+                [
+                    "You are TRAX's Pareto Speed Refinement Optimizer.",
+                    "The current Python policy ALREADY PASSES independent task verification.",
+                    "Produce a cleaner, faster, smoother `def run_policy(mcp, params):` that maintains 100% accuracy and safety",
+                    "(zero limit_refusal, zero duplicate non-idempotent calls) while minimizing total wall-clock time and redundant MCP calls.",
+                    "",
+                    format_mcp_tools_for_prompt(tools),
+                    "",
+                    f"CURRENT PASSING POLICY (wall={base_wall_s}s, calls={len(base_ex.get('methods') or [])}):",
+                    "```python",
+                    base_src,
+                    "```",
+                    "",
+                    f"EXECUTION PROFILER REPORT:\n{json.dumps(base_prof, indent=2, ensure_ascii=False)}",
+                    "",
+                    "OPTIMIZATION GUIDELINES:",
+                    "- Eliminate redundant consecutive read-only calls or unnecessary intermediate waypoints.",
+                    "- Where a motion tool accepts `steps`, use smooth minimal steps (e.g. 16-24 for transit, 18-24 for precision grasp/place) without losing accuracy.",
+                    "- Keep all safety margins, workspace bounds, and non-idempotent reconciliation intact.",
+                    "- Follow all AST sandbox rules (no imports, no leading underscores, no lambda). Return ONLY Python code.",
+                ]
+            )
+            llm_rec, opt_src = self._invoke_llm_tracked(origin="speed_optimize", prompt=prompt, iter_index=len(self._iterations))
+            ast_res = check_mcp_policy_ast(opt_src, allowed_tools=tool_names, entry_fn="run_policy")
+            sub = analyze_policy_subroutines(opt_src, failure_codes=())
+            with self._state_lock:
+                idx = len(self._iterations)
+                diff_txt = _compute_unified_diff(base_src, opt_src, f"iter_{cur_idx}", f"iter_{idx} (speed_opt)")
+                self._iterations.append(
+                    {
+                        "iter_index": idx,
+                        "label": f"iter_{idx} (speed_opt)",
+                        "origin": "speed_optimize",
+                        "policy_id": f"trax_iter_{idx}",
+                        "source": opt_src,
+                        "source_sha256": digest(opt_src),
+                        "unified_diff": diff_txt,
+                        "ast_check": ast_res,
+                        "subroutines": sub,
+                        "llm_meta": llm_rec,
+                        "execution": None,
+                        "attribution": None,
+                        "journal_entries": [],
+                        "created_utc": _utc_hms(),
+                    }
+                )
+                self._active_iter_idx = idx
+
+            exec_iter = self._execute_sync(task_id=self._task_id)
+            opt_ex = exec_iter.get("execution") or {}
+            decision = evaluate_pareto_gate(
+                {
+                    "hard_checks": {"ast": True},
+                    "accuracy": 1.0,
+                    "p95_ms": base_wall_s * 1000.0,
+                    "duplicate_non_idempotent": 0,
+                    "unreconciled_unknown": 0,
+                },
+                {
+                    "hard_checks": {"ast": bool((exec_iter.get("ast_check") or {}).get("compliant"))},
+                    "accuracy": 1.0 if opt_ex.get("task_passed") else 0.0,
+                    "p95_ms": float(opt_ex.get("wall_s") or 0.0) * 1000.0,
+                    "duplicate_non_idempotent": 1 if opt_ex.get("duplicate_non_idempotent") else 0,
+                    "unreconciled_unknown": 0 if opt_ex.get("queried_after_unknown", True) else 1,
+                },
+                min_speedup_pct=3.0,
+            )
+            with self._state_lock:
+                exec_iter["pareto_decision"] = decision.to_dict()
+                self._log("PARETO", f"Speed refinement iter_{exec_iter['iter_index']}: {decision.reason_code} — {decision.detail}")
+            return exec_iter
+
+    def start_optimize_speed_async(self, body: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        with self._state_lock:
+            if self._busy:
+                return {"status": "busy", "detail": self._busy_detail}
+            self._busy = True
+            self._cancel_token = CancellationToken()
+            self._phase = "iterating"
+            self._busy_detail = "Pareto Speed Refinement: optimizing latency & redundant MCP calls..."
+
+        def _worker() -> None:
+            try:
+                self.optimize_speed_sync()
+            except ExecutionAbortedError as exc:
+                with self._state_lock:
+                    self._log("ABORT", f"Speed refinement stopped: {exc}")
+                    self._phase = "aborted"
+            except Exception as exc:  # noqa: BLE001
+                with self._state_lock:
+                    self._log("ERROR", f"Speed refinement failed: {exc}")
+                    self._phase = "idle"
+            finally:
+                with self._state_lock:
+                    self._busy = False
+                    self._busy_detail = ""
+                    self._cancel_token = None
+
+        threading.Thread(target=_worker, daemon=True).start()
+        return {"status": "started", "phase": "speed_optimize"}
+
     def get_kb_snapshot(self) -> dict[str, Any]:
         with self._state_lock:
             emb = self._active_embodiment_id() if self._server_info else None
@@ -1082,8 +1467,52 @@ class TraxAgentEngine:
                 self._log("GIT", f"Rolled back `{res['restored_file']}` from commit {res['from_commit'][:7]} -> iter_{idx}.")
             return {"rollback": res, "kb": self.get_kb_snapshot(), "state": self.get_state()}
 
+    def _build_step_value_summary(self) -> dict[str, Any]:
+        """Summarize quantitative progression across Explore -> Compile -> Verify -> Optimize -> 0-LLM Skill."""
+        findings = self._exploration_findings
+        explore_refusals = sum(len(f.get("limit_refusals") or []) for f in findings)
+        explore_calls = sum(len(f.get("methods_called") or []) for f in findings)
+
+        first_pass = next((it for it in self._iterations if (it.get("execution") or {}).get("task_passed")), None)
+        opt_pass = next(
+            (it for it in reversed(self._iterations) if it.get("origin") == "speed_optimize" and (it.get("execution") or {}).get("task_passed")),
+            None,
+        )
+        ast_blocked = sum(1 for it in self._iterations if not (it.get("ast_check") or {}).get("compliant", True))
+        first_wall = float((first_pass.get("execution") or {}).get("wall_s") or 0.0) if first_pass else None
+        opt_wall = float((opt_pass.get("execution") or {}).get("wall_s") or 0.0) if opt_pass else None
+        speedup_pct = (
+            round(((first_wall - opt_wall) / first_wall) * 100.0, 1)
+            if (first_wall and opt_wall and first_wall > 1e-6)
+            else None
+        )
+        return {
+            "explore_rounds_done": len(findings),
+            "explore_mcp_calls": explore_calls,
+            "explore_refusals_found": explore_refusals,
+            "ast_blocked_iters": ast_blocked,
+            "first_pass_iter": first_pass["iter_index"] if first_pass else None,
+            "first_pass_wall_s": first_wall,
+            "first_pass_calls": len((first_pass.get("execution") or {}).get("methods") or []) if first_pass else None,
+            "optimized_iter": opt_pass["iter_index"] if opt_pass else None,
+            "optimized_wall_s": opt_wall,
+            "optimized_speedup_pct": speedup_pct,
+            "last_skill_replay": self._last_skill_replay,
+            "last_multiseed": self._last_multiseed,
+        }
+
     def get_state(self) -> dict[str, Any]:
         with self._state_lock:
+            emb = self._active_embodiment_id() if self._server_info else None
+            sha = self._mcp_tools_sha256 or None
+            ev = self._active_evidence_source() if self._server_info else None
+            urdf_sha = self._active_urdf_sha() or None
+            skills = self.kb.list_skills(
+                current_embodiment=emb,
+                current_tools_sha=sha,
+                current_evidence=ev,
+                current_urdf_sha=urdf_sha,
+            )
             return {
                 "engine": "trax_mcp_agent_v2",
                 "phase": self._phase,
@@ -1109,5 +1538,7 @@ class TraxAgentEngine:
                 "pending_llm_call": dict(self._pending_llm_call) if self._pending_llm_call else None,
                 "executed_runs": list(self._executed_runs),
                 "last_verify": self._last_verify,
+                "step_value_summary": self._build_step_value_summary(),
+                "available_skills": skills,
                 "event_log": list(self._event_log),
             }

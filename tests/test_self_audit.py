@@ -86,3 +86,43 @@ def test_audit_ledger_tracks_latest_accepted_baseline(tmp_path: Path) -> None:
     ledger.append({"suite": "s1", "accuracy": 0.90, "p95_ms": 80.0, "decision": {"accepted": True, "reason_code": "speedup_pareto"}})
     b2 = ledger.latest_accepted_baseline(suite="s1")
     assert b2 is not None and b2["p95_ms"] == 80.0
+
+
+def test_agent_engine_zero_llm_skill_replay_and_multiseed_gate(tmp_path: Path) -> None:
+    import sys
+    from trax.agent_engine import TraxAgentEngine
+    from trax.mcp_protocol import MCPClient
+
+    script = Path("examples/custom_mcp_robot/unknown_arm_mcp.py").resolve()
+    client = MCPClient(transport="stdio", command=[sys.executable, str(script)], timeout_s=10.0)
+    try:
+        good_policy = (
+            "def run_policy(mcp, params):\n"
+            "    mcp.read_gantry_pose()\n"
+            "    mcp.move_gantry_xy(x_mm=120.0, y_mm=80.0)\n"
+            "    mcp.fire_dispense_valve(command_id='g-cmd-1')\n"
+            "    return {'status': 'completed'}\n"
+        )
+        llm_calls = {"n": 0}
+
+        def _mock_llm(prompt: str) -> dict:
+            llm_calls["n"] += 1
+            return {"source": good_policy, "model": "mock", "wall_s": 0.01}
+
+        engine = TraxAgentEngine(tmp_path, lambda: (client, "stdio:gantry"), llm_fn=_mock_llm)
+        engine._synthesize_sync(force_fresh=True)
+        it = engine._execute_sync(task_id="dispense_task")
+        assert it["execution"]["task_passed"] is True
+        assert it["execution"]["profile"]["total_calls"] == 3
+        assert llm_calls["n"] == 1
+
+        # Verify zero-LLM skill replay directly from promoted skill library
+        skills = engine.get_state()["available_skills"]
+        assert len(skills) == 1
+        replay = engine.run_skill_sync(skill_py_path=skills[0]["skill_py_path"], task_id="dispense_task")
+        assert replay["llm_calls"] == 0
+        assert replay["task_passed"] is True
+        assert llm_calls["n"] == 1  # Strictly zero additional LLM calls!
+        assert engine.get_state()["step_value_summary"]["last_skill_replay"]["llm_calls"] == 0
+    finally:
+        client.close()

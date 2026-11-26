@@ -34,6 +34,7 @@ from trax.portability import check_policy_portability
 from trax.profiler import aggregate_trial_profiles
 from trax.regression import RegressionSuite
 from trax.release import ReleaseRegistry
+from trax.self_audit import AuditLedger
 
 _STATIC_DIR = Path(__file__).resolve().parent / "static"
 _STATIC_MIME: dict[str, str] = {
@@ -193,6 +194,26 @@ class TraxUIApp:
         except Exception:  # noqa: BLE001
             return None
         return None
+
+    def fetch_embodiment_manifest(self) -> dict[str, Any] | None:
+        try:
+            client, _ = self._resolve_active_mcp_client()
+            _, resp, _ = client.rpc("resources/read", {"uri": "trax://embodiment/manifest"})
+            contents = (resp.get("result") or {}).get("contents") or []
+            if contents and contents[0].get("text"):
+                return json.loads(str(contents[0]["text"]))
+        except Exception:  # noqa: BLE001
+            return None
+        return None
+
+    def get_audit_ledger_snapshot(self) -> dict[str, Any]:
+        ledger_path = self.workspace_dir / "traces" / "self_audit_ledger.jsonl"
+        rows = AuditLedger(ledger_path).read_all()
+        return {
+            "ledger_path": "workspace/traces/self_audit_ledger.jsonl",
+            "records": rows[-20:],
+            "manifest": self.fetch_embodiment_manifest(),
+        }
 
     def fetch_robot_urdf(self) -> str | None:
         """Fetch active embodiment URDF via MCP `trax://robot/urdf` and normalize mesh URLs for browser."""
@@ -512,6 +533,9 @@ def create_ui_server(
             if path == "/api/kb/state":
                 self._send_json(app.agent.get_kb_snapshot())
                 return
+            if path == "/api/audit/ledger":
+                self._send_json(app.get_audit_ledger_snapshot())
+                return
             if path == "/api/kb/diff":
                 qs = parse_qs(parsed.query)
                 sha = (qs.get("sha") or [""])[0]
@@ -606,6 +630,9 @@ def create_ui_server(
                 if path == "/api/kb/rollback":
                     self._send_json(app.agent.rollback_to_commit(str(body.get("sha") or "")))
                     return
+                if path == "/api/kb/run_skill":
+                    self._send_json(app.agent.start_run_skill_async(body))
+                    return
                 if path == "/api/evolve/probe":
                     self._send_json(app.agent.start_explore_async(body))
                     return
@@ -614,6 +641,12 @@ def create_ui_server(
                     return
                 if path == "/api/evolve/execute":
                     self._send_json(app.agent.start_execute_async(body))
+                    return
+                if path == "/api/evolve/verify_seeds":
+                    self._send_json(app.agent.start_verify_multiseed_async(body))
+                    return
+                if path == "/api/evolve/optimize_speed":
+                    self._send_json(app.agent.start_optimize_speed_async(body))
                     return
                 if path == "/api/evolve/auto":
                     self._send_json(app.agent.start_closed_loop_async(body))
