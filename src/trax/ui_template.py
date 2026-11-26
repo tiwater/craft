@@ -211,6 +211,30 @@ UI_HTML = r"""<!DOCTYPE html>
   .diff-hunk { color: var(--cyan); display: block; font-weight: 700; }
   .diff-ctx { color: var(--muted); display: block; }
 
+  /* Full-Transparency LLM Prompt/Response & Executed Code Views */
+  .run-strip { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+  .io-meta {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 8px; margin-bottom: 6px; font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  }
+  .io-stack { display: grid; grid-template-columns: 1fr; gap: 7px; }
+  .io-block { background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .io-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 5px 9px; background: #0a101d; border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--cyan);
+  }
+  .io-head.resp { color: #c084fc; }
+  .io-head.exec { color: #86efac; }
+  .io-pre {
+    margin: 0; padding: 8px 10px; max-height: 175px; overflow: auto;
+    font-family: var(--mono); font-size: 11px; line-height: 1.45; color: #e2e8f0;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .io-pre.code-snap { max-height: 315px; white-space: pre; word-break: normal; }
+  .ln-num { display: inline-block; width: 32px; color: var(--dim); user-select: none; text-align: right; margin-right: 10px; }
+
   /* Right Pane: Oracle + Journal + Console */
   .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   .metric { background: var(--codebg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
@@ -316,7 +340,10 @@ UI_HTML = r"""<!DOCTYPE html>
             <div class="sub-box">
               <div class="sub-head">
                 <span>ActiveProbe Telemetry</span>
-                <span id="probe-badge" class="badge">UNPROBED</span>
+                <div style="display:flex;gap:5px;align-items:center">
+                  <button class="sm" onclick="inspectProbeCode()">Probe Py</button>
+                  <span id="probe-badge" class="badge">UNPROBED</span>
+                </div>
               </div>
               <div id="probe-kv" class="probe-kv">
                 <div class="probe-row"><span class="probe-k">authority</span><span id="pk-auth" class="probe-v">-</span></div>
@@ -364,8 +391,10 @@ UI_HTML = r"""<!DOCTYPE html>
           <div class="subtabs">
             <div class="subtab-group">
               <button class="subtab active" data-sub="code" onclick="switchCodeTab('code')">Python Policy</button>
+              <button class="subtab" data-sub="llm" onclick="switchCodeTab('llm')">LLM Prompt / Response <span id="llm-tab-cnt" style="opacity:0.8">(0)</span></button>
+              <button class="subtab" data-sub="exec" onclick="switchCodeTab('exec')">Executed Code <span id="exec-tab-cnt" style="opacity:0.8">(0)</span></button>
               <button class="subtab" data-sub="diff" onclick="switchCodeTab('diff')">Unified Diff</button>
-              <button class="subtab" data-sub="subr" onclick="switchCodeTab('subr')">Subroutines &amp; Probe</button>
+              <button class="subtab" data-sub="subr" onclick="switchCodeTab('subr')">Subroutines</button>
             </div>
             <div style="display:flex;gap:5px;align-items:center">
               <span id="ast-badge" class="badge">-</span>
@@ -375,6 +404,46 @@ UI_HTML = r"""<!DOCTYPE html>
 
           <div id="pane-code">
             <textarea id="code-editor" class="code-editor" spellcheck="false"></textarea>
+          </div>
+          <div id="pane-llm" style="display:none">
+            <div id="llm-call-strip" class="run-strip"></div>
+            <div id="llm-meta-bar" class="io-meta">No LLM call recorded in this session yet. Click 2. Synthesize Py (LLM) or Run Closed Loop.</div>
+            <div class="io-stack">
+              <div class="io-block">
+                <div class="io-head">
+                  <span>FULL PROMPT SENT TO LLM</span>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <span id="llm-prompt-len" style="color:var(--muted);font-weight:500">0 chars</span>
+                    <button class="sm" onclick="copyElem('llm-prompt-pre')">Copy</button>
+                  </div>
+                </div>
+                <pre id="llm-prompt-pre" class="io-pre">(no LLM prompt yet)</pre>
+              </div>
+              <div class="io-block">
+                <div class="io-head resp">
+                  <span>RAW RESPONSE RETURNED BY LLM</span>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <span id="llm-resp-len" style="color:var(--muted);font-weight:500">0 chars</span>
+                    <button class="sm" onclick="copyElem('llm-resp-pre')">Copy</button>
+                  </div>
+                </div>
+                <pre id="llm-resp-pre" class="io-pre">(no LLM response yet)</pre>
+              </div>
+            </div>
+          </div>
+          <div id="pane-exec" style="display:none">
+            <div id="exec-run-strip" class="run-strip"></div>
+            <div id="exec-meta-bar" class="io-meta">No Python code has been executed on the host in this session yet.</div>
+            <div class="io-block">
+              <div class="io-head exec">
+                <span id="exec-code-title">EXACT EXECUTED PYTHON SNAPSHOT</span>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <span id="exec-code-sha" style="color:var(--muted);font-weight:500">-</span>
+                  <button class="sm" onclick="copyExecCode()">Copy</button>
+                </div>
+              </div>
+              <pre id="exec-code-pre" class="io-pre code-snap">(no executed Python snapshot yet)</pre>
+            </div>
           </div>
           <div id="pane-diff" style="display:none">
             <div id="diff-view" class="diff-view"></div>
@@ -505,6 +574,11 @@ let evoState = null;
 let codeSubTab = 'code';
 let editorDirty = false;
 let lastLoadedIterSha = '';
+let selectedLlmCallIdx = -1;
+let selectedExecRunIdx = -1;
+let lastLlmCount = 0;
+let lastExecCount = 0;
+let currentExecRawSource = '';
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -517,6 +591,15 @@ function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function copyElem(id) {
+  const el = document.getElementById(id);
+  if (el && navigator.clipboard) navigator.clipboard.writeText(el.textContent || '');
+}
+
+function copyExecCode() {
+  if (currentExecRawSource && navigator.clipboard) navigator.clipboard.writeText(currentExecRawSource);
+}
+
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
@@ -525,9 +608,29 @@ function switchTab(name) {
 function switchCodeTab(name) {
   codeSubTab = name;
   document.querySelectorAll('.subtab').forEach(b => b.classList.toggle('active', b.dataset.sub === name));
-  document.getElementById('pane-code').style.display = name === 'code' ? 'block' : 'none';
-  document.getElementById('pane-diff').style.display = name === 'diff' ? 'block' : 'none';
-  document.getElementById('pane-subr').style.display = name === 'subr' ? 'block' : 'none';
+  for (const id of ['code', 'llm', 'exec', 'diff', 'subr']) {
+    const el = document.getElementById('pane-' + id);
+    if (el) el.style.display = name === id ? 'block' : 'none';
+  }
+}
+
+function selectLlmCall(idx) {
+  selectedLlmCallIdx = idx;
+  if (evoState) renderLlmInspector(evoState);
+}
+
+function selectExecRun(idx) {
+  selectedExecRunIdx = idx;
+  if (evoState) renderExecutedCodeInspector(evoState);
+}
+
+function inspectProbeCode() {
+  if (evoState && (evoState.executed_runs || []).length) {
+    const idx = evoState.executed_runs.findIndex(r => r.stage === '01_explore_probe');
+    if (idx >= 0) selectedExecRunIdx = idx;
+  }
+  switchCodeTab('exec');
+  if (evoState) renderExecutedCodeInspector(evoState);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -866,7 +969,118 @@ function renderEvolution(evo) {
   `).join('');
   cbox.scrollTop = cbox.scrollHeight;
 
+  renderLlmInspector(evo);
+  renderExecutedCodeInspector(evo);
+
   if (evo.m1_archive) renderM1Archive(evo.m1_archive);
+}
+
+function renderNumberedCode(src) {
+  const lines = String(src || '').split('\n');
+  return lines.map((ln, idx) => `<span class="ln-num">${idx + 1}</span>${esc(ln)}`).join('\n');
+}
+
+function renderLlmInspector(evo) {
+  const completed = evo.llm_calls || [];
+  const pending = evo.pending_llm_call || null;
+  const allCalls = pending ? [...completed, pending] : completed;
+  const cntEl = document.getElementById('llm-tab-cnt');
+  if (cntEl) cntEl.textContent = pending ? `(${completed.length}+1 LIVE)` : `(${completed.length})`;
+
+  if (allCalls.length !== lastLlmCount) {
+    selectedLlmCallIdx = allCalls.length - 1;
+    lastLlmCount = allCalls.length;
+  }
+  if (selectedLlmCallIdx < 0 || selectedLlmCallIdx >= allCalls.length) {
+    selectedLlmCallIdx = allCalls.length - 1;
+  }
+
+  const strip = document.getElementById('llm-call-strip');
+  const metaBar = document.getElementById('llm-meta-bar');
+  const pPre = document.getElementById('llm-prompt-pre');
+  const rPre = document.getElementById('llm-resp-pre');
+  const pLen = document.getElementById('llm-prompt-len');
+  const rLen = document.getElementById('llm-resp-len');
+
+  if (!allCalls.length) {
+    strip.innerHTML = '';
+    metaBar.textContent = 'No LLM call recorded yet. Click 2. Synthesize Py (LLM) or Run Closed Loop to inspect full prompt & response.';
+    pPre.textContent = '(no LLM prompt yet)';
+    rPre.textContent = '(no LLM response yet)';
+    pLen.textContent = '0 chars';
+    rLen.textContent = '0 chars';
+    return;
+  }
+
+  strip.innerHTML = allCalls.map((c, idx) => {
+    const isRun = c.status === 'running';
+    const act = idx === selectedLlmCallIdx ? 'active' : '';
+    const dotCls = isRun ? '' : 'pass';
+    const lbl = isRun
+      ? `call #${c.call_id} [${c.origin} · RUNNING]`
+      : `call #${c.call_id} [it=${c.iter_index} · ${c.origin} · ${c.wall_s}s]`;
+    return `<button class="iter-chip ${dotCls} ${act}" onclick="selectLlmCall(${idx})"><span class="dot"></span>${esc(lbl)}</button>`;
+  }).join('');
+
+  const cur = allCalls[selectedLlmCallIdx];
+  metaBar.innerHTML = `
+    <span><strong>call #${esc(cur.call_id)}</strong> &middot; origin=<code>${esc(cur.origin)}</code> &middot; model=<code>${esc(cur.model)}</code> (${esc(cur.reasoning_effort||'-')}) &middot; provider=<code>${esc(cur.provider||'-')}</code></span>
+    <span>${cur.status === 'running' ? '<span class="spin"></span>awaiting LLM response...' : `wall=${esc(cur.wall_s)}s · ${esc(cur.started_utc||'')} -> ${esc(cur.completed_utc||'')}`}</span>
+  `;
+  const promptTxt = cur.prompt || '';
+  const respTxt = cur.status === 'running' ? '(waiting for LLM response...)' : (cur.raw_response || cur.extracted_source || '');
+  pPre.textContent = promptTxt;
+  rPre.textContent = respTxt;
+  pLen.textContent = `${promptTxt.length} chars`;
+  rLen.textContent = cur.status === 'running' ? 'pending' : `${respTxt.length} chars`;
+}
+
+function renderExecutedCodeInspector(evo) {
+  const runs = evo.executed_runs || [];
+  const cntEl = document.getElementById('exec-tab-cnt');
+  if (cntEl) cntEl.textContent = `(${runs.length})`;
+
+  if (runs.length !== lastExecCount) {
+    selectedExecRunIdx = runs.length - 1;
+    lastExecCount = runs.length;
+  }
+  if (selectedExecRunIdx < 0 || selectedExecRunIdx >= runs.length) {
+    selectedExecRunIdx = runs.length - 1;
+  }
+
+  const strip = document.getElementById('exec-run-strip');
+  const metaBar = document.getElementById('exec-meta-bar');
+  const titleEl = document.getElementById('exec-code-title');
+  const shaEl = document.getElementById('exec-code-sha');
+  const codePre = document.getElementById('exec-code-pre');
+
+  if (!runs.length) {
+    currentExecRawSource = '';
+    strip.innerHTML = '';
+    metaBar.textContent = 'No Python code has been executed on the host yet. Click 1. Explore / Probe or 3. Execute Py.';
+    titleEl.textContent = 'EXACT EXECUTED PYTHON SNAPSHOT';
+    shaEl.textContent = '-';
+    codePre.textContent = '(no executed Python snapshot yet)';
+    return;
+  }
+
+  strip.innerHTML = runs.map((r, idx) => {
+    const act = idx === selectedExecRunIdx ? 'active' : '';
+    const stCls = r.stage === '01_explore_probe' ? 'pass' : (r.task_passed ? 'pass' : 'fail');
+    const tag = r.stage === '01_explore_probe' ? 'PROBE' : (r.task_passed ? 'PASS' : 'FAIL');
+    return `<button class="iter-chip ${stCls} ${act}" onclick="selectExecRun(${idx})"><span class="dot"></span>#${r.run_index} ${esc(r.label)} [${tag}]</button>`;
+  }).join('');
+
+  const cur = runs[selectedExecRunIdx];
+  currentExecRawSource = cur.source || '';
+  const methodsStr = (cur.methods || []).join(' -> ');
+  metaBar.innerHTML = `
+    <span><strong>#${esc(cur.run_index)} ${esc(cur.stage)}</strong> &middot; cmd=<code>${esc(cur.command_id)}</code> &middot; scenario=<code>${esc(cur.scenario_key)}</code> &middot; wall=${esc(cur.wall_s)}s &middot; @${esc(cur.executed_utc)}</span>
+    <span>calls=${(cur.methods||[]).length} (${esc(methodsStr.slice(0, 90))}${methodsStr.length > 90 ? '...' : ''})</span>
+  `;
+  titleEl.textContent = `EXACT EXECUTED PYTHON — ${cur.label}`;
+  shaEl.textContent = `sha256:${(cur.source_sha256 || '').slice(0, 14)} · ${(cur.source || '').split('\n').length} lines`;
+  codePre.innerHTML = renderNumberedCode(cur.source || '');
 }
 
 function renderM1Archive(arc) {
@@ -1028,6 +1242,7 @@ async function runProbe() {
 
 async function runSynthesize() {
   editorDirty = false;
+  switchCodeTab('llm');
   await api('api/evolve/synthesize', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({

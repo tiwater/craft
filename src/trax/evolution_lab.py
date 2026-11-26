@@ -280,6 +280,9 @@ class EvolutionLabController:
         self._probe_report: dict[str, Any] | None = None
         self._iterations: list[dict[str, Any]] = []
         self._active_iter_idx: int = -1
+        self._llm_calls: list[dict[str, Any]] = []
+        self._pending_llm_call: dict[str, Any] | None = None
+        self._executed_runs: list[dict[str, Any]] = []
         self._event_log: list[dict[str, str]] = []
         self._m1_archive = load_m1_archive(self.workspace_dir)
 
@@ -342,6 +345,9 @@ class EvolutionLabController:
                 "probe_report": self._probe_report,
                 "iterations": list(self._iterations),
                 "active_iter_index": self._active_iter_idx,
+                "llm_calls": list(self._llm_calls),
+                "pending_llm_call": dict(self._pending_llm_call) if self._pending_llm_call else None,
+                "executed_runs": list(self._executed_runs),
                 "event_log": list(self._event_log),
                 "m1_archive": self._m1_archive,
             }
@@ -364,6 +370,9 @@ class EvolutionLabController:
             self._probe_report = None
             self._iterations = []
             self._active_iter_idx = -1
+            self._llm_calls = []
+            self._pending_llm_call = None
+            self._executed_runs = []
             self._event_log = []
             self._log("RESET", f"Fresh session initialized (scenario={self._scenario_key}). Start with 1. Probe or Run Closed Loop.")
             return self.get_state()
@@ -423,6 +432,24 @@ class EvolutionLabController:
         }
         with self._state_lock:
             self._probe_report = report
+            self._executed_runs.append(
+                {
+                    "run_index": len(self._executed_runs) + 1,
+                    "stage": "01_explore_probe",
+                    "label": "Stage-1 ActiveProbe (Public SDK)",
+                    "iter_index": None,
+                    "command_id": probe_cmd,
+                    "scenario_key": scenario_key,
+                    "source": PUBLIC_SDK_EXPLORATION_PROBE_SOURCE,
+                    "source_sha256": digest(PUBLIC_SDK_EXPLORATION_PROBE_SOURCE),
+                    "ast_check": check_sandbox_ast_compliance(PUBLIC_SDK_EXPLORATION_PROBE_SOURCE),
+                    "methods": list(probe_exec.get("methods") or []),
+                    "status": str(probe_exec.get("host_runtime_status") or "probed"),
+                    "task_passed": True,
+                    "wall_s": wall_s,
+                    "executed_utc": _utc_hms(),
+                }
+            )
             self._phase = "explored"
             self._log("PROBE", report["summary"])
         return report
@@ -539,9 +566,25 @@ class EvolutionLabController:
                 prev_iter=prev_iter,
                 negative_history=neg_hist,
             )
+            started_utc = _utc_hms()
+            next_call_id = len(self._llm_calls) + 1
+            self._pending_llm_call = {
+                "call_id": next_call_id,
+                "iter_index": len(self._iterations),
+                "origin": origin,
+                "provider": "codex_cli",
+                "model": "gpt-6-astra",
+                "reasoning_effort": "medium",
+                "status": "running",
+                "started_utc": started_utc,
+                "prompt": prompt,
+                "prompt_chars": len(prompt),
+                "raw_response": None,
+                "response_chars": 0,
+            }
             self._log(
                 "SYNTH",
-                f"Invoking LLM ({origin}, model=gpt-6-astra, prompt={len(prompt)} chars)...",
+                f"LLM call #{next_call_id} ({origin}, model=gpt-6-astra, prompt={len(prompt)} chars) dispatched...",
             )
 
         llm = self._llm_fn or make_live_llm_fn(
@@ -551,8 +594,14 @@ class EvolutionLabController:
             timeout_s=150.0,
             max_retries=1,
         )
-        llm_res = llm(prompt)
+        try:
+            llm_res = llm(prompt)
+        finally:
+            with self._state_lock:
+                self._pending_llm_call = None
+
         source = str(llm_res.get("source") or "").strip()
+        raw_response = str(llm_res.get("raw_output") if llm_res.get("raw_output") is not None else source)
         ast_res = check_sandbox_ast_compliance(source)
         sub = analyze_policy_subroutines(source, failure_codes=())
 
@@ -561,6 +610,25 @@ class EvolutionLabController:
             prev_src = str(self._iterations[self._active_iter_idx]["source"]) if 0 <= self._active_iter_idx < len(self._iterations) else ""
             prev_lbl = f"iter_{self._active_iter_idx}" if prev_src else ""
             diff_txt = _compute_unified_diff(prev_src, source, prev_lbl, f"iter_{idx} ({origin})")
+            call_record = {
+                "call_id": len(self._llm_calls) + 1,
+                "iter_index": idx,
+                "origin": origin,
+                "provider": "codex_cli" if self._llm_fn is None else "custom_llm",
+                "model": str(llm_res.get("model", "gpt-6-astra")),
+                "reasoning_effort": str(llm_res.get("reasoning_effort", "medium")),
+                "status": "completed",
+                "started_utc": started_utc,
+                "completed_utc": _utc_hms(),
+                "wall_s": llm_res.get("wall_s", 0.0),
+                "prompt": prompt,
+                "prompt_chars": len(prompt),
+                "raw_response": raw_response,
+                "response_chars": len(raw_response),
+                "extracted_source": source,
+                "extracted_sha256": digest(source),
+            }
+            self._llm_calls.append(call_record)
             rec = {
                 "iter_index": idx,
                 "label": f"iter_{idx} ({origin})",
@@ -571,13 +639,7 @@ class EvolutionLabController:
                 "unified_diff": diff_txt,
                 "ast_check": ast_res,
                 "subroutines": sub,
-                "llm_meta": {
-                    "model": llm_res.get("model", "gpt-6-astra"),
-                    "reasoning_effort": llm_res.get("reasoning_effort", "medium"),
-                    "wall_s": llm_res.get("wall_s", 0.0),
-                    "prompt_chars": len(prompt),
-                    "prompt_excerpt": prompt[:1200],
-                },
+                "llm_meta": call_record,
                 "execution": None,
                 "attribution": None,
                 "journal_entries": [],
@@ -589,7 +651,7 @@ class EvolutionLabController:
             ast_tag = "COMPLIANT" if ast_res.get("compliant") else f"BLOCKED ({len(ast_res.get('violations', []))} violations)"
             self._log(
                 "AST",
-                f"iter_{idx} generated in {llm_res.get('wall_s', 0.0)}s -> AST {ast_tag} (sha256={rec['source_sha256'][:12]}).",
+                f"LLM call #{call_record['call_id']} -> iter_{idx} in {call_record['wall_s']}s ({call_record['response_chars']} chars) -> AST {ast_tag} (sha256={rec['source_sha256'][:12]}).",
             )
             return rec
 
@@ -711,10 +773,32 @@ class EvolutionLabController:
 
         with self._state_lock:
             target_iter = self._iterations[cur_idx]
-            target_iter["execution"] = exec_res
+            exec_with_code = dict(exec_res)
+            exec_with_code["executed_command_id"] = cmd_id
+            exec_with_code["executed_source"] = source
+            exec_with_code["executed_sha256"] = digest(source)
+            target_iter["execution"] = exec_with_code
             target_iter["attribution"] = attr_dict
             target_iter["journal_entries"] = journal_entries
             target_iter["subroutines"] = sub
+            self._executed_runs.append(
+                {
+                    "run_index": len(self._executed_runs) + 1,
+                    "stage": "03_policy_exec",
+                    "label": f"iter_{cur_idx} ({target_iter.get('origin')})",
+                    "iter_index": cur_idx,
+                    "command_id": cmd_id,
+                    "scenario_key": self._scenario_key,
+                    "source": source,
+                    "source_sha256": digest(source),
+                    "ast_check": ast_res,
+                    "methods": list(exec_res.get("methods") or []),
+                    "status": str(exec_res.get("host_runtime_status") or ""),
+                    "task_passed": bool(exec_res.get("task_passed")),
+                    "wall_s": exec_res.get("wall_s", 0.0),
+                    "executed_utc": _utc_hms(),
+                }
+            )
             self._phase = "verified" if exec_res.get("task_passed") else "attributed"
             verdict = "PASS" if exec_res.get("task_passed") else f"FAIL ({attr_dict['layer']}/{attr_dict['code']})"
             oracle = exec_res.get("oracle_post_run") or {}
@@ -769,6 +853,9 @@ class EvolutionLabController:
                 self._iterations = []
                 self._active_iter_idx = -1
                 self._probe_report = None
+                self._llm_calls = []
+                self._pending_llm_call = None
+                self._executed_runs = []
             self._busy = True
             self._phase = "exploring"
             self._busy_detail = f"Closed-loop evolution (max_iters={max_iters}): Stage 1 Exploring..."

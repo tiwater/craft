@@ -45,9 +45,21 @@ def test_closed_loop_explore_synthesize_execute_iterate_with_diff_and_journal() 
         calls["n"] += 1
         assert "PUBLIC-SDK EXPLORATION TELEMETRY" in prompt
         if calls["n"] == 1:
-            return {"source": naive_src, "model": "mock-llm", "reasoning_effort": "medium", "wall_s": 0.05}
+            return {
+                "raw_output": f"```python\n{naive_src}```",
+                "source": naive_src,
+                "model": "mock-llm",
+                "reasoning_effort": "medium",
+                "wall_s": 0.05,
+            }
         assert "PREVIOUS ITERATION FAILURE DIAGNOSTICS" in prompt
-        return {"source": repaired_src, "model": "mock-llm", "reasoning_effort": "medium", "wall_s": 0.06}
+        return {
+            "raw_output": f"Here is the repaired policy:\n```python\n{repaired_src}```",
+            "source": repaired_src,
+            "model": "mock-llm",
+            "reasoning_effort": "medium",
+            "wall_s": 0.06,
+        }
 
     with tempfile.TemporaryDirectory(prefix="trax-evo-") as tmp:
         lab = EvolutionLabController(
@@ -74,3 +86,19 @@ def test_closed_loop_explore_synthesize_execute_iterate_with_diff_and_journal() 
     assert it1["unified_diff"].startswith("---")
     assert len(it1["journal_entries"]) >= 4
     assert st["phase"] == "verified"
+
+    # Full transparency assertions: exact LLM prompts/responses & exact executed Python code
+    assert len(st["llm_calls"]) == 2
+    assert "PUBLIC-SDK EXPLORATION TELEMETRY" in st["llm_calls"][0]["prompt"]
+    assert "```python" in st["llm_calls"][0]["raw_response"]
+    assert "PREVIOUS ITERATION FAILURE DIAGNOSTICS" in st["llm_calls"][1]["prompt"]
+    assert "Here is the repaired policy:" in st["llm_calls"][1]["raw_response"]
+
+    assert len(st["executed_runs"]) == 3
+    assert st["executed_runs"][0]["stage"] == "01_explore_probe"
+    assert "sdk.move_to_target" in st["executed_runs"][0]["source"]
+    assert st["executed_runs"][1]["stage"] == "03_policy_exec"
+    assert st["executed_runs"][1]["source"].strip() == naive_src.strip()
+    assert st["executed_runs"][2]["stage"] == "03_policy_exec"
+    assert st["executed_runs"][2]["source"].strip() == repaired_src.strip()
+    assert st["executed_runs"][2]["task_passed"] is True
