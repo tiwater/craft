@@ -617,7 +617,7 @@ class MCPInspectorController:
         self.workspace_dir = workspace_dir
         self._get_active_driver = get_active_driver
         self._driver_lock = lock
-        self._state_lock = threading.Lock()
+        self._state_lock = threading.RLock()
         self._journal_path = self.workspace_dir / "ui_mcp_journal.sqlite"
 
         self._endpoint_label: str = "Active Host (Auto)"

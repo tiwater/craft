@@ -63,7 +63,7 @@ class TraxStudioApp:
         self.driver = driver
         self.workspace_dir = Path(workspace_dir)
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._bench_running = False
         self._run_state: dict[str, Any] = {
             "running": False,

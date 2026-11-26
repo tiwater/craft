@@ -263,7 +263,7 @@ class EvolutionLabController:
         self.driver = driver
         self.workspace_dir = workspace_dir
         self._driver_lock = driver_lock
-        self._state_lock = threading.Lock()
+        self._state_lock = threading.RLock()
         self._llm_fn = llm_fn
         self._journal_path = self.workspace_dir / "ui_evolution_journal.sqlite"
 
@@ -369,7 +369,7 @@ class EvolutionLabController:
         with self._state_lock:
             if 0 <= index < len(self._iterations):
                 self._active_iter_idx = index
-            return self.get_state()
+        return self.get_state()
 
     def reset_session(self, *, task_instruction: str | None = None, scenario_key: str | None = None) -> dict[str, Any]:
         with self._state_lock:
@@ -387,8 +387,8 @@ class EvolutionLabController:
             self._pending_llm_call = None
             self._executed_runs = []
             self._event_log = []
-            self._log("RESET", f"Fresh session initialized (scenario={self._scenario_key}). Start with 1. Probe or Run Closed Loop.")
-            return self.get_state()
+            self._log("RESET", f"Fresh session initialized (scenario={self._scenario_key}). Click 1. Explore / Probe or Run Closed Loop (1->4).")
+        return self.get_state()
 
     def _run_probe_sync(self, scenario_key: str) -> dict[str, Any]:
         scenario = self._scenario_dict(scenario_key)

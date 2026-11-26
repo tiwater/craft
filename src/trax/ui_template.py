@@ -1540,6 +1540,12 @@ function renderEvolution(evo) {
     document.getElementById('pk-pos').textContent = first && first.world_m ? `[${first.world_m.slice(0,3).join(', ')}]` : '-';
     document.getElementById('pk-l2').textContent = pr.l2_radial_offset_mm != null ? `${pr.l2_radial_offset_mm} mm` : '-';
     document.getElementById('pk-wall').textContent = `${pr.probe_wall_s}s`;
+  } else {
+    pb.textContent = 'UNPROBED';
+    pb.className = 'badge';
+    for (const id of ['pk-auth','pk-sdk','pk-objs','pk-pos','pk-l2','pk-wall']) {
+      document.getElementById(id).textContent = '-';
+    }
   }
 
   // Iteration timeline strip
@@ -1614,6 +1620,25 @@ function renderEvolution(evo) {
           return `<tr class="${cls}"><td>${i+1}</td><td>${esc(r.action)}</td><td>${esc(st)}</td></tr>`;
         }).join('')
       : '<tr><td colspan="3" style="color:var(--dim)">Click 3. Execute Py to run inside AST sandbox + SQLite journal.</td></tr>';
+  } else {
+    const ed = document.getElementById('code-editor');
+    if (ed && !editorDirty) {
+      ed.value = '';
+      lastLoadedIterSha = '';
+      syncCodeEditorHighlight();
+    }
+    const ab = document.getElementById('ast-badge');
+    ab.textContent = 'EMPTY';
+    ab.className = 'badge';
+    document.getElementById('sha-badge').textContent = 'sha256:-';
+    document.getElementById('diff-view').innerHTML = '<span class="diff-ctx">Fresh session. Click 1. Explore / Probe, 2. Synthesize Py (LLM), or Run Closed Loop (1->4).</span>';
+    document.getElementById('subr-view').innerHTML = highlightJson({ status: 'fresh_session', stage1_probe_report: pr || null });
+    const vp = document.getElementById('verdict-pill');
+    vp.textContent = 'IDLE';
+    vp.className = 'badge';
+    for (const id of ['m-layer','m-code','m-oracle','m-brew']) document.getElementById(id).textContent = '-';
+    document.getElementById('journal-count').textContent = '0 ops';
+    document.getElementById('journal-tbody').innerHTML = '<tr><td colspan="3" style="color:var(--dim)">Fresh session ready. Click Run Closed Loop (1->4) or 1. Explore / Probe.</td></tr>';
   }
 
   // Console log

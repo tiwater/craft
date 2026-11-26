@@ -104,6 +104,15 @@ def test_closed_loop_explore_synthesize_execute_iterate_with_diff_and_journal() 
     assert st["executed_runs"][2]["source"].strip() == repaired_src.strip()
     assert st["executed_runs"][2]["task_passed"] is True
 
+    # Regression test: select_iteration and reset_session must NEVER deadlock self._state_lock
+    with tempfile.TemporaryDirectory(prefix="trax-evo-reset-") as tmp2:
+        lab2 = EvolutionLabController(cfg, driver, Path(tmp2), threading.RLock(), llm_fn=fake_llm)
+        st_reset = lab2.reset_session(scenario_key="fault")
+        assert st_reset["phase"] == "idle"
+        assert st_reset["iterations"] == []
+        st_sel = lab2.select_iteration(0)
+        assert st_sel["active_iter_index"] == -1
+
 
 def test_embodiment_manager_hot_switch_and_rax_matrix_and_comparator() -> None:
     cfg = SceneConfig.from_file(Path("examples/single_cup_coffee_config.json"))
