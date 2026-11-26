@@ -894,7 +894,7 @@ const PY_BUILTINS = new Set([
   'len','float','int','str','dict','list','tuple','set','bool','range',
   'min','max','abs','round','sum','sorted','enumerate','any','all','isinstance','zip','print',
 ]);
-const PY_TOK_RE = /(#[^\n]*)|([frbuFRBU]{0,2}(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'))|(\bdef\s+)([A-Za-z_]\w*)|(\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|(\b[A-Za-z_]\w*\b)(?=\s*\()|(\b[A-Za-z_]\w*\b)/g;
+const PY_TOK_RE = /(#[^\n]*)|([frbuFRBU]{0,2}(?:"{3}[\s\S]*?"{3}|'{3}[\s\S]*?'{3}|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'))|(\bdef\s+)([A-Za-z_]\w*)|(\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|(\b[A-Za-z_]\w*\b)(?=\s*\()|(\b[A-Za-z_]\w*\b)/g;
 
 function highlightPython(src) {
   const s = String(src ?? '');
