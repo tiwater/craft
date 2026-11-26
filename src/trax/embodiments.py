@@ -28,7 +28,8 @@ def _read_json(path: Path) -> dict[str, Any] | None:
 
 
 def _suite_configs(workspace_dir: Path) -> dict[str, dict[str, Any]]:
-    exp_root = workspace_dir.parent
+    cand_exp = workspace_dir.parent / "experiments"
+    exp_root = cand_exp if cand_exp.is_dir() else workspace_dir.parent
     return {
         "libero_object_blind": {
             "label": "Blind LIBERO-Object (10/10 · Franka Panda)",
@@ -239,7 +240,8 @@ def load_archived_policy_comparison(
 
 def build_rax_coverage_matrix(workspace_dir: Path) -> list[dict[str, Any]]:
     """Build honest multi-embodiment coverage matrix mapped against RAX (arXiv:2610.22496)."""
-    exp_root = workspace_dir.parent
+    cand_exp = workspace_dir.parent / "experiments"
+    exp_root = cand_exp if cand_exp.is_dir() else workspace_dir.parent
     has_lib_sp = (exp_root / "trax-2.0-m1" / "libero-spatial-full" / "libero_report.json").is_file()
     has_lib_ob = (exp_root / "trax-2.0-m1" / "libero-object-blind" / "libero_report.json").is_file()
     has_rb4 = (exp_root / "trax-2.0-m1" / "robosuite-v4" / "robosuite_prior_work_report.json").is_file()

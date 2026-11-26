@@ -195,7 +195,8 @@ def _read_json_safe(path: Path) -> dict[str, Any] | None:
 
 def load_m1_archive(workspace_dir: Path) -> dict[str, Any]:
     """Load real archived benchmark receipts from experiments/ for the M1 Archive tab."""
-    exp_root = workspace_dir.parent
+    cand_exp = workspace_dir.parent / "experiments"
+    exp_root = cand_exp if cand_exp.is_dir() else workspace_dir.parent
     out: dict[str, Any] = {}
 
     rb4 = _read_json_safe(exp_root / "trax-2.0-m1" / "robosuite-v4" / "robosuite_prior_work_report.json")

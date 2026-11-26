@@ -116,7 +116,7 @@ UI_HTML = r"""<!DOCTYPE html>
   }
   .tab-panel { display: none; min-height: 0; }
   .tab-panel.active { display: block; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-  #tab-lab.active, #tab-mcp.active { display: flex; flex-direction: column; overflow: hidden; }
+  #tab-lab.active, #tab-mcp.active, #tab-kb.active { display: flex; flex-direction: column; overflow: hidden; }
 
   /* Full-Viewport 3-Pane Research IDE Grid */
   .ide-grid {
@@ -437,6 +437,7 @@ UI_HTML = r"""<!DOCTYPE html>
       <div class="tabs">
         <button class="tab-btn active" data-tab="lab" onclick="switchTab('lab')">Closed-Loop Lab</button>
         <button class="tab-btn" data-tab="mcp" onclick="switchTab('mcp')">MCP Inspector</button>
+        <button class="tab-btn" data-tab="kb" onclick="switchTab('kb')">Knowledge &amp; Git</button>
         <button class="tab-btn" data-tab="m1" onclick="switchTab('m1')">Embodiments &amp; RAX Matrix</button>
         <button class="tab-btn" data-tab="gov" onclick="switchTab('gov')">Governance</button>
       </div>
@@ -739,7 +740,80 @@ UI_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- TAB 3: MULTI-EMBODIMENT RAX COVERAGE MATRIX & CROSS-METHOD COMPARATOR -->
+  <!-- TAB 3: GIT-VERSIONED EXECUTABLE KNOWLEDGE BASE -->
+  <div id="tab-kb" class="tab-panel">
+    <div class="mcp-conn-bar" style="grid-template-columns:auto 1fr auto">
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="panel-title">Executable Knowledge Base</span>
+        <span id="kb-branch-pill" class="badge ok">branch: main</span>
+        <span id="kb-tags-pill" class="badge">0 tags</span>
+      </div>
+      <div id="kb-zones-bar" style="font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap">
+        <span><strong>knowledge/</strong> (Git)</span>
+        <span><strong>runtime/</strong> (SQLite WAL)</span>
+        <span><strong>traces/</strong> (JSONL)</span>
+        <span><strong>recordings/</strong> (Episodes)</span>
+      </div>
+      <button class="sm primary" onclick="loadKnowledgeBase()">Refresh KB &amp; Git</button>
+    </div>
+
+    <div class="mcp-grid">
+      <!-- COL 1: RUNTIME-OWNED FACTS.md & FORBIDDEN.md -->
+      <div class="panel" style="gap:8px">
+        <div class="io-block" style="flex:1.15">
+          <div class="io-head">
+            <span>FACTS.md &mdash; Verified Physical &amp; MCP Invariants</span>
+            <span class="badge ok">RUNTIME-OWNED</span>
+          </div>
+          <pre id="kb-facts-pre" class="io-pre">(loading FACTS.md...)</pre>
+        </div>
+        <div class="io-block" style="flex:0.85">
+          <div class="io-head resp">
+            <span>FORBIDDEN.md &mdash; 4-Layer Negative Constraints</span>
+            <span class="badge warn">DEDUPLICATED</span>
+          </div>
+          <pre id="kb-forbidden-pre" class="io-pre">(loading FORBIDDEN.md...)</pre>
+        </div>
+      </div>
+
+      <!-- COL 2: CONTRACT-BOUND VERIFIED SKILLS -->
+      <div class="panel" style="gap:8px">
+        <div class="panel-head" style="margin-bottom:0">
+          <span class="panel-title">Contract-Bound Skills (skills/&lt;embodiment&gt;/*)</span>
+          <span id="kb-skills-cnt" class="badge">0 skills</span>
+        </div>
+        <div id="kb-skills-list" class="mcp-list" style="flex:0.55"></div>
+        <div class="io-block" style="flex:1.45">
+          <div class="io-head exec">
+            <span id="kb-file-title">SKILL INSPECTOR</span>
+            <div style="display:flex;gap:5px">
+              <button class="sm" onclick="openKbSkillFile('md')">SKILL.md</button>
+              <button class="sm" onclick="openKbSkillFile('py')">skill.py</button>
+            </div>
+          </div>
+          <pre id="kb-file-pre" class="io-pre code-snap">(select a verified skill above to inspect SKILL.md or skill.py)</pre>
+        </div>
+      </div>
+
+      <!-- COL 3: GIT LOG, REAL GIT DIFF & ROLLBACK -->
+      <div class="panel" style="gap:8px">
+        <div class="panel-head" style="margin-bottom:0">
+          <span class="panel-title">Git Commit History (workspace/knowledge)</span>
+          <button id="btn-kb-rollback" class="sm warn" onclick="rollbackSelectedCommit()" disabled>Rollback Policy</button>
+        </div>
+        <div id="kb-git-log" class="mcp-list" style="flex:0.85"></div>
+        <div class="io-block" style="flex:1.15">
+          <div class="io-head">
+            <span id="kb-diff-title">GIT DIFF / COMMIT PATCH</span>
+            <span id="kb-diff-sha" style="color:var(--muted);font-weight:500">-</span>
+          </div>
+          <div id="kb-diff-view" class="diff-view" style="border:none;border-radius:0;min-height:120px">(select a commit above to inspect real git diff)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: MULTI-EMBODIMENT RAX COVERAGE MATRIX & CROSS-METHOD COMPARATOR -->
   <div id="tab-m1" class="tab-panel">
     <div class="panel">
       <div class="panel-head">
@@ -1023,6 +1097,104 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
   if (name === 'mcp' && (!mcpState || !(mcpState.tools || []).length)) {
     inspectMcp();
+  }
+  if (name === 'kb') {
+    loadKnowledgeBase();
+  }
+}
+
+let kbState = null;
+let selectedKbSkill = null;
+let selectedKbCommit = '';
+
+async function loadKnowledgeBase() {
+  try {
+    kbState = await api('api/kb/state');
+    document.getElementById('kb-branch-pill').textContent = `branch: ${kbState.branch || 'main'}`;
+    document.getElementById('kb-branch-pill').className = 'badge ' + (kbState.branch === 'main' ? 'ok' : 'warn');
+    document.getElementById('kb-tags-pill').textContent = `${(kbState.tags || []).length} verified tags`;
+
+    const ws = kbState.workspace_stats || {};
+    document.getElementById('kb-zones-bar').innerHTML = `
+      <span><strong>knowledge/</strong> Git (${(kbState.git_log||[]).length} commits)</span>
+      <span><strong>runtime/</strong> SQLite (${(ws.sqlite_ledgers||[]).length} WAL DBs)</span>
+      <span><strong>traces/</strong> JSONL (${ws.llm_calls_logged||0} LLM · ${ws.mcp_wire_logged||0} MCP)</span>
+      <span><strong>recordings/</strong> (${ws.recordings_count||0} episodes)</span>
+    `;
+    document.getElementById('kb-facts-pre').textContent = kbState.facts_md || '(empty)';
+    document.getElementById('kb-forbidden-pre').textContent = kbState.forbidden_md || '(empty)';
+
+    const skills = kbState.skills || [];
+    document.getElementById('kb-skills-cnt').textContent = `${skills.length} skills`;
+    document.getElementById('kb-skills-list').innerHTML = skills.map((s, idx) => {
+      const cls = s.status === 'active' ? 'ok' : (s.status === 'stale_contract' ? 'err' : 'warn');
+      const act = selectedKbSkill && selectedKbSkill.skill_md_path === s.skill_md_path ? 'active' : '';
+      return `<button class="mcp-item ${act}" onclick="selectKbSkill(${idx})">
+        <div class="mcp-item-top">
+          <span class="mcp-item-name">${esc(s.embodiment_id)} / ${esc(s.skill_name)}</span>
+          <span class="badge ${cls}">${esc(s.status.toUpperCase())}</span>
+        </div>
+        <div class="mcp-item-desc">evidence=${esc(s.evidence_source)} · contract=${esc(s.mcp_tools_sha256)} · ${esc(s.verify_detail||'')}</div>
+      </button>`;
+    }).join('') || '<div style="font-family:var(--mono);font-size:11px;color:var(--dim)">No promoted skills yet. Run a Closed Loop task until verify_task passes to promote onto main.</div>';
+
+    if (!selectedKbSkill && skills.length) selectKbSkill(0);
+
+    const commits = kbState.git_log || [];
+    document.getElementById('kb-git-log').innerHTML = commits.map(c => {
+      const act = c.sha === selectedKbCommit ? 'active' : '';
+      const isMerge = c.subject.startsWith('merge(');
+      return `<button class="mcp-item ${act}" onclick="selectKbCommit('${esc(c.sha)}','${esc(c.short_sha)}')">
+        <div class="mcp-item-top">
+          <span class="mcp-item-name"><code>${esc(c.short_sha)}</code> ${esc(c.subject.slice(0, 52))}</span>
+          ${c.refs ? `<span class="badge ${isMerge ? 'ok' : ''}">${esc(c.refs.slice(0, 32))}</span>` : ''}
+        </div>
+        <div class="mcp-item-desc">${esc(c.date)}</div>
+      </button>`;
+    }).join('') || '<div style="font-family:var(--mono);font-size:11px;color:var(--dim)">No commits yet.</div>';
+
+    if (!selectedKbCommit && commits.length) selectKbCommit(commits[0].sha, commits[0].short_sha);
+  } catch (e) {
+    document.getElementById('kb-facts-pre').textContent = `KB load error: ${e.message}`;
+  }
+}
+
+function selectKbSkill(idx) {
+  if (!kbState || !kbState.skills || !kbState.skills[idx]) return;
+  selectedKbSkill = kbState.skills[idx];
+  openKbSkillFile('py');
+}
+
+async function openKbSkillFile(kind) {
+  if (!selectedKbSkill) return;
+  const path = kind === 'md' ? selectedKbSkill.skill_md_path : selectedKbSkill.skill_py_path;
+  document.getElementById('kb-file-title').textContent = path;
+  const data = await api('api/kb/file?path=' + encodeURIComponent(path));
+  const pre = document.getElementById('kb-file-pre');
+  if (kind === 'py') pre.innerHTML = renderNumberedCode(data.content || '');
+  else pre.textContent = data.content || '';
+}
+
+async function selectKbCommit(sha, shortSha) {
+  selectedKbCommit = sha;
+  document.getElementById('kb-diff-sha').textContent = shortSha || sha.slice(0, 7);
+  document.getElementById('btn-kb-rollback').disabled = !sha;
+  const data = await api('api/kb/diff?sha=' + encodeURIComponent(sha));
+  document.getElementById('kb-diff-view').innerHTML = renderDiffHtml(data.diff || '');
+}
+
+async function rollbackSelectedCommit() {
+  if (!selectedKbCommit) return;
+  try {
+    const res = await api('api/kb/rollback', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ sha: selectedKbCommit }),
+    });
+    if (res.state) renderEvolution(res.state);
+    await loadKnowledgeBase();
+    switchTab('lab');
+  } catch (e) {
+    alert('Rollback failed: ' + e.message);
   }
 }
 

@@ -21,6 +21,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 from .contracts import digest
 from .journal import Journal
+from .knowledge_base import AuditTraceStore, ExecutableKnowledgeBase
 from .mcp_protocol import MCPClient, MCP_PROTOCOL_VERSION, format_mcp_tools_for_prompt
 from .prior_work_bench import make_live_llm_fn
 from .probing import analyze_policy_subroutines
@@ -427,7 +428,9 @@ class TraxAgentEngine:
         self._on_wire = on_wire
         self._state_lock = threading.RLock()
         self._exec_lock = threading.RLock()
-        self._journal_path = self.workspace_dir / "trax_agent_journal.sqlite"
+        self.traces = AuditTraceStore(self.workspace_dir)
+        self.kb = ExecutableKnowledgeBase(self.workspace_dir)
+        self._journal_path = self.traces.runtime_dir / "agent_journal.sqlite"
 
         self._phase: str = "idle"
         self._busy: bool = False
@@ -439,6 +442,7 @@ class TraxAgentEngine:
 
         self._mcp_endpoint: str = ""
         self._server_info: dict[str, Any] | None = None
+        self._mcp_tools_sha256: str = ""
         self._discovered_tools: list[dict[str, Any]] = []
         self._discovered_resources: list[dict[str, Any]] = []
         self._exploration_findings: list[dict[str, Any]] = []
@@ -450,7 +454,20 @@ class TraxAgentEngine:
         self._event_log: list[dict[str, str]] = []
         self._last_verify: dict[str, Any] | None = None
 
-        self._log("INIT", "TRAX Unified MCP Agent Engine ready. Click 1. Agent Explore (MCP+LLM) or Run Closed Loop (1->4).")
+        self._log("INIT", f"TRAX MCP Agent Engine + Git Knowledge Base ready (branch={self.kb.current_branch()}).")
+
+    def _emit_wire(self, entry: dict[str, Any]) -> None:
+        self.traces.append_mcp_wire(entry)
+        if self._on_wire is not None:
+            self._on_wire(entry)
+
+    def _active_embodiment_id(self) -> str:
+        info = self._server_info or {}
+        return str(info.get("execution_authority") or info.get("name") or "unknown-embodiment")
+
+    def _active_evidence_source(self) -> str:
+        info = self._server_info or {}
+        return str(info.get("evidence_source") or "simulator")
 
     def _log(self, tag: str, message: str) -> None:
         self._event_log.append({"t": _utc_hms(), "tag": tag, "msg": message})
@@ -480,13 +497,12 @@ class TraxAgentEngine:
         )
         tools_req, tools_resp, tools_ms = client.rpc("tools/list", {})
         res_req, res_resp, res_ms = client.rpc("resources/list", {})
-        if self._on_wire is not None:
-            for m, rq, rs, ms in (
-                ("initialize", init_req, init_resp, init_ms),
-                ("tools/list", tools_req, tools_resp, tools_ms),
-                ("resources/list", res_req, res_resp, res_ms),
-            ):
-                self._on_wire({"t": _utc_hms(), "method": m, "latency_ms": ms, "ok": "error" not in rs, "request": rq, "response": rs})
+        for m, rq, rs, ms in (
+            ("initialize", init_req, init_resp, init_ms),
+            ("tools/list", tools_req, tools_resp, tools_ms),
+            ("resources/list", res_req, res_resp, res_ms),
+        ):
+            self._emit_wire({"t": _utc_hms(), "method": m, "latency_ms": ms, "ok": "error" not in rs, "request": rq, "response": rs})
 
         if "error" in init_resp:
             raise RuntimeError(f"MCP initialize failed: {init_resp['error']}")
@@ -496,10 +512,14 @@ class TraxAgentEngine:
         info = (init_resp.get("result") or {}).get("serverInfo") or {}
         tools = list((tools_resp.get("result") or {}).get("tools") or [])
         resources = list((res_resp.get("result") or {}).get("resources") or [])
+        tools_sha = digest(
+            [{"name": t.get("name"), "schema": t.get("inputSchema"), "ann": t.get("annotations")} for t in tools]
+        )
 
         with self._state_lock:
             self._mcp_endpoint = endpoint_label
             self._server_info = info
+            self._mcp_tools_sha256 = tools_sha
             self._discovered_tools = tools
             self._discovered_resources = resources
         return client, endpoint_label, info, tools, resources
@@ -571,6 +591,7 @@ class TraxAgentEngine:
                 "extracted_sha256": digest(source),
             }
             self._llm_calls.append(rec)
+            self.traces.append_llm_call(rec)
             self._log("LLM", f"Call #{rec['call_id']} ({origin}) returned {rec['response_chars']} chars in {rec['wall_s']}s.")
         return rec, source
 
@@ -584,6 +605,11 @@ class TraxAgentEngine:
         prior_findings: Sequence[Mapping[str, Any]],
     ) -> str:
         tool_doc = format_mcp_tools_for_prompt(tools)
+        kb_block = self.kb.render_prompt_knowledge_block(
+            embodiment_id=self._active_embodiment_id(),
+            mcp_tools_sha256=self._mcp_tools_sha256,
+            evidence_source=self._active_evidence_source(),
+        )
         prior_txt = json.dumps(list(prior_findings), indent=2, ensure_ascii=False) if prior_findings else "(none yet)"
         focus = (
             "Round 1 focus: probe workspace reachability, hover above the target object, descend to grasp height, "
@@ -604,6 +630,7 @@ class TraxAgentEngine:
                 "",
                 tool_doc,
                 "",
+                *([f"GOVERNED KNOWLEDGE BASE (Runtime FACTS + FORBIDDEN + Contract-Valid Skills):\n{kb_block}", ""] if kb_block else []),
                 f"TARGET TASK ({self._task_id}):\n{self._task_instruction}",
                 "",
                 f"LIVE OBSERVATION BEFORE ROUND {round_idx}:\n{json.dumps(obs, indent=2, ensure_ascii=False)}",
@@ -628,6 +655,10 @@ class TraxAgentEngine:
                 "MCP",
                 f"Discovered {len(tools)} MCP tools & {len(resources)} resources on {info.get('name', ep_label)} ({ep_label}).",
             )
+            emb_id = self._active_embodiment_id()
+            if self.kb.current_branch() == "main":
+                br = self.kb.begin_session_branch(emb_id, task_id)
+                self._log("GIT", f"Created isolated knowledge branch `{br}` off `main`.")
             self._reset_backend_if_supported(client, tools, task_id, seed)
             findings: list[dict[str, Any]] = []
 
@@ -659,7 +690,7 @@ class TraxAgentEngine:
                     journal_path=self._journal_path,
                     run_tag=f"probe-r{r}",
                     max_calls=35,
-                    on_wire=self._on_wire,
+                    on_wire=self._emit_wire,
                 )
                 ret_val: Any = None
                 err: str | None = None
@@ -692,6 +723,22 @@ class TraxAgentEngine:
                 }
                 findings.append(finding)
 
+                git_sha = self.kb.record_discovery_and_probe(
+                    embodiment_id=emb_id,
+                    evidence_source=self._active_evidence_source(),
+                    mcp_tools_sha256=self._mcp_tools_sha256,
+                    tools=tools,
+                    task_id=task_id,
+                    round_idx=r,
+                    probe_source=probe_src,
+                    finding=finding,
+                    obs_snapshot=obs,
+                )
+                self.traces.save_recording(
+                    f"explore-{task_id}-r{r}-{llm_rec['call_id']}",
+                    {"stage": f"explore_r{r}", "finding": finding, "mcp_trace": proxy.trace},
+                )
+
                 with self._state_lock:
                     self._exploration_findings = list(findings)
                     self._executed_runs.append(
@@ -709,13 +756,14 @@ class TraxAgentEngine:
                             "status": "error" if err else "probed",
                             "task_passed": err is None,
                             "wall_s": wall_s,
+                            "git_commit": git_sha,
                             "executed_utc": _utc_hms(),
                         }
                     )
                     self._log(
                         "PROBE",
-                        f"Explore R{r}/{rounds} finished in {wall_s}s: {len(proxy.methods)} MCP calls "
-                        f"({', '.join(proxy.methods[:6])}{'...' if len(proxy.methods) > 6 else ''})"
+                        f"Explore R{r}/{rounds} finished in {wall_s}s: {len(proxy.methods)} MCP calls"
+                        + (f" | git={git_sha}" if git_sha else "")
                         + (f" | err={err}" if err else f" | refusals={len(proxy.limit_refusals)}"),
                     )
                 # Reset cleanly between exploration rounds so next probe starts from known state
@@ -734,6 +782,11 @@ class TraxAgentEngine:
         negative_history: Sequence[str],
     ) -> tuple[str, str]:
         tool_doc = format_mcp_tools_for_prompt(tools)
+        kb_block = self.kb.render_prompt_knowledge_block(
+            embodiment_id=self._active_embodiment_id(),
+            mcp_tools_sha256=self._mcp_tools_sha256,
+            evidence_source=self._active_evidence_source(),
+        )
         findings_txt = (
             json.dumps(self._exploration_findings, indent=2, ensure_ascii=False)
             if self._exploration_findings
@@ -749,6 +802,7 @@ class TraxAgentEngine:
                     "",
                     tool_doc,
                     "",
+                    *([f"GOVERNED KNOWLEDGE BASE (Runtime FACTS + FORBIDDEN + Contract-Valid Skills):\n{kb_block}", ""] if kb_block else []),
                     f"TASK ({self._task_id}):\n{self._task_instruction}",
                     "",
                     f"CURRENT OBSERVATION:\n{json.dumps(obs, indent=2, ensure_ascii=False)}",
@@ -930,7 +984,7 @@ class TraxAgentEngine:
                     journal_path=self._journal_path,
                     run_tag=f"it{cur_idx}",
                     max_calls=60,
-                    on_wire=self._on_wire,
+                    on_wire=self._emit_wire,
                 )
                 with self._state_lock:
                     self._log("EXEC", f"Running iter_{cur_idx} inside AST sandbox + SQLite MCP governance (task={self._task_id})...")
@@ -979,6 +1033,47 @@ class TraxAgentEngine:
             failure_codes = () if exec_res["task_passed"] else (str(attr.get("code") or ""),)
             sub = analyze_policy_subroutines(source, failure_codes=failure_codes)
 
+            emb_id = self._active_embodiment_id()
+            ev_src = self._active_evidence_source()
+            if self.kb.current_branch() == "main":
+                br = self.kb.begin_session_branch(emb_id, self._task_id)
+                self._log("GIT", f"Created isolated knowledge branch `{br}` off `main`.")
+
+            git_commit = self.kb.record_policy_iteration(
+                embodiment_id=emb_id,
+                evidence_source=ev_src,
+                mcp_tools_sha256=self._mcp_tools_sha256,
+                task_id=self._task_id,
+                iter_index=cur_idx,
+                origin=str(self._iterations[cur_idx].get("origin") or "policy"),
+                source=source,
+                attribution=attr,
+                passed=bool(exec_res["task_passed"]),
+            )
+            self.traces.save_recording(
+                cmd_id,
+                {
+                    "stage": "policy_exec",
+                    "iter_index": cur_idx,
+                    "task_id": self._task_id,
+                    "embodiment_id": emb_id,
+                    "git_commit": git_commit,
+                    "attribution": attr,
+                    "execution": exec_res,
+                },
+            )
+            promotion_info: dict[str, Any] | None = None
+            if exec_res["task_passed"]:
+                promotion_info = self.kb.promote_verified_skill_to_main(
+                    embodiment_id=emb_id,
+                    evidence_source=ev_src,
+                    mcp_tools_sha256=self._mcp_tools_sha256,
+                    task_id=self._task_id,
+                    task_instruction=self._task_instruction,
+                    policy_source=source,
+                    verify_result=exec_res.get("verify_result") or {"passed": True},
+                )
+
             with self._state_lock:
                 target_iter = self._iterations[cur_idx]
                 target_iter["ast_check"] = ast_res
@@ -986,6 +1081,8 @@ class TraxAgentEngine:
                 target_iter["attribution"] = attr
                 target_iter["journal_entries"] = journal_entries
                 target_iter["subroutines"] = sub
+                target_iter["git_commit"] = git_commit
+                target_iter["promotion"] = promotion_info
                 self._last_verify = exec_res.get("verify_result")
                 self._executed_runs.append(
                     {
@@ -1002,6 +1099,7 @@ class TraxAgentEngine:
                         "status": str(exec_res.get("host_runtime_status") or ""),
                         "task_passed": bool(exec_res.get("task_passed")),
                         "wall_s": exec_res.get("wall_s", 0.0),
+                        "git_commit": git_commit,
                         "executed_utc": _utc_hms(),
                     }
                 )
@@ -1010,8 +1108,13 @@ class TraxAgentEngine:
                 self._log(
                     "EXEC",
                     f"iter_{cur_idx} -> {verdict} | {exec_res['wall_s']}s | {len(exec_res['methods'])} MCP calls | "
-                    f"{(exec_res.get('verify_result') or {}).get('detail', '')}",
+                    f"git={git_commit or '-'} | {(exec_res.get('verify_result') or {}).get('detail', '')}",
                 )
+                if promotion_info:
+                    self._log(
+                        "GIT",
+                        f"Promoted verified skill -> `main` ({promotion_info['commit']}) & tagged `{promotion_info['tag']}`.",
+                    )
                 return target_iter
 
     # --- Public Async & State APIs ---
@@ -1210,10 +1313,56 @@ class TraxAgentEngine:
         threading.Thread(target=_worker, daemon=True).start()
         return {"status": "started", "phase": "exploring", "explore_rounds": rounds, "max_iters": max_iters}
 
+    def get_kb_snapshot(self) -> dict[str, Any]:
+        with self._state_lock:
+            emb = self._active_embodiment_id() if self._server_info else None
+            sha = self._mcp_tools_sha256 or None
+            ev = self._active_evidence_source() if self._server_info else None
+        return self.kb.snapshot(
+            current_embodiment=emb,
+            current_tools_sha=sha,
+            current_evidence=ev,
+            trace_stats=self.traces.stats(),
+        )
+
+    def rollback_to_commit(self, commit_sha: str) -> dict[str, Any]:
+        with self._exec_lock:
+            res = self.kb.rollback_policy_from_commit(commit_sha, self._task_id)
+            src = res["source"]
+            tool_names = [str(t["name"]) for t in self._discovered_tools]
+            ast_res = check_mcp_policy_ast(src, allowed_tools=tool_names, entry_fn="run_policy")
+            sub = analyze_policy_subroutines(src, failure_codes=())
+            with self._state_lock:
+                idx = len(self._iterations)
+                prev_src = str(self._iterations[self._active_iter_idx]["source"]) if 0 <= self._active_iter_idx < len(self._iterations) else ""
+                diff_txt = _compute_unified_diff(prev_src, src, f"iter_{self._active_iter_idx}", f"iter_{idx} (git_rollback)")
+                self._iterations.append(
+                    {
+                        "iter_index": idx,
+                        "label": f"iter_{idx} (rollback {res['from_commit'][:7]})",
+                        "origin": "git_rollback",
+                        "policy_id": f"trax_iter_{idx}",
+                        "source": src,
+                        "source_sha256": digest(src),
+                        "unified_diff": diff_txt,
+                        "ast_check": ast_res,
+                        "subroutines": sub,
+                        "llm_meta": None,
+                        "execution": None,
+                        "attribution": None,
+                        "journal_entries": [],
+                        "git_commit": res.get("new_commit"),
+                        "created_utc": _utc_hms(),
+                    }
+                )
+                self._active_iter_idx = idx
+                self._log("GIT", f"Rolled back `{res['restored_file']}` from commit {res['from_commit'][:7]} -> iter_{idx}.")
+            return {"rollback": res, "kb": self.get_kb_snapshot(), "state": self.get_state()}
+
     def get_state(self) -> dict[str, Any]:
         with self._state_lock:
             return {
-                "engine": "trax_mcp_agent_v1",
+                "engine": "trax_mcp_agent_v2",
                 "phase": self._phase,
                 "busy": self._busy,
                 "busy_detail": self._busy_detail,
@@ -1225,6 +1374,8 @@ class TraxAgentEngine:
                 "explore_rounds": self._explore_rounds,
                 "mcp_endpoint": self._mcp_endpoint,
                 "server_info": self._server_info,
+                "mcp_tools_sha256": self._mcp_tools_sha256[:16],
+                "kb_branch": self.kb.current_branch(),
                 "discovered_tools_count": len(self._discovered_tools),
                 "discovered_tools": [t.get("name") for t in self._discovered_tools],
                 "discovered_resources_count": len(self._discovered_resources),

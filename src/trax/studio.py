@@ -487,6 +487,20 @@ def create_studio_server(
             if path == "/api/mcp/state":
                 self._send_json(app.mcp.get_state())
                 return
+            if path == "/api/kb/state":
+                self._send_json(app.agent.get_kb_snapshot())
+                return
+            if path == "/api/kb/diff":
+                qs = parse_qs(parsed.query)
+                sha = (qs.get("sha") or [""])[0]
+                parent = (qs.get("parent") or [None])[0]
+                self._send_json({"sha": sha, "diff": app.agent.kb.git_diff(sha, parent)})
+                return
+            if path == "/api/kb/file":
+                qs = parse_qs(parsed.query)
+                rel = (qs.get("path") or [""])[0]
+                self._send_json({"path": rel, "content": app.agent.kb.read_text_file(rel)})
+                return
             if path == "/api/compare/policy":
                 try:
                     self._send_json(app.compare_archived_policy(parse_qs(parsed.query)))
@@ -607,6 +621,9 @@ def create_studio_server(
                     return
                 if path == "/api/mcp/read_resource":
                     self._send_json(app.mcp.read_resource(body))
+                    return
+                if path == "/api/kb/rollback":
+                    self._send_json(app.agent.rollback_to_commit(str(body.get("sha") or "")))
                     return
                 if path == "/api/evolve/probe":
                     self._send_json(app.agent.start_explore_async(body))

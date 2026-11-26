@@ -1,136 +1,93 @@
-# TRAX Architecture, Execution, and Ownership
+# TRAX System Architecture: MCP-Native Transactional Governance & Git-Versioned Executable Knowledge Base
 
-TRAX is the unified user-facing orchestration layer for configuring scenes,
-teaching manipulation tasks, developing code policies, running independent
-acceptance verification, managing fixed-version releases, and queuing
-evidence-backed improvements.
+**TRAX** (*Transactional Robot Action Execution*) is a pure-Python-stdlib architecture for **embodiment-agnostic, crash-recoverable, and auditable robot code-policy agents** across simulators and physical robots.
 
-See [`decisions/0003-product-architecture-and-reuse-boundary.md`](decisions/0003-product-architecture-and-reuse-boundary.md)
-for the module-by-module reuse boundary and Phase 1 scope.
+Unlike demonstration-based imitation policies or unguarded coding-agent loops that mix exploration prose, actuation, and unverified skills, TRAX enforces **strict separation of ownership**, **MCP-based heterogeneous embodiment discovery**, **transactional SQLite governance for non-idempotent actions**, and a **Git-versioned Executable Knowledge Base**.
 
-## System Architecture
+---
 
-```mermaid
-flowchart LR
-    U[Operator: Config + Teaching] --> CFG[Scene & Capability Contract]
-    CFG --> DISC[Host Capability Discovery]
-    DISC <--> EDGE["ticos-edge Host (EdgeCapRuntime / SDK / Sandbox)"]
-    ES["EvidenceScene (Perception Authority)"] --> EDGE
+## 1. End-to-End Four-Layer System Architecture
 
-    U --> DEV[Unified Teaching & Dev Loop]
-    CFG --> DEV
-    LLM["Switchable Generation Backend (codex_cli / openai_api)"] <--> DEV
-    SKILL[Verified Skill Experience Store] <--> DEV
-    DEV <--> EDGE
-
-    DEV --> ACC[Independent Acceptance Gate]
-    ACC <--> EDGE
-    ACC --> REL[Fixed-Version Release Registry & Rollback]
-    ACC --> OPT[Improvement / Optimization Queue]
-    REL --> EDGE
-    REL --> UI["ticos UI (Read-Only Evidence Consumer)"]
-    ACC --> UI
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Layer 4 · Research Console & Inspector UI (src/trax/studio.py, ui_template)│
+│  Full-viewport pure-English Light+ IDE (zero external web dependencies)     │
+│  [Closed-Loop Lab] [MCP Inspector] [Knowledge & Git] [Embodiments/Matrix]   │
+└────────────────────────────────────┬────────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────────────┐
+│  Layer 3 · Unified MCP-Native Agent Engine (src/trax/agent_engine.py)       │
+│                                                                             │
+│  01. MCP Discovery       initialize + tools/list + resources/list (SHA-256) │
+│  02. Active Exploration  Multi-turn LLM writes & executes `run_probe(mcp)`  │
+│  03. Policy Compilation  Compiles findings + KB into `run_policy(mcp, p)`   │
+│  04. Governed Execution  AST Gate + GovernedMCPProxy + SQLite Intent Journal│
+│  05. 4-Layer Attribution policy / control / perception / device -> Diff Fix │
+└───────────────┬────────────────────────────────────────────┬────────────────┘
+                │                                            │
+┌───────────────▼──────────────────────────┐  ┌──────────────▼────────────────┐
+│  Layer 2 · Four-Zone Governed Workspace  │  │ Layer 1 · Heterogeneous Robot │
+│  (src/trax/knowledge_base.py, journal.py)│  │ Backends via MCP JSON-RPC 2.0 │
+│                                          │  │ (src/trax/mcp_protocol.py)    │
+│  1. workspace/knowledge/ (Git Repo)      │  │                               │
+│     • FACTS.md      (Runtime-owned)      │  │ • LeRobot SO-101 6-DoF MuJoCo │
+│     • FORBIDDEN.md  (4-Layer dedup)      │  │   (`move_ee`, `set_gripper`,  │
+│     • probes/*.py   (Executed probes)    │  │    `move_joints`, `go_home`,  │
+│     • policies/*.py (Task policies)      │  │    `activate_workstation`,    │
+│     • skills/<emb>/ (SKILL.md + skill.py)│  │    `query_command_status`,    │
+│       - session/* branches -> verified   │  │    `verify_task`, 4 cameras,  │
+│         `--no-ff` merge to `main` + tag  │  │    pre-motion limit_refusal)  │
+│                                          │  │ • Tabletop 6-DoF / Gazebo Sim │
+│  2. workspace/runtime/   (SQLite WAL)    │  │ • LIBERO / Robosuite Suites   │
+│     • agent_journal.sqlite (ACID)        │  │ • Physical Robot MCP Bridge   │
+│     • mcp_journal.sqlite   (ACID)        │  │   (HTTP `/mcp` or Stdio)      │
+│                                          │  │                               │
+│  3. workspace/traces/    (JSONL Audit)   │  │ Backend owns: drivers, IK,    │
+│     • llm_calls.jsonl (full prompt/resp) │  │ perception, hard safeguards,  │
+│     • mcp_wire.jsonl  (raw JSON-RPC 2.0) │  │ and independent verification. │
+│                                          │  │                               │
+│  4. workspace/recordings/ (Episodes)     │  └───────────────────────────────┘
+│     • <run_id>.json   (shadow replay)    │
+└──────────────────────────────────────────┘
 ```
 
-## Dependency Direction (Host Independence)
+---
 
-TRAX is a standalone package (`tiwater-trax`) and **must never assume any
-specific downstream host (such as `ticos-edge`) exists**:
+## 2. Core Architectural Principles
 
-```
-External Robot/Sim Host (e.g. ticos-edge, ROS2 bridge, custom sim)
-        │
-        ▼  depends on & plugs into
-tiwater-trax (SceneHostDriver protocol / `craft.drivers` entry points / generic `http` driver)
-```
+### 2.1 Dynamic MCP Embodiment Discovery (`src/trax/mcp_protocol.py`)
+Different robot morphologies expose fundamentally different control and sensing APIs (single-arm IK/gripper, bimanual arms, dexterous 16-DoF hands, mobile bases, humanoids, external appliances). Instead of hardcoding a fixed domain verb list, TRAX communicates with robot backends via standard **MCP JSON-RPC 2.0** (`initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, over Streamable HTTP `/mcp` or Stdio):
+- The backend declares its native tool JSON Schemas and MCP safety annotations (`readOnlyHint`, `idempotentHint`, `destructiveHint`, `traxRequiresReconciliation`).
+- TRAX dynamically computes `mcp_tools_sha256`, binds the AST sandbox whitelist strictly to the discovered tools, and grounds every LLM prompt directly in the live schema.
+- Backends enforce **pre-motion hard safeguards** (workspace reach and joint-limit checks) and return structured `limit_refusal` diagnostics *before* moving actuators.
 
-- Built-in `fixture` driver (`FixtureHostDriver`) runs benchmarks and TRAX
-  Studio completely offline with zero external services.
-- Built-in `http` driver (`HttpHostDriver`) consumes any compatible HTTP host
-  purely via runtime configuration (`HostConnectionConfig`).
-- External hosts can also register custom drivers via
-  `craft.host_driver.register_host_driver(...)` or Python
-  `[project.entry-points."craft.drivers"]`.
+### 2.2 Transactional Safety Governance (`src/trax/journal.py`, `GovernedMCPProxy`)
+Online execution of compiled Python policies runs deterministically inside a pure-stdlib AST sandbox with **zero online LLM calls**. For any MCP tool annotated `idempotentHint: false` or `destructiveHint: true`:
+1. **Intent-Before-Dispatch**: TRAX commits an ACID SQLite WAL intent row (`Journal.claim`) *before* dispatching `tools/call`.
+2. **Query-First Reconciliation**: If a transport timeout or crash leaves a receipt `unknown`, blind retry is forbidden; the policy must reconcile state via `query_command_status` (or equivalent host status tool).
+3. **Four-Layer Fault Attribution**: Failures are classified deterministically into `perception`, `policy` (`ast_sandbox_violation`, `duplicate_non_idempotent`, `unreconciled_unknown_ack`), `control` (`backend_limit_refusal`, `task_verification_failed`), or `device`.
 
-## Ownership Boundaries
+### 2.3 Four-Zone Workspace & Git-Versioned Executable Knowledge Base (`src/trax/knowledge_base.py`)
+Data in `workspace/` is partitioned strictly by mutability, durability, and audit role:
+1. **`workspace/knowledge/` (Independent Git Repository — Executable Knowledge Base)**:
+   - **`FACTS.md` (Runtime-Owned, LLM Read-Only)**: Objective physical measurements and MCP contract facts extracted deterministically from live telemetry and backend refusals—preventing LLM reflection hallucinations from poisoning memory.
+   - **`FORBIDDEN.md` (4-Layer Attribution Deduplicated)**: Compact negative-constraint ledger keyed by `(embodiment, layer, code, summary)` so bounded context never forgets prior safety violations.
+   - **`probes/` & `policies/`**: Every executed exploration probe and policy iteration is committed on an isolated `session/<embodiment>/<task>-<ts>` Git branch.
+   - **`skills/<embodiment>/<skill_name>/SKILL.md + skill.py`**: Only policies passing AST preflight + independent `verify_task=PASS` + zero non-idempotent violations are promoted via `--no-ff` merge onto protected `main` with an immutable `verified/...` tag.
+   - **Automatic Contract-Drift & Evidence-Tier Governance**: Skills whose `mcp_tools_sha256` diverges from the live backend are quarantined as `stale_contract`; `simulator` skills loaded onto a `physical_robot` backend are automatically downgraded to `advisory_sim_prior` until re-verified on real hardware.
+2. **`workspace/runtime/` (SQLite WAL)**: ACID transactional command ledgers (`agent_journal.sqlite`, `mcp_journal.sqlite`), strictly excluded from Git.
+3. **`workspace/traces/` (Append-Only JSONL)**: Complete untruncated LLM prompts/responses (`llm_calls.jsonl`) and raw MCP JSON-RPC 2.0 wire exchanges (`mcp_wire.jsonl`).
+4. **`workspace/recordings/`**: Per-run verification snapshots and telemetry for zero-actuation `recorded_data` shadow regression.
 
-Strict separation of ownership is mandatory:
+---
 
-1. **Perception & World-State Authority (`ticos-edge` / EvidenceScene):**
-   - `ticos-edge` owns RGB-D ingestion, SAM2/BundleTrack pose ownership,
-     `OnlineTableWorldModel`, and scene snapshots returned by `/cap/state` and
-     `EdgeZeroGtCoffeeSDK.observe_scene`.
-   - TRAX consumes scene observations read-only. It never adds a parallel
-     detector, tracker, world model, or coordinate estimator. Video teaching
-     materials are teaching evidence only and never override live scene state.
-2. **Host Actuation & Sandbox Authority (`ticos-edge`):**
-   - `EdgeCapRuntime._run_job`, `EdgeZeroGtCoffeeSDK` (`ConstrainedCoffeeRobotSDK`
-     + `SDKPublicProxy`), and `execute_policy_in_subprocess_sandbox` own device
-     interlocks, timeouts, command execution, and OS-level policy sandboxing.
-   - TRAX delegates live/simulator policy execution through the host adapter
-     and never bypasses host interlocks or command identities.
-3. **TRAX Orchestration & Governance (`src/trax/`):**
-   - **Configuration & Discovery (`config`, `edge_adapter`):** Declarative
-     scene/object/capability/acceptance/budget contracts, automatic host
-     capability discovery, staleness/ambiguity/disconnect checks, and
-     query-first reconciliation for unknown non-idempotent outcomes.
-   - **Generation Transport (`backends.py`, `generation.py`):** Adapted from
-     `ticos-edge/tools/cap_llm_backends.py`. Explicit `codex_cli` or
-     `openai_api` selection with `medium` default reasoning effort; generated
-     code is always an unapproved draft.
-   - **Teaching & Development Loop (`teaching`, `dev_loop`, `regression`, `repair_screener`):** Structured task
-     specs, ACE-inspired on-demand clarification/teaching requests, iterative
-     candidate generation and execution, budget caps, pause/resume checkpoints,
-     complete failure retention, capability-bank regression replay (`RegressionSuite`),
-     and SimEX-inspired replay-aligned multi-hypothesis simulation pre-screening
-     (`RepairScreener`, exposed via `POST /v1/repair/screen`). Screening strictly
-     preserves host ownership boundaries (blocking non-policy failures and
-     unreproduced-in-sim defects) and never bypasses independent acceptance.
-   - **Independent Acceptance & Release (`acceptance`, `release`, `skills`):**
-     Acceptance criteria frozen outside policy generation, held-out evaluation,
-     reliability-first gating before latency comparison, fixed-version release
-     registry with rollback, slow-step optimization queue, and verified skill
-     experience records carrying applicability conditions, measured limits,
-     known failure modes, and linked regression case IDs.
-   - **Core Contract Baseline (`policy.py`, `journal.py`, `runtime.py`,
-     `contracts.py`, `fixtures.py`):** Preserved stdlib-only v0.1.0 components:
-     `PolicyBundle` (content-hashed frozen policy), `Journal` (SQLite
-     intent-before-dispatch), and `Execution` (restricted AST fixture runtime).
-4. **Presentation Consumer (`ticos`):**
-   - Read-only consumer of TRAX/edge statuses, traces, and acceptance evidence.
-   - Never runs inference, policy generation, or fallback object recognition.
+## 3. Systematic Comparison vs. RAX (`arXiv:2610.22496`)
 
-## Receipt Lifecycle & Reconciliation
-
-For non-idempotent physical or simulated actions (such as starting a brew cycle
-or future appliance heating):
-
-1. Bind a stable run ID to the frozen policy hash, parameters, deployment, and
-   goal.
-2. Derive each command ID from the run ID and a unique logical step key.
-3. Commit intent durably before dispatch.
-4. Record the adapter receipt. `running` or `unknown` suspends; `rejected`
-   blocks.
-5. On resume or reconciliation, reuse completed receipts and **query**
-   unresolved commands (`query_command_status` / `Adapter.query`). Never infer
-   absence of side effects from a timeout and never blindly redispatch a
-   non-idempotent action.
-6. Verify the host-bound goal independently before accepting a `completed`
-   status.
-
-A local SQLite journal is **not** a distributed exactly-once physical execution
-protocol. Crashes between intent commit and dispatch, or loss of the journal,
-require operator reconciliation.
-
-## Evidence Separation
-
-Every recorded trial, acceptance evaluation, and skill experience entry must
-carry an explicit `evidence_source` tag:
-
-- `fixture`: deterministic in-process software contract fixture (no robot/sim).
-- `simulator`: live `ticos-edge` / Isaac Sim, Gazebo Fortress (`gazebo_cafe`), or MuJoCo (`mujoco_cafe` / Robosuite) simulation run (see [`docs/gazebo_and_fidelity.md`](gazebo_and_fidelity.md) for host ownership & fidelity details).
-- `recorded_data`: offline replay on recorded RGB-D / trace data.
-- `physical_robot`: physical robot execution.
-
-Fixture and simulator passes are never promoted as physical-robot approval or
-food-quality certification.
+| Architectural Dimension | RAX (`arXiv:2610.22496`) | **TRAX (Ours)** |
+| :--- | :--- | :--- |
+| **Embodiment Interface** | Frontend–Backend split via MCP + 4-axis docs | **MCP JSON-RPC 2.0 + SHA-256 Contract Binding + 3-Owner Separation** (Perception / Policy Governance / Host Actuation) |
+| **Non-Idempotent Actions & Crash Recovery** | Interactive online takeover on exception; no transactional intent ledger | **ACID SQLite WAL Intent-Before-Dispatch + Query-First Reconciliation** (auto-enforced from MCP `idempotentHint: false`) |
+| **Perception Ownership** | Coding agent synthesizes 3D RGB-D perception pipelines | **Host-owned authoritative perception** (zero fabricated parallel estimators; deterministic 4-layer attribution) |
+| **Knowledge & Memory Governance** | LLM-authored `PROGRESS.md` / `TIPS.md` + versioned skill repo | **Runtime-owned `FACTS.md` & `FORBIDDEN.md` (anti-hallucination) + Git-gated `session/* -> main` Executable Knowledge Base** |
+| **Contract Drift & Sim-to-Real Safety** | Unattended execution evidence on session branch | **Automatic `stale_contract` invalidation on MCP schema drift + `simulator -> physical_robot` evidence-tier downgrade** |
+| **Core Runtime Dependencies** | Containerized coding agent + backend stack | **100% pure Python stdlib core** (`make check-stdlib` enforced); optional simulator backends isolated |

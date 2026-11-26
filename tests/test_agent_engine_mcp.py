@@ -145,7 +145,15 @@ def test_unified_mcp_agent_explore_compile_governed_exec_and_repair_on_so101() -
             assert it1["execution"]["duplicate_non_idempotent"] is False
             assert it1["execution"]["queried_after_unknown"] is True
             assert it1["unified_diff"].startswith("---")
-            assert (Path(tmp) / "trax_agent_journal.sqlite").is_file()
+            assert (Path(tmp) / "runtime" / "agent_journal.sqlite").is_file()
+            assert (Path(tmp) / "knowledge" / ".git").is_dir()
+            assert (Path(tmp) / "traces" / "llm_calls.jsonl").is_file()
+            assert (Path(tmp) / "traces" / "mcp_wire.jsonl").is_file()
+            kb_snap = eng.get_kb_snapshot()
+            assert kb_snap["branch"] == "main"
+            assert len(kb_snap["skills"]) == 1
+            assert kb_snap["skills"][0]["status"] == "active"
+            assert len(kb_snap["tags"]) >= 1
             assert st["phase"] == "verified"
     finally:
         server.shutdown()

@@ -67,4 +67,4 @@ def test_mcp_inspector_controller_journals_non_idempotent_tool_calls() -> None:
         r2 = insp.call_tool({"tool_name": "start_coffee_machine", "arguments": {"command_id": "mcp-brew-test"}})
         assert r2["non_idempotent"] is True
         assert r2["journal_id"] is not None
-        assert (Path(tmp) / "ui_mcp_journal.sqlite").is_file()
+        assert (Path(tmp) / "runtime" / "mcp_journal.sqlite").is_file()
