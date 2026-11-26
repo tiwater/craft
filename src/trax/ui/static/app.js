@@ -543,10 +543,15 @@ function renderCameraShells() {
     return;
   }
   if (!camList.includes(activeCam)) activeCam = camList[0];
-  document.getElementById('btn-mode-single').style.borderColor = camMode === 'single' ? 'var(--cyan)' : 'var(--border2)';
-  document.getElementById('btn-mode-grid').style.borderColor = camMode === 'grid' ? 'var(--cyan)' : 'var(--border2)';
-  const urdfBtn = document.getElementById('btn-mode-urdf');
-  if (urdfBtn) urdfBtn.style.borderColor = camMode === 'urdf' ? 'var(--cyan)' : 'var(--border2)';
+  const setModeActive = (id, isAct) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.background = isAct ? 'var(--cyan-bg)' : '';
+    el.style.color = isAct ? 'var(--cyan)' : '';
+  };
+  setModeActive('btn-mode-single', camMode === 'single');
+  setModeActive('btn-mode-grid', camMode === 'grid');
+  setModeActive('btn-mode-urdf', camMode === 'urdf');
 
   if (camMode !== 'urdf' && urdfViewer) {
     urdfViewer.dispose();
