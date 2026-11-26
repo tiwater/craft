@@ -21,6 +21,7 @@ robosuite = ["mujoco>=3.1,<3.4", "numpy>=1.24,<2.3", "Pillow>=10.0", "scipy>=1.1
 
 [project.scripts]
 trax = "trax.cli:main"
+trax-ui = "trax_ui.cli:main"
 
 [project.urls]
 Homepage = "https://tiwater.github.io/trax/"

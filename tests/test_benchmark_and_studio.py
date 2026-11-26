@@ -13,7 +13,7 @@ from trax.benchmark import (
 )
 from trax.config import SceneConfig
 from trax.host_driver import FixtureHostDriver, create_host_driver, list_host_drivers, register_host_driver
-from trax.ui import TraxUIApp, create_ui_server
+from trax_ui import TraxUIApp, create_ui_server
 
 
 BROKEN_NO_RECENTER_POLICY = """def run_policy(sdk, params):

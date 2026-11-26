@@ -23,7 +23,7 @@ from trax.operations import (
 from trax.regression import RegressionSuite
 from trax.release import ReleaseRegistry
 from trax.skills import SkillExperienceStore
-from trax.ui import TraxUIApp, create_ui_server
+from trax_ui import TraxUIApp, create_ui_server
 
 
 BROKEN_BASELINE = """def run_policy(sdk, params):

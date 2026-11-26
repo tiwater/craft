@@ -15,30 +15,30 @@ import time
 from typing import Any, Mapping, Sequence
 from urllib.parse import parse_qs, urlparse
 
-from .agent_engine import TraxAgentEngine
-from .autonomy import AutonomyPromotionLedger
-from .benchmark import (
+from trax.agent_engine import TraxAgentEngine
+from trax.autonomy import AutonomyPromotionLedger
+from trax.benchmark import (
     PolicyEntry,
     builtin_reference_policy_source,
     default_coffee_benchmark_suite,
     render_benchmark_html,
     run_paired_benchmark,
 )
-from .coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
-from .config import SceneConfig
-from .embodiments import EmbodimentManager, load_archived_policy_comparison
-from .evolution_lab import EvolutionLabController, load_m1_archive
-from .host_driver import SceneHostDriver
-from .mcp_protocol import MCPInspectorController
-from .operations import run_continuous_shift
-from .portability import check_policy_portability
-from .profiler import aggregate_trial_profiles
-from .regression import RegressionSuite
-from .release import ReleaseRegistry
-from .teaching import TeachingMaterial, build_task_specification
+from trax.coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
+from trax.config import SceneConfig
+from trax.embodiments import EmbodimentManager, load_archived_policy_comparison
+from trax.evolution_lab import EvolutionLabController, load_m1_archive
+from trax.host_driver import SceneHostDriver
+from trax.mcp_protocol import MCPInspectorController
+from trax.operations import run_continuous_shift
+from trax.portability import check_policy_portability
+from trax.profiler import aggregate_trial_profiles
+from trax.regression import RegressionSuite
+from trax.release import ReleaseRegistry
+from trax.teaching import TeachingMaterial, build_task_specification
 
 
-from .ui_template import UI_HTML
+from .template import UI_HTML
 
 def _read_optional_json(path: Path) -> dict[str, Any] | None:
     if not path.is_file():

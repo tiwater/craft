@@ -6,17 +6,17 @@ Unlike demonstration-based imitation policies or unguarded coding-agent loops th
 
 ---
 
-## 1. End-to-End Four-Layer System Architecture
+## 1. End-to-End Three-Layer Headless Core + Optional External Console
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Layer 4 · Research Console & Inspector UI (src/trax/ui.py, ui_template.py) │
-│  Full-viewport pure-English Light+ IDE (zero external web dependencies)     │
+│  Optional External Console · src/trax_ui/ (`trax-ui`, detached from core)   │
+│  Full-viewport pure-English Light+ IDE (zero imports from `trax` -> UI)     │
 │  [Closed-Loop Lab] [MCP Inspector] [Knowledge & Git] [Embodiments/Matrix]   │
 └────────────────────────────────────┬────────────────────────────────────────┘
-                                     │
+                                     │ consumes public TRAX & MCP APIs only
 ┌────────────────────────────────────▼────────────────────────────────────────┐
-│  Layer 3 · Unified MCP-Native Agent Engine (src/trax/agent_engine.py)       │
+│  Core Layer 3 · Unified MCP-Native Agent Engine (src/trax/agent_engine.py)  │
 │                                                                             │
 │  01. MCP Discovery       initialize + tools/list + resources/list (SHA-256) │
 │  02. Active Exploration  Multi-turn LLM writes & executes `run_probe(mcp)`  │

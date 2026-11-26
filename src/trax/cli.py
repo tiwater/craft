@@ -22,7 +22,6 @@ from .fixtures import DEPLOYMENT, FixtureAdapter, example_policy
 from .host_driver import create_host_driver
 from .journal import Journal
 from .runtime import execute
-from .ui import TraxUIApp, create_ui_server
 
 
 def _override_config(
@@ -207,18 +206,6 @@ def main() -> None:
     lb.add_argument("--effort", default="medium", choices=["low", "medium", "high", "xhigh"])
     lb.add_argument("--max-dev-calls", type=int, default=5)
     lb.add_argument("--no-isolate", action="store_true", help="Disable per-task subprocess isolation (not recommended on robosuite 1.4)")
-
-    ui_cmd = sub.add_parser("ui", help="Launch standalone TRAX UI web observer & research console")
-    ui_cmd.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
-    ui_cmd.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or plugin)")
-    ui_cmd.add_argument("--workspace", required=True, help="Workspace dir for releases & benchmark results")
-    ui_cmd.add_argument("--host", default="127.0.0.1", help="Bind host (default 127.0.0.1)")
-    ui_cmd.add_argument("--port", type=int, default=8860, help="Bind port (default 8860)")
-    ui_cmd.add_argument("--policy", action="append", default=[], help="Extra policy as label=/path/to/policy.py")
-    ui_cmd.add_argument("--host-base", "--edge-base", dest="edge_base", help="Override host base URL (for http/plugin drivers)")
-    ui_cmd.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
-    ui_cmd.add_argument("--allow-actuation", action="store_true")
-    ui_cmd.add_argument("--allow-sim-reset", action="store_true")
 
     engine = sub.add_parser("serve-engine", help="Launch headless TRAX Engine /v1/... REST API for control planes")
     engine.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
@@ -549,32 +536,6 @@ def main() -> None:
                 indent=2,
             )
         )
-        return
-
-    if args.command == "ui":
-        cfg = _override_config(
-            SceneConfig.from_file(args.config),
-            edge_base=args.edge_base,
-            sim_base=args.sim_base,
-            allow_actuation=args.allow_actuation,
-            allow_sim_reset=args.allow_sim_reset,
-            scope="fixture" if args.driver == "fixture" else None,
-        )
-        driver = create_host_driver(args.driver, cfg)
-        if getattr(driver, "driver_name", "") in ("mujoco_cafe", "mujoco_so101"):
-            driver._realtime_pacing = True  # smooth visible arm motion in live UI video
-        policies = _parse_policy_specs(args.policy, include_builtin_ref=False)
-        app = TraxUIApp(cfg, driver, args.workspace, policies=policies)
-        server = create_ui_server(app, host=args.host, port=args.port)
-        print(
-            f"TRAX UI listening on http://{args.host}:{args.port} "
-            f"(driver={driver.driver_name}, evidence_source={driver.evidence_source})",
-            flush=True,
-        )
-        try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            server.shutdown()
         return
 
     if args.command == "serve-engine":
