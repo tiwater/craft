@@ -17,16 +17,39 @@ UI_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>TRAX UI — Closed-Loop Policy Synthesis &amp; Transactional Execution Lab</title>
 <style>
+  /* Default: Paper-Ready Academic Light Theme (VS Code / GitHub Light+) */
   :root {
-    --bg: #070b13; --surface: #0d1423; --surface2: #131d31; --codebg: #060a12;
-    --border: #1e2d48; --border2: #2b3f63;
-    --text: #f1f5f9; --muted: #94a3b8; --dim: #64748b;
-    --cyan: #38bdf8; --cyan-bg: rgba(56,189,248,0.12);
-    --green: #22c55e; --green-bg: rgba(34,197,94,0.12);
-    --amber: #f59e0b; --amber-bg: rgba(245,158,11,0.14);
-    --red: #ef4444; --red-bg: rgba(239,68,68,0.14);
-    --blue: #2563eb;
+    --bg: #f4f6fa; --surface: #ffffff; --surface2: #f1f5f9; --codebg: #fafbfd;
+    --consolebg: #f8fafc; --headbg: #eef2f7; --topbar: rgba(255,255,255,0.96);
+    --btn-hover: #e2e8f0; --row-sep: rgba(203,213,225,0.75);
+    --border: #d8e0ec; --border2: #cbd5e1;
+    --text: #0f172a; --text-strong: #020617; --muted: #475569; --dim: #64748b;
+    --cyan: #0369a1; --cyan-bg: rgba(2,132,199,0.10);
+    --green: #16a34a; --green-txt: #166534; --green-bg: rgba(22,163,74,0.11);
+    --amber: #d97706; --amber-txt: #92400e; --amber-bg: rgba(217,119,6,0.12);
+    --red: #dc2626; --red-txt: #b91c1c; --red-bg: rgba(220,38,38,0.10);
+    --purple-txt: #7c3aed; --blue: #1d4ed8;
+    --tok-kw: #7c3aed; --tok-bi: #0369a1; --tok-fn: #b45309; --tok-call: #1d4ed8;
+    --tok-sdk: #0e7490; --tok-str: #047857; --tok-num: #c2410c; --tok-cm: #64748b;
+    --tok-jkey: #0369a1; --tok-jbool: #7c3aed; --tok-jnull: #b91c1c;
+    --radar-bg: #f8fafc; --radar-grid: #e2e8f0; --radar-txt: #0f172a;
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  :root[data-theme="dark"] {
+    --bg: #070b13; --surface: #0d1423; --surface2: #131d31; --codebg: #060a12;
+    --consolebg: #04070e; --headbg: #0a101d; --topbar: rgba(13,20,35,0.97);
+    --btn-hover: #1a2742; --row-sep: rgba(30,45,72,0.7);
+    --border: #1e2d48; --border2: #2b3f63;
+    --text: #f1f5f9; --text-strong: #ffffff; --muted: #94a3b8; --dim: #64748b;
+    --cyan: #38bdf8; --cyan-bg: rgba(56,189,248,0.12);
+    --green: #22c55e; --green-txt: #86efac; --green-bg: rgba(34,197,94,0.12);
+    --amber: #f59e0b; --amber-txt: #fde047; --amber-bg: rgba(245,158,11,0.14);
+    --red: #ef4444; --red-txt: #fca5a5; --red-bg: rgba(239,68,68,0.14);
+    --purple-txt: #c084fc; --blue: #2563eb;
+    --tok-kw: #c084fc; --tok-bi: #38bdf8; --tok-fn: #fbbf24; --tok-call: #60a5fa;
+    --tok-sdk: #22d3ee; --tok-str: #86efac; --tok-num: #fdba74; --tok-cm: #64748b;
+    --tok-jkey: #38bdf8; --tok-jbool: #c084fc; --tok-jnull: #fca5a5;
+    --radar-bg: #070c18; --radar-grid: #17233b; --radar-txt: #e2e8f0;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; width: 100%; margin: 0; }
@@ -43,7 +66,7 @@ UI_HTML = r"""<!DOCTYPE html>
   /* Full-Bleed Topbar + 4-Stage Pipeline */
   .topbar {
     flex: 0 0 auto;
-    background: rgba(13,20,35,0.97); backdrop-filter: blur(8px);
+    background: var(--topbar); backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border); padding: 8px 16px;
     z-index: 40;
   }
@@ -53,33 +76,33 @@ UI_HTML = r"""<!DOCTYPE html>
     gap: 12px; flex-wrap: wrap;
   }
   .brand-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .brand-title { font-size: 16px; font-weight: 800; letter-spacing: 0.8px; color: #fff; }
+  .brand-title { font-size: 16px; font-weight: 800; letter-spacing: 0.8px; color: var(--text-strong); }
   .badge {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 2px 8px; border-radius: 5px;
     font-size: 11px; font-weight: 600; font-family: var(--mono);
     background: var(--surface2); color: var(--cyan); border: 1px solid var(--border);
   }
-  .badge.ok { color: #86efac; background: var(--green-bg); border-color: rgba(34,197,94,0.35); }
-  .badge.warn { color: #fde047; background: var(--amber-bg); border-color: rgba(245,158,11,0.38); }
-  .badge.err { color: #fca5a5; background: var(--red-bg); border-color: rgba(239,68,68,0.40); }
+  .badge.ok { color: var(--green-txt); background: var(--green-bg); border-color: rgba(22,163,74,0.35); }
+  .badge.warn { color: var(--amber-txt); background: var(--amber-bg); border-color: rgba(217,119,6,0.38); }
+  .badge.err { color: var(--red-txt); background: var(--red-bg); border-color: rgba(220,38,38,0.40); }
 
   /* 4-Stage Scientific Pipeline Bar */
   .pipeline {
     display: flex; align-items: center; gap: 4px;
-    background: #080d18; padding: 3px 6px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface2); padding: 3px 6px; border-radius: 7px; border: 1px solid var(--border);
   }
   .pipe-step {
     font-family: var(--mono); font-size: 10.5px; font-weight: 700;
     padding: 3px 8px; border-radius: 5px; color: var(--dim);
     border: 1px solid transparent; transition: all 0.2s;
   }
-  .pipe-step.done { color: #86efac; background: var(--green-bg); border-color: rgba(34,197,94,0.3); }
-  .pipe-step.active { color: #e0f2fe; background: rgba(56,189,248,0.2); border-color: var(--cyan); }
-  .pipe-step.warn { color: #fde047; background: var(--amber-bg); border-color: rgba(245,158,11,0.45); }
+  .pipe-step.done { color: var(--green-txt); background: var(--green-bg); border-color: rgba(22,163,74,0.35); }
+  .pipe-step.active { color: var(--cyan); background: var(--cyan-bg); border-color: var(--cyan); }
+  .pipe-step.warn { color: var(--amber-txt); background: var(--amber-bg); border-color: rgba(217,119,6,0.45); }
   .pipe-arr { color: var(--border2); font-size: 11px; font-family: var(--mono); }
 
-  .tabs { display: flex; gap: 3px; background: #080d18; padding: 3px; border-radius: 7px; border: 1px solid var(--border); }
+  .tabs { display: flex; gap: 3px; background: var(--surface2); padding: 3px; border-radius: 7px; border: 1px solid var(--border); align-items: center; }
   .tab-btn {
     background: transparent; color: var(--muted); border: none;
     padding: 5px 12px; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;
@@ -123,7 +146,7 @@ UI_HTML = r"""<!DOCTYPE html>
   }
   .panel-title {
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.65px;
-    color: #cbd5e1; font-family: var(--mono);
+    color: var(--muted); font-family: var(--mono);
   }
 
   /* Camera Stage */
@@ -164,9 +187,9 @@ UI_HTML = r"""<!DOCTYPE html>
   .sub-head { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.45px; color: var(--muted); font-family: var(--mono); margin-bottom: 5px; }
   .radar-svg { flex: 1 1 auto; width: 100%; min-height: 145px; height: 100%; display: block; }
   .probe-kv { font-family: var(--mono); font-size: 11px; display: flex; flex-direction: column; gap: 5px; overflow: auto; }
-  .probe-row { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px solid rgba(30,45,72,0.55); padding-bottom: 3px; }
+  .probe-row { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px solid var(--row-sep); padding-bottom: 3px; }
   .probe-k { color: var(--muted); }
-  .probe-v { color: #e2e8f0; font-weight: 600; text-align: right; }
+  .probe-v { color: var(--text); font-weight: 600; text-align: right; }
 
   /* Controls & Inputs */
   .ctrl-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
@@ -175,12 +198,13 @@ UI_HTML = r"""<!DOCTYPE html>
     border-radius: 6px; padding: 5px 10px; font-size: 11.5px; font-weight: 600;
     font-family: var(--mono); cursor: pointer; transition: all 0.14s;
   }
-  button:hover { border-color: var(--cyan); background: #1a2742; }
+  button:hover { border-color: var(--cyan); background: var(--btn-hover); }
   button:disabled { opacity: 0.42; cursor: not-allowed; }
-  button.primary { background: var(--blue); border-color: #3b82f6; color: #fff; }
-  button.primary:hover { background: #1d4ed8; }
-  button.ok { background: #15803d; border-color: #22c55e; color: #fff; }
-  button.warn { background: #b45309; border-color: #f59e0b; color: #fff; }
+  button.primary { background: var(--blue); border-color: #2563eb; color: #fff; }
+  button.primary:hover { background: #1e40af; }
+  button.ok { background: #15803d; border-color: #16a34a; color: #fff; }
+  button.ok:hover { background: #166534; }
+  button.warn { background: #b45309; border-color: #d97706; color: #fff; }
   button.sm { padding: 3px 7px; font-size: 10.5px; }
 
   select, input[type="text"], textarea.prompt-in {
@@ -197,7 +221,7 @@ UI_HTML = r"""<!DOCTYPE html>
     font-family: var(--mono); font-size: 11px; font-weight: 600;
     background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
   }
-  .iter-chip.active { border-color: var(--cyan); color: #fff; background: rgba(56,189,248,0.16); }
+  .iter-chip.active { border-color: var(--cyan); color: var(--text-strong); background: var(--cyan-bg); }
   .iter-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
   .iter-chip.pass .dot { background: var(--green); }
   .iter-chip.fail .dot { background: var(--red); }
@@ -206,12 +230,12 @@ UI_HTML = r"""<!DOCTYPE html>
   .subtabs { flex: 0 0 auto; display: flex; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 7px; align-items: center; justify-content: space-between; flex-wrap: nowrap; overflow-x: auto; }
   .subtab-group { display: flex; gap: 4px; flex-wrap: nowrap; }
   .subtab { background: transparent; border: 1px solid transparent; color: var(--muted); padding: 3px 9px; font-size: 11px; border-radius: 5px; white-space: nowrap; }
-  .subtab.active { background: var(--surface2); border-color: var(--border2); color: #fff; }
+  .subtab.active { background: var(--surface2); border-color: var(--border2); color: var(--text-strong); }
   .code-pane { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
   textarea.code-editor {
     width: 100%; flex: 1 1 auto; min-height: 220px; height: 100%; resize: none;
-    background: var(--codebg); color: #e2e8f0;
+    background: var(--codebg); color: var(--text);
     border: 1px solid var(--border); border-radius: 7px;
     padding: 10px 11px; font-family: var(--mono); font-size: 12px; line-height: 1.5;
     tab-size: 4; white-space: pre; overflow: auto;
@@ -223,7 +247,7 @@ UI_HTML = r"""<!DOCTYPE html>
     border-radius: 7px; overflow: hidden;
   }
   .py-gutter {
-    flex: 0 0 42px; overflow: hidden; background: #090f1d;
+    flex: 0 0 42px; overflow: hidden; background: var(--headbg);
     border-right: 1px solid var(--border); padding: 10px 6px 10px 0;
     text-align: right; font-family: var(--mono); font-size: 12px; line-height: 1.5;
     color: var(--dim); user-select: none; white-space: pre;
@@ -235,31 +259,31 @@ UI_HTML = r"""<!DOCTYPE html>
     font-family: var(--mono); font-size: 12px; line-height: 1.5;
     tab-size: 4; white-space: pre; letter-spacing: 0; font-variant-ligatures: none;
   }
-  .py-hl { overflow: hidden; pointer-events: none; color: #e2e8f0; background: transparent; }
+  .py-hl { overflow: hidden; pointer-events: none; color: var(--text); background: transparent; }
   textarea.py-ta {
     overflow: auto; background: transparent; color: transparent;
     caret-color: var(--cyan); -webkit-text-fill-color: transparent;
   }
-  textarea.py-ta::selection { background: rgba(56,189,248,0.28); }
-  .tok-kw { color: #c084fc; font-weight: 600; }
-  .tok-bi { color: #38bdf8; }
-  .tok-fn { color: #fbbf24; font-weight: 600; }
-  .tok-call { color: #60a5fa; }
-  .tok-sdk { color: #22d3ee; font-weight: 600; }
-  .tok-str { color: #86efac; }
-  .tok-num { color: #fdba74; }
-  .tok-cm { color: #64748b; font-style: italic; }
-  .tok-jkey { color: #38bdf8; }
-  .tok-jbool { color: #c084fc; font-weight: 600; }
-  .tok-jnull { color: #fca5a5; font-style: italic; }
+  textarea.py-ta::selection { background: rgba(2,132,199,0.22); }
+  .tok-kw { color: var(--tok-kw); font-weight: 600; }
+  .tok-bi { color: var(--tok-bi); }
+  .tok-fn { color: var(--tok-fn); font-weight: 600; }
+  .tok-call { color: var(--tok-call); }
+  .tok-sdk { color: var(--tok-sdk); font-weight: 600; }
+  .tok-str { color: var(--tok-str); }
+  .tok-num { color: var(--tok-num); }
+  .tok-cm { color: var(--tok-cm); font-style: italic; }
+  .tok-jkey { color: var(--tok-jkey); }
+  .tok-jbool { color: var(--tok-jbool); font-weight: 600; }
+  .tok-jnull { color: var(--tok-jnull); font-style: italic; }
   .diff-view {
     flex: 1 1 auto; min-height: 220px; height: 100%; overflow: auto; background: var(--codebg);
     border: 1px solid var(--border); border-radius: 7px;
     padding: 9px 10px; font-family: var(--mono); font-size: 11.5px; line-height: 1.48;
     white-space: pre;
   }
-  .diff-add { color: #86efac; background: rgba(34,197,94,0.10); display: block; }
-  .diff-del { color: #fca5a5; background: rgba(239,68,68,0.12); display: block; }
+  .diff-add { color: var(--green-txt); background: var(--green-bg); display: block; }
+  .diff-del { color: var(--red-txt); background: var(--red-bg); display: block; }
   .diff-hunk { color: var(--cyan); display: block; font-weight: 700; }
   .diff-ctx { color: var(--muted); display: block; }
 
@@ -274,21 +298,21 @@ UI_HTML = r"""<!DOCTYPE html>
   .io-block { background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
   .io-head {
     flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 6px;
-    padding: 5px 9px; background: #0a101d; border-bottom: 1px solid var(--border);
+    padding: 5px 9px; background: var(--headbg); border-bottom: 1px solid var(--border);
     font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--cyan);
   }
-  .io-head.resp { color: #c084fc; }
-  .io-head.exec { color: #86efac; }
+  .io-head.resp { color: var(--purple-txt); }
+  .io-head.exec { color: var(--green-txt); }
   .io-pre {
     flex: 1 1 auto; min-height: 0; margin: 0; padding: 8px 10px; overflow: auto;
-    font-family: var(--mono); font-size: 11.5px; line-height: 1.46; color: #e2e8f0;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.46; color: var(--text);
     white-space: pre-wrap; word-break: break-word;
   }
   .io-pre.code-snap { white-space: pre; word-break: normal; }
   .ln-num { display: inline-block; width: 32px; color: var(--dim); user-select: none; text-align: right; margin-right: 10px; }
 
   /* Embodiment Switcher, RAX Matrix & Side-by-Side Policy Comparator */
-  .emb-select { width: auto; min-width: 215px; max-width: 265px; padding: 3px 8px; font-size: 11px; border-color: rgba(56,189,248,0.45); background: #0a1222; color: #e0f2fe; }
+  .emb-select { width: auto; min-width: 215px; max-width: 265px; padding: 3px 8px; font-size: 11px; border-color: var(--cyan); background: var(--surface2); color: var(--text-strong); }
   .http-bar {
     display: grid; grid-template-columns: 1.4fr 150px 1.1fr auto; gap: 7px; align-items: center;
     background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; margin-top: 8px;
@@ -303,9 +327,9 @@ UI_HTML = r"""<!DOCTYPE html>
   .cmp-bar select { width: auto; min-width: 170px; }
   .hm-cell { cursor: pointer; text-align: center; font-weight: 700; border-radius: 4px; transition: opacity 0.12s; }
   .hm-cell:hover { outline: 1px solid var(--cyan); }
-  .hm-hi { background: rgba(34,197,94,0.18); color: #86efac; }
-  .hm-mid { background: rgba(245,158,11,0.16); color: #fde047; }
-  .hm-zero { background: rgba(239,68,68,0.22); color: #fca5a5; }
+  .hm-hi { background: var(--green-bg); color: var(--green-txt); }
+  .hm-mid { background: var(--amber-bg); color: var(--amber-txt); }
+  .hm-zero { background: var(--red-bg); color: var(--red-txt); }
   .hm-sel { outline: 2px solid var(--cyan); }
   .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
   @media (max-width: 1050px) { .cmp-grid { grid-template-columns: 1fr; } }
@@ -315,18 +339,18 @@ UI_HTML = r"""<!DOCTYPE html>
   .metric-grid { flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   .metric { background: var(--codebg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
   .metric-k { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.45px; color: var(--muted); font-family: var(--mono); }
-  .metric-v { font-size: 12.5px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+  .metric-v { font-size: 12.5px; font-weight: 700; font-family: var(--mono); margin-top: 2px; color: var(--text-strong); }
 
   .journal-box { flex: 1.1 1 0; min-height: 140px; overflow: auto; background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; }
   table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
-  th, td { border-bottom: 1px solid rgba(30,45,72,0.7); padding: 5px 7px; text-align: left; vertical-align: middle; }
-  th { color: var(--muted); font-size: 10px; text-transform: uppercase; background: #0a101d; position: sticky; top: 0; }
-  tr.row-hi { background: rgba(56,189,248,0.10); }
-  tr.row-warn { background: rgba(245,158,11,0.14); color: #fde047; }
-  tr.row-ok { background: rgba(34,197,94,0.10); color: #86efac; }
+  th, td { border-bottom: 1px solid var(--row-sep); padding: 5px 7px; text-align: left; vertical-align: middle; }
+  th { color: var(--muted); font-size: 10px; text-transform: uppercase; background: var(--headbg); position: sticky; top: 0; }
+  tr.row-hi { background: var(--cyan-bg); }
+  tr.row-warn { background: var(--amber-bg); color: var(--amber-txt); }
+  tr.row-ok { background: var(--green-bg); color: var(--green-txt); }
 
   .console-box {
-    flex: 0.9 1 0; min-height: 140px; overflow: auto; background: #04070e;
+    flex: 0.9 1 0; min-height: 140px; overflow: auto; background: var(--consolebg);
     border: 1px solid var(--border); border-radius: 7px;
     padding: 7px 9px; font-family: var(--mono); font-size: 11px; line-height: 1.48;
   }
@@ -348,36 +372,36 @@ UI_HTML = r"""<!DOCTYPE html>
     border-radius: 6px; padding: 7px 9px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;
   }
   .mcp-item:hover { border-color: var(--cyan); }
-  .mcp-item.active { border-color: var(--cyan); background: rgba(56,189,248,0.12); }
+  .mcp-item.active { border-color: var(--cyan); background: var(--cyan-bg); }
   .mcp-item-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-  .mcp-item-name { font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: #f8fafc; }
+  .mcp-item-name { font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--text-strong); }
   .mcp-item-desc { font-size: 10.5px; color: var(--muted); line-height: 1.35; }
   .mcp-wire-card {
     background: var(--codebg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px;
     font-family: var(--mono); font-size: 10.5px;
   }
   .mcp-wire-pre {
-    margin: 5px 0 0; padding: 6px 8px; background: #04070e; border-radius: 5px;
-    max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: #cbd5e1;
+    margin: 5px 0 0; padding: 6px 8px; background: var(--consolebg); border-radius: 5px; border: 1px solid var(--border);
+    max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: var(--text);
   }
   .mcp-res-img { max-width: 100%; max-height: 440px; border-radius: 6px; border: 1px solid var(--border); display: block; margin: 6px auto; }
   .log-ln { margin-bottom: 2px; word-break: break-word; }
   .log-t { color: var(--dim); margin-right: 5px; }
   .log-tag { font-weight: 700; margin-right: 5px; }
   .tag-PROBE { color: var(--cyan); }
-  .tag-SYNTH, .tag-AST { color: #c084fc; }
-  .tag-EXEC { color: #86efac; }
-  .tag-ITER, .tag-LOOP { color: #fde047; }
-  .tag-ERROR { color: #fca5a5; }
-  .tag-INIT, .tag-EDIT, .tag-RESET { color: var(--muted); }
+  .tag-SYNTH, .tag-AST { color: var(--purple-txt); }
+  .tag-EXEC { color: var(--green-txt); }
+  .tag-ITER, .tag-LOOP { color: var(--amber-txt); }
+  .tag-ERROR { color: var(--red-txt); }
+  .tag-INIT, .tag-EDIT, .tag-RESET, .tag-HOST { color: var(--muted); }
 
   /* Archive & Governance Tables */
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 980px) { .two-col { grid-template-columns: 1fr; } }
   .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-  .chip { font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: var(--surface2); color: #cbd5e1; border: 1px solid var(--border); font-family: var(--mono); }
-  .chip.ok { background: var(--green-bg); color: #86efac; border-color: rgba(34,197,94,0.3); }
-  .chip.miss { background: var(--red-bg); color: #fca5a5; border-color: rgba(239,68,68,0.35); }
+  .chip { font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-family: var(--mono); }
+  .chip.ok { background: var(--green-bg); color: var(--green-txt); border-color: rgba(22,163,74,0.3); }
+  .chip.miss { background: var(--red-bg); color: var(--red-txt); border-color: rgba(220,38,38,0.35); }
   .alert-bar { margin-top: 8px; padding: 8px 10px; border-radius: 7px; background: var(--amber-bg); border: 1px solid rgba(245,158,11,0.5); display: none; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .alert-bar.show { display: flex; }
   .pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blink 1.3s infinite; }
@@ -409,11 +433,14 @@ UI_HTML = r"""<!DOCTYPE html>
       <span id="ps-iter" class="pipe-step">04 ITERATE</span>
     </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="lab" onclick="switchTab('lab')">Closed-Loop Lab</button>
-      <button class="tab-btn" data-tab="mcp" onclick="switchTab('mcp')">MCP Inspector</button>
-      <button class="tab-btn" data-tab="m1" onclick="switchTab('m1')">Embodiments &amp; RAX Matrix</button>
-      <button class="tab-btn" data-tab="gov" onclick="switchTab('gov')">Governance</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="lab" onclick="switchTab('lab')">Closed-Loop Lab</button>
+        <button class="tab-btn" data-tab="mcp" onclick="switchTab('mcp')">MCP Inspector</button>
+        <button class="tab-btn" data-tab="m1" onclick="switchTab('m1')">Embodiments &amp; RAX Matrix</button>
+        <button class="tab-btn" data-tab="gov" onclick="switchTab('gov')">Governance</button>
+      </div>
+      <button id="theme-toggle" class="sm" onclick="toggleTheme()" title="Switch Light / Dark UI theme">Dark</button>
     </div>
   </div>
 </div>
@@ -466,7 +493,7 @@ UI_HTML = r"""<!DOCTYPE html>
           </div>
 
           <div id="confirm-alert" class="alert-bar">
-            <span style="font-size:11.5px;font-family:var(--mono);color:#fde047"><strong>AMBIGUITY GATE:</strong> select target object_id</span>
+            <span style="font-size:11.5px;font-family:var(--mono);color:var(--amber-txt)"><strong>AMBIGUITY GATE:</strong> select target object_id</span>
             <div id="confirm-btns" style="display:flex;gap:6px"></div>
           </div>
         </div>
@@ -759,7 +786,7 @@ UI_HTML = r"""<!DOCTYPE html>
         <select id="cmp-task" onchange="loadPolicyComparison()"></select>
         <span style="font-family:var(--mono);font-size:11px;color:var(--cyan)">Method A:</span>
         <select id="cmp-left" onchange="loadPolicyComparison()"></select>
-        <span style="font-family:var(--mono);font-size:11px;color:#c084fc">vs Method B:</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--purple-txt)">vs Method B:</span>
         <select id="cmp-right" onchange="loadPolicyComparison()"></select>
       </div>
 
@@ -840,9 +867,9 @@ UI_HTML = r"""<!DOCTYPE html>
           <span id="cap-pill" class="badge">-</span>
         </div>
         <div id="cap-meta" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:8px"></div>
-        <div style="font-size:10.5px;font-weight:700;font-family:var(--mono);color:#86efac">READY SDK METHODS</div>
+        <div style="font-size:10.5px;font-weight:700;font-family:var(--mono);color:var(--green-txt)">READY SDK METHODS</div>
         <div id="cap-ok-chips" class="chips"></div>
-        <div style="font-size:10.5px;font-weight:700;font-family:var(--mono);color:#fca5a5;margin-top:11px">MISSING CAPABILITIES (OVEN GATE)</div>
+        <div style="font-size:10.5px;font-weight:700;font-family:var(--mono);color:var(--red-txt);margin-top:11px">MISSING CAPABILITIES (OVEN GATE)</div>
         <div id="cap-miss-chips" class="chips"></div>
       </div>
 
@@ -1222,7 +1249,27 @@ function inspectProbeCode() {
   if (evoState) renderExecutedCodeInspector(evoState);
 }
 
+function applyTheme(theme) {
+  const mode = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = mode;
+  try { localStorage.setItem('trax_theme', mode); } catch (_) {}
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = mode === 'dark' ? 'Light' : 'Dark';
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.dataset.theme || 'light';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+}
+
+(function initTheme() {
+  let saved = 'light';
+  try { saved = localStorage.getItem('trax_theme') || 'light'; } catch (_) {}
+  applyTheme(saved);
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(document.documentElement.dataset.theme || 'light');
   const ed = document.getElementById('code-editor');
   if (ed) {
     ed.addEventListener('input', () => { editorDirty = true; syncCodeEditorHighlight(); });
@@ -1389,7 +1436,7 @@ function renderSpatialRadar(obs) {
     }
   }
   const trail = cupTrail.length > 1
-    ? `<polyline fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4 3" opacity="0.75" points="${cupTrail.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/>`
+    ? `<polyline fill="none" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="4 3" opacity="0.8" points="${cupTrail.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/>`
     : '';
 
   const marks = objs
@@ -1397,28 +1444,28 @@ function renderSpatialRadar(obs) {
     .map(o => {
       const pos = o.center_world_m || o.world || [0.33, 0];
       const [px, py] = worldToRadar(pos[0], pos[1]);
-      const col = o.semantic_class === 'dine_in_red' ? '#f43f5e' : '#10b981';
-      const ring = filled && o.semantic_class === 'dine_in_red' ? '#facc15' : '#f8fafc';
+      const col = o.semantic_class === 'dine_in_red' ? '#e11d48' : '#059669';
+      const ring = filled && o.semantic_class === 'dine_in_red' ? '#d97706' : 'var(--surface)';
       return `<g>
         <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="8" fill="${col}" stroke="${ring}" stroke-width="2"/>
-        <text x="${px.toFixed(1)}" y="${(py+17).toFixed(1)}" fill="#e2e8f0" font-size="8.5" font-family="monospace" text-anchor="middle">${o.object_id || o.id} (${(pos[0]*100).toFixed(1)},${(pos[1]*100).toFixed(1)}cm)</text>
+        <text x="${px.toFixed(1)}" y="${(py+17).toFixed(1)}" fill="var(--radar-txt)" font-size="8.5" font-family="monospace" text-anchor="middle">${o.object_id || o.id} (${(pos[0]*100).toFixed(1)},${(pos[1]*100).toFixed(1)}cm)</text>
       </g>`;
     }).join('');
 
-  const spCol = l2.safe_to_pour ? '#22c55e' : '#f59e0b';
+  const spCol = l2.safe_to_pour ? 'var(--green)' : 'var(--amber)';
   svg.innerHTML = `
-    <rect x="4" y="4" width="352" height="212" rx="6" fill="#070c18" stroke="#1e2d48"/>
-    <line x1="24" y1="110" x2="336" y2="110" stroke="#17233b" stroke-dasharray="2 4"/>
-    <line x1="${sx.toFixed(1)}" y1="14" x2="${sx.toFixed(1)}" y2="206" stroke="#17233b" stroke-dasharray="2 4"/>
-    <rect x="${(nzx-26).toFixed(1)}" y="${(nzy-15).toFixed(1)}" width="60" height="30" rx="4" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-dasharray="3 2"/>
-    <text x="${(nzx+4).toFixed(1)}" y="${(nzy+3).toFixed(1)}" fill="#fca5a5" font-size="8.5" font-family="monospace" text-anchor="middle">NO-GO</text>
-    <circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="16" fill="rgba(56,189,248,0.08)" stroke="${spCol}" stroke-width="1.7" stroke-dasharray="3 2"/>
+    <rect x="4" y="4" width="352" height="212" rx="6" fill="var(--radar-bg)" stroke="var(--border)"/>
+    <line x1="24" y1="110" x2="336" y2="110" stroke="var(--radar-grid)" stroke-dasharray="2 4"/>
+    <line x1="${sx.toFixed(1)}" y1="14" x2="${sx.toFixed(1)}" y2="206" stroke="var(--radar-grid)" stroke-dasharray="2 4"/>
+    <rect x="${(nzx-26).toFixed(1)}" y="${(nzy-15).toFixed(1)}" width="60" height="30" rx="4" fill="var(--red-bg)" stroke="var(--red)" stroke-dasharray="3 2"/>
+    <text x="${(nzx+4).toFixed(1)}" y="${(nzy+3).toFixed(1)}" fill="var(--red-txt)" font-size="8.5" font-family="monospace" text-anchor="middle">NO-GO</text>
+    <circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="16" fill="var(--cyan-bg)" stroke="${spCol}" stroke-width="1.7" stroke-dasharray="3 2"/>
     <circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="2.2" fill="${spCol}"/>
     <text x="${sx.toFixed(1)}" y="${(sy-21).toFixed(1)}" fill="${spCol}" font-size="8.5" font-weight="600" font-family="monospace" text-anchor="middle">SPOUT (L2)</text>
-    <circle cx="${p1x.toFixed(1)}" cy="${p1y.toFixed(1)}" r="14" fill="rgba(34,197,94,0.08)" stroke="#22c55e" stroke-width="1.4" stroke-dasharray="3 2"/>
-    <text x="${p1x.toFixed(1)}" y="${(p1y+24).toFixed(1)}" fill="#86efac" font-size="8.5" font-family="monospace" text-anchor="middle">SLOT_1</text>
-    <circle cx="${p2x.toFixed(1)}" cy="${p2y.toFixed(1)}" r="12" fill="none" stroke="#475569" stroke-dasharray="2 3"/>
-    <text x="${p2x.toFixed(1)}" y="${(p2y-15).toFixed(1)}" fill="#64748b" font-size="8" font-family="monospace" text-anchor="middle">SLOT_2</text>
+    <circle cx="${p1x.toFixed(1)}" cy="${p1y.toFixed(1)}" r="14" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.4" stroke-dasharray="3 2"/>
+    <text x="${p1x.toFixed(1)}" y="${(p1y+24).toFixed(1)}" fill="var(--green-txt)" font-size="8.5" font-family="monospace" text-anchor="middle">SLOT_1</text>
+    <circle cx="${p2x.toFixed(1)}" cy="${p2y.toFixed(1)}" r="12" fill="none" stroke="var(--dim)" stroke-dasharray="2 3"/>
+    <text x="${p2x.toFixed(1)}" y="${(p2y-15).toFixed(1)}" fill="var(--dim)" font-size="8" font-family="monospace" text-anchor="middle">SLOT_2</text>
     ${trail}${marks}
   `;
 }
