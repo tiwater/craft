@@ -29,8 +29,9 @@ UI_HTML = r"""<!DOCTYPE html>
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; width: 100%; margin: 0; }
   body {
-    margin: 0;
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg); color: var(--text); line-height: 1.42;
     -webkit-font-smoothing: antialiased;
@@ -39,14 +40,15 @@ UI_HTML = r"""<!DOCTYPE html>
   a { color: var(--cyan); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
-  /* Topbar + 4-Stage Pipeline */
+  /* Full-Bleed Topbar + 4-Stage Pipeline */
   .topbar {
+    flex: 0 0 auto;
     background: rgba(13,20,35,0.97); backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border); padding: 9px 18px;
-    position: sticky; top: 0; z-index: 40;
+    border-bottom: 1px solid var(--border); padding: 8px 16px;
+    z-index: 40;
   }
   .topbar-inner {
-    max-width: 1680px; margin: 0 auto;
+    width: 100%; max-width: none; margin: 0;
     display: flex; align-items: center; justify-content: space-between;
     gap: 12px; flex-wrap: wrap;
   }
@@ -85,22 +87,35 @@ UI_HTML = r"""<!DOCTYPE html>
   .tab-btn:hover { color: var(--text); }
   .tab-btn.active { background: var(--blue); color: #fff; }
 
-  .container { max-width: 1680px; margin: 0 auto; padding: 12px 18px 28px; }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* 3-Pane Research IDE Grid */
-  .ide-grid {
-    display: grid;
-    grid-template-columns: minmax(360px, 1.12fr) minmax(430px, 1.38fr) minmax(300px, 0.90fr);
-    gap: 12px; align-items: start;
+  .container {
+    width: 100%; max-width: none; margin: 0; padding: 10px 14px;
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
   }
-  @media (max-width: 1220px) { .ide-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 860px) { .ide-grid { grid-template-columns: 1fr; } }
+  .tab-panel { display: none; min-height: 0; }
+  .tab-panel.active { display: block; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  #tab-lab.active, #tab-mcp.active { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Full-Viewport 3-Pane Research IDE Grid */
+  .ide-grid {
+    flex: 1 1 auto; min-height: 0; height: 100%;
+    display: grid;
+    grid-template-columns: minmax(400px, 1.08fr) minmax(540px, 1.42fr) minmax(350px, 0.92fr);
+    gap: 10px; align-items: stretch;
+  }
+  .ide-grid > div { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+  .ide-grid > div > .panel { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; margin-bottom: 0; }
+
+  @media (max-width: 1180px) {
+    body { height: auto; overflow: auto; }
+    .container { overflow: visible; }
+    #tab-lab.active, #tab-mcp.active { overflow: visible; height: auto; }
+    .ide-grid { grid-template-columns: 1fr; height: auto; }
+    .ide-grid > div { height: auto; }
+  }
 
   .panel {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 9px; padding: 11px 13px; margin-bottom: 12px;
+    border-radius: 9px; padding: 10px 12px; margin-bottom: 10px;
   }
   .panel-head {
     display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
@@ -142,13 +157,13 @@ UI_HTML = r"""<!DOCTYPE html>
   .thumb canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
   .thumb span { position: absolute; bottom: 3px; left: 4px; background: rgba(2,6,23,0.85); color: #e2e8f0; font-size: 9.5px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; }
 
-  /* Radar + ActiveProbe Split */
-  .explore-split { display: grid; grid-template-columns: 1.05fr 1fr; gap: 8px; margin-top: 9px; }
+  /* Radar + ActiveProbe Split (stretches to bottom of Pane 1) */
+  .explore-split { flex: 1 1 auto; min-height: 170px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 8px; margin-top: 8px; }
   @media (max-width: 680px) { .explore-split { grid-template-columns: 1fr; } }
-  .sub-box { background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 9px; }
-  .sub-head { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.45px; color: var(--muted); font-family: var(--mono); margin-bottom: 5px; }
-  .radar-svg { width: 100%; height: 158px; display: block; }
-  .probe-kv { font-family: var(--mono); font-size: 11px; display: flex; flex-direction: column; gap: 4px; }
+  .sub-box { background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 9px; display: flex; flex-direction: column; min-height: 0; }
+  .sub-head { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.45px; color: var(--muted); font-family: var(--mono); margin-bottom: 5px; }
+  .radar-svg { flex: 1 1 auto; width: 100%; min-height: 145px; height: 100%; display: block; }
+  .probe-kv { font-family: var(--mono); font-size: 11px; display: flex; flex-direction: column; gap: 5px; overflow: auto; }
   .probe-row { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px solid rgba(30,45,72,0.55); padding-bottom: 3px; }
   .probe-k { color: var(--muted); }
   .probe-v { color: #e2e8f0; font-weight: 600; text-align: right; }
@@ -187,23 +202,24 @@ UI_HTML = r"""<!DOCTYPE html>
   .iter-chip.pass .dot { background: var(--green); }
   .iter-chip.fail .dot { background: var(--red); }
 
-  /* Code / Diff / Subroutines IDE */
-  .subtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 7px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-  .subtab-group { display: flex; gap: 4px; }
-  .subtab { background: transparent; border: 1px solid transparent; color: var(--muted); padding: 3px 9px; font-size: 11px; border-radius: 5px; }
+  /* Code / Diff / Subroutines IDE (full-height flex fill) */
+  .subtabs { flex: 0 0 auto; display: flex; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 7px; align-items: center; justify-content: space-between; flex-wrap: nowrap; overflow-x: auto; }
+  .subtab-group { display: flex; gap: 4px; flex-wrap: nowrap; }
+  .subtab { background: transparent; border: 1px solid transparent; color: var(--muted); padding: 3px 9px; font-size: 11px; border-radius: 5px; white-space: nowrap; }
   .subtab.active { background: var(--surface2); border-color: var(--border2); color: #fff; }
+  .code-pane { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
   textarea.code-editor {
-    width: 100%; height: 390px; resize: vertical;
+    width: 100%; flex: 1 1 auto; min-height: 220px; height: 100%; resize: none;
     background: var(--codebg); color: #e2e8f0;
     border: 1px solid var(--border); border-radius: 7px;
-    padding: 10px 11px; font-family: var(--mono); font-size: 11.5px; line-height: 1.48;
+    padding: 10px 11px; font-family: var(--mono); font-size: 12px; line-height: 1.5;
     tab-size: 4; white-space: pre; overflow: auto;
   }
   .diff-view {
-    height: 390px; overflow: auto; background: var(--codebg);
+    flex: 1 1 auto; min-height: 220px; height: 100%; overflow: auto; background: var(--codebg);
     border: 1px solid var(--border); border-radius: 7px;
-    padding: 9px 10px; font-family: var(--mono); font-size: 11px; line-height: 1.46;
+    padding: 9px 10px; font-family: var(--mono); font-size: 11.5px; line-height: 1.48;
     white-space: pre;
   }
   .diff-add { color: #86efac; background: rgba(34,197,94,0.10); display: block; }
@@ -212,27 +228,27 @@ UI_HTML = r"""<!DOCTYPE html>
   .diff-ctx { color: var(--muted); display: block; }
 
   /* Full-Transparency LLM Prompt/Response & Executed Code Views */
-  .run-strip { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+  .run-strip { flex: 0 0 auto; display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
   .io-meta {
-    display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
+    flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
     background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
     padding: 5px 8px; margin-bottom: 6px; font-family: var(--mono); font-size: 10.5px; color: var(--muted);
   }
-  .io-stack { display: grid; grid-template-columns: 1fr; gap: 7px; }
-  .io-block { background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .io-stack { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; gap: 7px; }
+  .io-block { background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
   .io-head {
-    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 6px;
     padding: 5px 9px; background: #0a101d; border-bottom: 1px solid var(--border);
     font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--cyan);
   }
   .io-head.resp { color: #c084fc; }
   .io-head.exec { color: #86efac; }
   .io-pre {
-    margin: 0; padding: 8px 10px; max-height: 175px; overflow: auto;
-    font-family: var(--mono); font-size: 11px; line-height: 1.45; color: #e2e8f0;
+    flex: 1 1 auto; min-height: 0; margin: 0; padding: 8px 10px; overflow: auto;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.46; color: #e2e8f0;
     white-space: pre-wrap; word-break: break-word;
   }
-  .io-pre.code-snap { max-height: 315px; white-space: pre; word-break: normal; }
+  .io-pre.code-snap { white-space: pre; word-break: normal; }
   .ln-num { display: inline-block; width: 32px; color: var(--dim); user-select: none; text-align: right; margin-right: 10px; }
 
   /* Embodiment Switcher, RAX Matrix & Side-by-Side Policy Comparator */
@@ -257,15 +273,15 @@ UI_HTML = r"""<!DOCTYPE html>
   .hm-sel { outline: 2px solid var(--cyan); }
   .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
   @media (max-width: 1050px) { .cmp-grid { grid-template-columns: 1fr; } }
-  .cmp-pre { max-height: 410px; }
+  .cmp-pre { max-height: 460px; }
 
-  /* Right Pane: Oracle + Journal + Console */
-  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  /* Right Pane: Oracle + Journal + Console (full-height flex fill) */
+  .metric-grid { flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   .metric { background: var(--codebg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
   .metric-k { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.45px; color: var(--muted); font-family: var(--mono); }
   .metric-v { font-size: 12.5px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
 
-  .journal-box { max-height: 195px; overflow: auto; background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; }
+  .journal-box { flex: 1.1 1 0; min-height: 140px; overflow: auto; background: var(--codebg); border: 1px solid var(--border); border-radius: 7px; }
   table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
   th, td { border-bottom: 1px solid rgba(30,45,72,0.7); padding: 5px 7px; text-align: left; vertical-align: middle; }
   th { color: var(--muted); font-size: 10px; text-transform: uppercase; background: #0a101d; position: sticky; top: 0; }
@@ -274,10 +290,41 @@ UI_HTML = r"""<!DOCTYPE html>
   tr.row-ok { background: rgba(34,197,94,0.10); color: #86efac; }
 
   .console-box {
-    height: 205px; overflow: auto; background: #04070e;
+    flex: 0.9 1 0; min-height: 140px; overflow: auto; background: #04070e;
     border: 1px solid var(--border); border-radius: 7px;
-    padding: 7px 9px; font-family: var(--mono); font-size: 10.5px; line-height: 1.48;
+    padding: 7px 9px; font-family: var(--mono); font-size: 11px; line-height: 1.48;
   }
+
+  /* MCP Inspector 3-Column Full-Height Workbench */
+  .mcp-conn-bar {
+    flex: 0 0 auto; display: grid; grid-template-columns: 205px 1fr auto; gap: 8px; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 9px 12px; margin-bottom: 10px;
+  }
+  .mcp-grid {
+    flex: 1 1 auto; min-height: 0; display: grid;
+    grid-template-columns: minmax(290px, 0.92fr) minmax(460px, 1.38fr) minmax(360px, 1.05fr);
+    gap: 10px; align-items: stretch;
+  }
+  .mcp-grid > .panel { display: flex; flex-direction: column; min-height: 0; margin-bottom: 0; }
+  .mcp-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+  .mcp-item {
+    text-align: left; width: 100%; background: var(--codebg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 9px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+  }
+  .mcp-item:hover { border-color: var(--cyan); }
+  .mcp-item.active { border-color: var(--cyan); background: rgba(56,189,248,0.12); }
+  .mcp-item-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .mcp-item-name { font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: #f8fafc; }
+  .mcp-item-desc { font-size: 10.5px; color: var(--muted); line-height: 1.35; }
+  .mcp-wire-card {
+    background: var(--codebg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px;
+    font-family: var(--mono); font-size: 10.5px;
+  }
+  .mcp-wire-pre {
+    margin: 5px 0 0; padding: 6px 8px; background: #04070e; border-radius: 5px;
+    max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: #cbd5e1;
+  }
+  .mcp-res-img { max-width: 100%; max-height: 440px; border-radius: 6px; border: 1px solid var(--border); display: block; margin: 6px auto; }
   .log-ln { margin-bottom: 2px; word-break: break-word; }
   .log-t { color: var(--dim); margin-right: 5px; }
   .log-tag { font-weight: 700; margin-right: 5px; }
@@ -328,6 +375,7 @@ UI_HTML = r"""<!DOCTYPE html>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="lab" onclick="switchTab('lab')">Closed-Loop Lab</button>
+      <button class="tab-btn" data-tab="mcp" onclick="switchTab('mcp')">MCP Inspector</button>
       <button class="tab-btn" data-tab="m1" onclick="switchTab('m1')">Embodiments &amp; RAX Matrix</button>
       <button class="tab-btn" data-tab="gov" onclick="switchTab('gov')">Governance</button>
     </div>
@@ -427,10 +475,10 @@ UI_HTML = r"""<!DOCTYPE html>
             </div>
           </div>
 
-          <div id="pane-code">
+          <div id="pane-code" class="code-pane">
             <textarea id="code-editor" class="code-editor" spellcheck="false"></textarea>
           </div>
-          <div id="pane-llm" style="display:none">
+          <div id="pane-llm" class="code-pane" style="display:none">
             <div id="llm-call-strip" class="run-strip"></div>
             <div id="llm-meta-bar" class="io-meta">No LLM call recorded in this session yet. Click 2. Synthesize Py (LLM) or Run Closed Loop.</div>
             <div class="io-stack">
@@ -456,10 +504,10 @@ UI_HTML = r"""<!DOCTYPE html>
               </div>
             </div>
           </div>
-          <div id="pane-exec" style="display:none">
+          <div id="pane-exec" class="code-pane" style="display:none">
             <div id="exec-run-strip" class="run-strip"></div>
             <div id="exec-meta-bar" class="io-meta">No Python code has been executed on the host in this session yet.</div>
-            <div class="io-block">
+            <div class="io-block" style="flex:1 1 auto">
               <div class="io-head exec">
                 <span id="exec-code-title">EXACT EXECUTED PYTHON SNAPSHOT</span>
                 <div style="display:flex;gap:6px;align-items:center">
@@ -470,10 +518,10 @@ UI_HTML = r"""<!DOCTYPE html>
               <pre id="exec-code-pre" class="io-pre code-snap">(no executed Python snapshot yet)</pre>
             </div>
           </div>
-          <div id="pane-diff" style="display:none">
+          <div id="pane-diff" class="code-pane" style="display:none">
             <div id="diff-view" class="diff-view"></div>
           </div>
-          <div id="pane-subr" style="display:none">
+          <div id="pane-subr" class="code-pane" style="display:none">
             <div id="subr-view" class="diff-view"></div>
           </div>
         </div>
@@ -517,7 +565,105 @@ UI_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- TAB 2: MULTI-EMBODIMENT RAX COVERAGE MATRIX & CROSS-METHOD COMPARATOR -->
+  <!-- TAB 2: LIVE MCP DISCOVERY, TOOL CALL & JSON-RPC INSPECTOR -->
+  <div id="tab-mcp" class="tab-panel">
+    <div class="mcp-conn-bar">
+      <select id="mcp-transport" onchange="onMcpTransportChange()">
+        <option value="auto">Active Host (Auto /mcp)</option>
+        <option value="http">Custom HTTP MCP (/mcp)</option>
+        <option value="stdio">Local Stdio MCP Command</option>
+      </select>
+      <input id="mcp-target-input" class="txt-in" placeholder="http://127.0.0.1:8880/mcp (leave empty for active host, or enter external robot MCP endpoint)"/>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="primary" onclick="inspectMcp()">Discover (initialize + tools/list + resources/list)</button>
+        <span id="mcp-srv-badge" class="badge">NOT PROBED</span>
+      </div>
+    </div>
+
+    <div class="mcp-grid">
+      <!-- COL 1: DISCOVERED TOOLS & RESOURCES -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">MCP tools/list &amp; resources/list</span>
+          <span id="mcp-counts-badge" class="badge">0 tools &middot; 0 res</span>
+        </div>
+        <input id="mcp-filter" class="txt-in" placeholder="Filter discovered tools..." oninput="renderMcpCatalog()" style="margin-bottom:7px"/>
+        <div id="mcp-tools-list" class="mcp-list" style="flex:1.35"></div>
+        <div class="panel-head" style="margin-top:9px;margin-bottom:5px">
+          <span class="panel-title">MCP Resources</span>
+        </div>
+        <div id="mcp-res-list" class="mcp-list" style="flex:0.65"></div>
+      </div>
+
+      <!-- COL 2: SCHEMA INSPECTOR, LIVE TOOLS/CALL & RESOURCE VIEWER -->
+      <div class="panel">
+        <div class="subtabs">
+          <div class="subtab-group">
+            <button class="subtab active" data-mcpsub="tool" onclick="switchMcpSub('tool')">Tool Schema &amp; Live Call</button>
+            <button class="subtab" data-mcpsub="res" onclick="switchMcpSub('res')">Resource Reader</button>
+            <button class="subtab" data-mcpsub="prompt" onclick="switchMcpSub('prompt')">Dynamic LLM Contract</button>
+          </div>
+          <span id="mcp-sel-badge" class="badge">-</span>
+        </div>
+
+        <div id="mcp-pane-tool" class="code-pane" style="gap:7px">
+          <div id="mcp-tool-meta" class="io-meta">Click Discover to inspect tools exposed by the active or external MCP robot backend.</div>
+          <div class="io-block" style="flex:0.9">
+            <div class="io-head"><span>MCP INPUT SCHEMA &amp; GOVERNANCE ANNOTATIONS</span></div>
+            <pre id="mcp-schema-pre" class="io-pre">(select a tool on the left)</pre>
+          </div>
+          <div class="io-block" style="flex:0.75">
+            <div class="io-head resp">
+              <span>TOOL ARGUMENTS (JSON)</span>
+              <div style="display:flex;gap:8px;align-items:center">
+                <label style="font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer">
+                  <input id="mcp-journal-chk" type="checkbox" checked/> SQLite Intent Journal
+                </label>
+                <button class="ok sm" onclick="invokeSelectedMcpTool()">Invoke tools/call</button>
+              </div>
+            </div>
+            <textarea id="mcp-args-input" class="code-editor" style="min-height:85px;border:none;border-radius:0">{}</textarea>
+          </div>
+          <div class="io-block" style="flex:1">
+            <div class="io-head exec">
+              <span>LAST tools/call RESULT</span>
+              <span id="mcp-call-meta" style="color:var(--muted);font-weight:500">-</span>
+            </div>
+            <pre id="mcp-call-result" class="io-pre">(invoke a tool to see live structured MCP response)</pre>
+          </div>
+        </div>
+
+        <div id="mcp-pane-res" class="code-pane" style="display:none;gap:7px">
+          <div id="mcp-res-meta" class="io-meta">Click any MCP resource on the left (e.g. trax://scene/state or trax://cameras/overview).</div>
+          <div class="io-block" style="flex:1">
+            <div class="io-head"><span>MCP resources/read PAYLOAD</span></div>
+            <div id="mcp-res-body" style="flex:1;overflow:auto;padding:8px 10px"></div>
+          </div>
+        </div>
+
+        <div id="mcp-pane-prompt" class="code-pane" style="display:none;gap:7px">
+          <div class="io-meta">
+            <span>Auto-generated LLM grounding contract synthesized strictly from live MCP <code>tools/list</code> schemas (zero hardcoded robot API).</span>
+            <button class="sm" onclick="copyElem('mcp-prompt-preview')">Copy</button>
+          </div>
+          <div class="io-block" style="flex:1">
+            <pre id="mcp-prompt-preview" class="io-pre">(run Discover first)</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- COL 3: LIVE JSON-RPC 2.0 WIRE TRAFFIC -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">JSON-RPC 2.0 Wire Traffic</span>
+          <span id="mcp-wire-count" class="badge">0 msgs</span>
+        </div>
+        <div id="mcp-wire-list" class="mcp-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: MULTI-EMBODIMENT RAX COVERAGE MATRIX & CROSS-METHOD COMPARATOR -->
   <div id="tab-m1" class="tab-panel">
     <div class="panel">
       <div class="panel-head">
@@ -712,15 +858,219 @@ function copyExecCode() {
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+  if (name === 'mcp' && (!mcpState || !(mcpState.tools || []).length)) {
+    inspectMcp();
+  }
 }
 
 function switchCodeTab(name) {
   codeSubTab = name;
-  document.querySelectorAll('.subtab').forEach(b => b.classList.toggle('active', b.dataset.sub === name));
+  document.querySelectorAll('#tab-lab .subtab').forEach(b => b.classList.toggle('active', b.dataset.sub === name));
   for (const id of ['code', 'llm', 'exec', 'diff', 'subr']) {
     const el = document.getElementById('pane-' + id);
-    if (el) el.style.display = name === id ? 'block' : 'none';
+    if (el) el.style.display = name === id ? 'flex' : 'none';
   }
+}
+
+let mcpState = null;
+let selectedMcpTool = '';
+
+function switchMcpSub(name) {
+  document.querySelectorAll('#tab-mcp .subtab').forEach(b => b.classList.toggle('active', b.dataset.mcpsub === name));
+  for (const id of ['tool', 'res', 'prompt']) {
+    const el = document.getElementById('mcp-pane-' + id);
+    if (el) el.style.display = name === id ? 'flex' : 'none';
+  }
+}
+
+function onMcpTransportChange() {
+  const tr = document.getElementById('mcp-transport').value;
+  const inp = document.getElementById('mcp-target-input');
+  if (tr === 'stdio') {
+    inp.placeholder = 'e.g. python3 -m my_robot_mcp_server';
+  } else if (tr === 'http') {
+    inp.placeholder = 'e.g. http://192.168.1.50:8890/mcp';
+  } else {
+    inp.placeholder = 'Auto-detects active host /mcp (or in-process MCP bridge)';
+  }
+}
+
+function defaultArgsFromSchema(schema) {
+  const out = {};
+  const props = (schema && schema.properties) || {};
+  for (const [k, def] of Object.entries(props)) {
+    if (def.default !== undefined) out[k] = def.default;
+    else if (def.type === 'string') out[k] = '';
+    else if (def.type === 'boolean') out[k] = false;
+    else if (def.type === 'number' || def.type === 'integer') out[k] = 0;
+    else if (def.type === 'array') out[k] = [];
+    else if (def.type === 'object') out[k] = {};
+  }
+  return out;
+}
+
+async function inspectMcp() {
+  const tr = document.getElementById('mcp-transport').value;
+  const raw = document.getElementById('mcp-target-input').value.trim();
+  const badge = document.getElementById('mcp-srv-badge');
+  badge.textContent = 'DISCOVERING...';
+  badge.className = 'badge warn';
+  try {
+    const payload = { transport: tr };
+    if (tr === 'http' && raw) payload.url = raw;
+    if (tr === 'stdio' && raw) payload.command = raw;
+    mcpState = await api('api/mcp/inspect', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+    renderMcpState();
+  } catch (e) {
+    badge.textContent = 'ERR';
+    badge.className = 'badge err';
+    document.getElementById('mcp-tool-meta').textContent = `MCP discovery failed: ${e.message}`;
+  }
+}
+
+function renderMcpState() {
+  if (!mcpState) return;
+  const info = mcpState.server_info || {};
+  const tools = mcpState.tools || [];
+  const res = mcpState.resources || [];
+  const b = document.getElementById('mcp-srv-badge');
+  b.textContent = info.name ? `${info.name} (${info.protocolVersion || 'mcp'})` : 'CONNECTED';
+  b.className = 'badge ok';
+  document.getElementById('mcp-counts-badge').textContent = `${tools.length} tools · ${res.length} res`;
+  document.getElementById('mcp-prompt-preview').textContent = mcpState.prompt_contract_preview || '(no tools discovered)';
+  if (!selectedMcpTool && tools.length) selectedMcpTool = tools[0].name;
+  renderMcpCatalog();
+  renderMcpSelectedTool();
+  renderMcpWire();
+}
+
+function renderMcpCatalog() {
+  if (!mcpState) return;
+  const q = (document.getElementById('mcp-filter').value || '').toLowerCase();
+  const tools = (mcpState.tools || []).filter(t => !q || (t.name || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q));
+  document.getElementById('mcp-tools-list').innerHTML = tools.map(t => {
+    const ann = t.annotations || {};
+    let tag = '<span class="badge">IDEMPOTENT</span>';
+    if (ann.destructiveHint || ann.idempotentHint === false) {
+      tag = '<span class="badge warn">NON-IDEMPOTENT · JOURNAL</span>';
+    } else if (ann.readOnlyHint) {
+      tag = '<span class="badge ok">READ-ONLY</span>';
+    }
+    const act = t.name === selectedMcpTool ? 'active' : '';
+    return `<button class="mcp-item ${act}" onclick="selectMcpTool('${esc(t.name)}')">
+      <div class="mcp-item-top"><span class="mcp-item-name">${esc(t.name)}</span>${tag}</div>
+      <div class="mcp-item-desc">${esc((t.description || '').slice(0, 110))}</div>
+    </button>`;
+  }).join('') || '<div style="font-family:var(--mono);font-size:11px;color:var(--dim)">No tools match filter.</div>';
+
+  const resources = mcpState.resources || [];
+  document.getElementById('mcp-res-list').innerHTML = resources.map(r => `
+    <button class="mcp-item" onclick="readMcpResource('${esc(r.uri)}')">
+      <div class="mcp-item-top"><span class="mcp-item-name">${esc(r.uri)}</span><span class="badge">${esc(r.mimeType||'')}</span></div>
+      <div class="mcp-item-desc">${esc(r.name || r.description || '')}</div>
+    </button>
+  `).join('') || '<div style="font-family:var(--mono);font-size:11px;color:var(--dim)">No resources advertised.</div>';
+}
+
+function selectMcpTool(name) {
+  selectedMcpTool = name;
+  switchMcpSub('tool');
+  renderMcpCatalog();
+  renderMcpSelectedTool();
+}
+
+function renderMcpSelectedTool() {
+  if (!mcpState) return;
+  const t = (mcpState.tools || []).find(x => x.name === selectedMcpTool);
+  if (!t) return;
+  const ann = t.annotations || {};
+  document.getElementById('mcp-sel-badge').textContent = t.name;
+  document.getElementById('mcp-tool-meta').innerHTML = `
+    <span><strong>${esc(t.name)}</strong> &middot; ${esc(t.description || '')}</span>
+    <span>endpoint=<code>${esc(mcpState.endpoint_label || '-')}</code></span>
+  `;
+  document.getElementById('mcp-schema-pre').textContent = JSON.stringify({
+    name: t.name,
+    annotations: ann,
+    inputSchema: t.inputSchema || {},
+  }, null, 2);
+  document.getElementById('mcp-args-input').value = JSON.stringify(defaultArgsFromSchema(t.inputSchema), null, 2);
+}
+
+async function invokeSelectedMcpTool() {
+  if (!selectedMcpTool) return;
+  let args = {};
+  try {
+    args = JSON.parse(document.getElementById('mcp-args-input').value || '{}');
+  } catch (e) {
+    document.getElementById('mcp-call-result').textContent = `Invalid JSON arguments: ${e.message}`;
+    return;
+  }
+  document.getElementById('mcp-call-meta').textContent = 'invoking...';
+  try {
+    const res = await api('api/mcp/call', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        tool_name: selectedMcpTool,
+        arguments: args,
+        use_journal: document.getElementById('mcp-journal-chk').checked,
+      }),
+    });
+    mcpState = res.state;
+    const jTxt = res.journal_id ? ` · SQLite journal=${res.journal_id}` : '';
+    document.getElementById('mcp-call-meta').textContent = `${res.latency_ms}ms${jTxt}`;
+    document.getElementById('mcp-call-result').textContent = JSON.stringify(res.response, null, 2);
+    renderMcpWire();
+  } catch (e) {
+    document.getElementById('mcp-call-meta').textContent = 'error';
+    document.getElementById('mcp-call-result').textContent = `tools/call failed: ${e.message}`;
+  }
+}
+
+async function readMcpResource(uri) {
+  switchMcpSub('res');
+  document.getElementById('mcp-res-meta').textContent = `Reading ${uri} ...`;
+  try {
+    const res = await api('api/mcp/read_resource', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ uri }),
+    });
+    mcpState = res.state;
+    document.getElementById('mcp-res-meta').textContent = `${uri} · ${res.latency_ms}ms`;
+    const contents = ((res.response || {}).result || {}).contents || [];
+    const box = document.getElementById('mcp-res-body');
+    if (contents.length && contents[0].blob && String(contents[0].mimeType || '').startsWith('image/')) {
+      box.innerHTML = `<img class="mcp-res-img" src="data:${esc(contents[0].mimeType)};base64,${contents[0].blob}"/>`;
+    } else if (contents.length && contents[0].text != null) {
+      box.innerHTML = `<pre class="io-pre" style="padding:0">${esc(contents[0].text)}</pre>`;
+    } else {
+      box.innerHTML = `<pre class="io-pre" style="padding:0">${esc(JSON.stringify(res.response, null, 2))}</pre>`;
+    }
+    renderMcpWire();
+  } catch (e) {
+    document.getElementById('mcp-res-meta').textContent = `Read failed: ${e.message}`;
+  }
+}
+
+function renderMcpWire() {
+  if (!mcpState) return;
+  const logs = [...(mcpState.wire_log || [])].reverse();
+  document.getElementById('mcp-wire-count').textContent = `${logs.length} msgs`;
+  document.getElementById('mcp-wire-list').innerHTML = logs.map(w => `
+    <div class="mcp-wire-card">
+      <div class="mcp-item-top">
+        <span><strong style="color:var(--cyan)">${esc(w.method)}</strong> <span style="color:var(--dim)">[${esc(w.t)}]</span></span>
+        <span style="display:flex;gap:4px">
+          ${w.journal_id ? `<span class="badge warn">JOURNALED</span>` : ''}
+          <span class="badge ${w.ok ? 'ok' : 'err'}">${w.ok ? 'OK' : 'ERR'} · ${esc(w.latency_ms)}ms</span>
+        </span>
+      </div>
+      <pre class="mcp-wire-pre">REQ: ${esc(JSON.stringify(w.request))}\nRES: ${esc(JSON.stringify(w.response, null, 2))}</pre>
+    </div>
+  `).join('') || '<div style="font-family:var(--mono);font-size:11px;color:var(--dim)">No JSON-RPC messages yet.</div>';
 }
 
 function selectLlmCall(idx) {

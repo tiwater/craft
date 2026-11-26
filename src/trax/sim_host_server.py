@@ -27,14 +27,16 @@ from typing import Any, Mapping
 from urllib.parse import urlparse
 
 from .host_driver import SceneHostDriver
+from .mcp_protocol import build_driver_mcp_server
 
 
 class StandaloneSimHostApp:
-    """Thread-safe HTTP facade over a local `SceneHostDriver`."""
+    """Thread-safe HTTP + MCP JSON-RPC 2.0 facade over a local `SceneHostDriver`."""
 
     def __init__(self, driver: SceneHostDriver) -> None:
         self.driver = driver
         self._lock = threading.RLock()
+        self.mcp_server = build_driver_mcp_server(driver, self._lock)
         self._last_runtime: dict[str, Any] = {
             "status": "idle",
             "commandId": None,
@@ -219,12 +221,26 @@ def create_sim_host_server(
             if path == "/health":
                 self._send_json({"status": "ok", "driver": app.driver.driver_name, "evidence_source": app.driver.evidence_source})
                 return
+            if path == "/mcp":
+                self._send_json(
+                    {
+                        "endpoint": "/mcp",
+                        "transport": "streamable-http-jsonrpc-2.0",
+                        "serverInfo": app.mcp_server.server_info(),
+                        "toolsCount": len(app.mcp_server.list_tools_dicts()),
+                        "resourcesCount": len(app.mcp_server.list_resources_dicts()),
+                    }
+                )
+                return
             self._send_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
 
         def do_POST(self) -> None:  # noqa: N802
             path = urlparse(self.path).path.rstrip("/") or "/"
             try:
                 body = self._read_json()
+                if path == "/mcp":
+                    self._send_json(app.mcp_server.handle_rpc(body))
+                    return
                 if path == "/cap/execute":
                     self._send_json(app.post_cap_execute(body))
                     return

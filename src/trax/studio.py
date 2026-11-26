@@ -28,6 +28,7 @@ from .config import SceneConfig
 from .embodiments import EmbodimentManager, load_archived_policy_comparison
 from .evolution_lab import EvolutionLabController
 from .host_driver import SceneHostDriver
+from .mcp_protocol import MCPInspectorController
 from .operations import run_continuous_shift
 from .portability import check_policy_portability
 from .profiler import aggregate_trial_profiles
@@ -116,6 +117,11 @@ class TraxStudioApp:
             self.workspace_dir,
             self._lock,
             seed_policies=seed_policies,
+        )
+        self.mcp = MCPInspectorController(
+            self.workspace_dir,
+            lambda: self.driver,
+            self._lock,
         )
 
     def switch_embodiment(self, body: Mapping[str, Any]) -> dict[str, Any]:
@@ -446,6 +452,9 @@ def create_studio_server(
             if path == "/api/embodiments":
                 self._send_json(app.embodiments.snapshot())
                 return
+            if path == "/api/mcp/state":
+                self._send_json(app.mcp.get_state())
+                return
             if path == "/api/compare/policy":
                 try:
                     self._send_json(app.compare_archived_policy(parse_qs(parsed.query)))
@@ -557,6 +566,15 @@ def create_studio_server(
                     return
                 if path == "/api/embodiment/switch":
                     self._send_json(app.switch_embodiment(body))
+                    return
+                if path == "/api/mcp/inspect":
+                    self._send_json(app.mcp.inspect(body))
+                    return
+                if path == "/api/mcp/call":
+                    self._send_json(app.mcp.call_tool(body))
+                    return
+                if path == "/api/mcp/read_resource":
+                    self._send_json(app.mcp.read_resource(body))
                     return
                 if path == "/api/evolve/probe":
                     self._send_json(app.evolution.start_probe_async(body))
