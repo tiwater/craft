@@ -10,7 +10,7 @@ Unlike demonstration-based imitation policies or unguarded coding-agent loops th
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Layer 4 · Research Console & Inspector UI (src/trax/studio.py, ui_template)│
+│  Layer 4 · Research Console & Inspector UI (src/trax/ui.py, ui_template.py) │
 │  Full-viewport pure-English Light+ IDE (zero external web dependencies)     │
 │  [Closed-Loop Lab] [MCP Inspector] [Knowledge & Git] [Embodiments/Matrix]   │
 └────────────────────────────────────┬────────────────────────────────────────┘

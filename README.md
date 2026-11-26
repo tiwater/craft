@@ -42,7 +42,7 @@
 1. **MCP-Native Multi-Embodiment Discovery & Three-Owner Separation (`src/trax/mcp_protocol.py`, `src/trax/mujoco_so101_driver.py`):** Any robot backend (e.g., LeRobot SO-101 6-DoF, tabletop manipulators, LIBERO/Robosuite, or physical robot HTTP/Stdio bridges) exposes its own native tools, JSON Schemas, cameras, and pre-motion hard safeguards (`limit_refusal`) over standard MCP JSON-RPC 2.0 (`/mcp`), while strictly preserving separation between perception owner, TRAX policy governance, and host actuation.
 2. **Unified Closed-Loop Agent Engine & Transactional Governance (`src/trax/agent_engine.py`, `src/trax/journal.py`):** Runs `MCP Discovery → Multi-Turn LLM Active Exploration (run_probe) → Modular Policy Compilation (run_policy) → AST Sandbox + SQLite Intent Journal Execution → 4-Layer Attribution & Diff Repair`. Any MCP tool marked `idempotentHint: false` or `destructiveHint: true` is automatically protected by ACID intent-before-dispatch journaling and query-first reconciliation on unknown receipts, while compiled online policies execute with **0 online LLM calls**.
 3. **Four-Zone Workspace & Git-Versioned Executable Knowledge Base (`src/trax/knowledge_base.py`):** Partitions runtime state cleanly into `workspace/knowledge/` (independent Git repo storing runtime-owned `FACTS.md` & `FORBIDDEN.md`, executed `probes/`, `policies/`, and contract-bound `skills/<embodiment>/SKILL.md + skill.py`, with isolated `session/*` branches merged `--no-ff` into `main` only after independent verification), `workspace/runtime/` (SQLite WAL ledgers), `workspace/traces/` (untruncated LLM prompt/response & MCP JSON-RPC JSONL audit logs), and `workspace/recordings/`.
-4. **Full-Viewport Research Console & MCP Inspector (`src/trax/studio.py`, `src/trax/ui_template.py`):** Pure-English Light+ IDE (zero external web dependencies) providing live multi-camera observation, syntax-highlighted Python/JSON/Diff inspection, full LLM Prompt/Response & Executed Code auditing, live MCP JSON-RPC 2.0 probing, Git commit/diff/rollback controls, and cross-method archived benchmark comparison.
+4. **Full-Viewport Research Console & MCP Inspector (`src/trax/ui.py`, `src/trax/ui_template.py`):** Pure-English Light+ IDE (zero external web dependencies) providing live multi-camera observation, syntax-highlighted Python/JSON/Diff inspection, full LLM Prompt/Response & Executed Code auditing, live MCP JSON-RPC 2.0 probing, Git commit/diff/rollback controls, and cross-method archived benchmark comparison.
 
 <div align="center">
   <img src="docs/assets/figures/trax_architecture.svg" alt="TRAX Ownership-Separated Transactional Architecture" width="96%"/>
@@ -115,9 +115,9 @@ trax libero-bench --help
 
 ```text
 trax/
-├── src/trax/                  # Pure-Python-stdlib core (policy, journal, runtime, probing,
-│                              # repair_screener, skills, acceptance, operations, studio)
-│                              # + isolated optional sim drivers (mujoco_cafe_driver, robosuite_bench, libero_bench)
+├── src/trax/                  # Pure-Python-stdlib core (agent_engine, mcp_protocol, knowledge_base,
+│                              # policy, journal, runtime, probing, repair_screener, skills, ui)
+│                              # + isolated optional sim drivers (mujoco_so101_driver, mujoco_cafe_driver, robosuite_bench, libero_bench)
 ├── papers/trax/               # Single-column technical report (trax.cls), auto-generated tables/ & trax.pdf
 ├── docs/                      # Academic project page (https://tiwater.github.io/trax/) & architecture docs
 ├── tools/                     # Deterministic JSON-receipt -> LaTeX table & SVG figure generator

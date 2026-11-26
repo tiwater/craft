@@ -208,7 +208,7 @@ def main() -> None:
     lb.add_argument("--max-dev-calls", type=int, default=5)
     lb.add_argument("--no-isolate", action="store_true", help="Disable per-task subprocess isolation (not recommended on robosuite 1.4)")
 
-    ui_cmd = sub.add_parser("ui", aliases=["studio"], help="Launch standalone TRAX UI web observer & operations interface")
+    ui_cmd = sub.add_parser("ui", help="Launch standalone TRAX UI web observer & research console")
     ui_cmd.add_argument("--config", required=True, help="Path to SceneConfig JSON file")
     ui_cmd.add_argument("--driver", default="fixture", help="Host driver name (fixture, http, or plugin)")
     ui_cmd.add_argument("--workspace", required=True, help="Workspace dir for releases & benchmark results")
@@ -551,7 +551,7 @@ def main() -> None:
         )
         return
 
-    if args.command in ("ui", "studio"):
+    if args.command == "ui":
         cfg = _override_config(
             SceneConfig.from_file(args.config),
             edge_base=args.edge_base,
