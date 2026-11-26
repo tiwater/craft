@@ -25,6 +25,7 @@ from .benchmark import (
 )
 from .coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
 from .config import SceneConfig
+from .evolution_lab import EvolutionLabController
 from .host_driver import SceneHostDriver
 from .operations import run_continuous_shift
 from .portability import check_policy_portability
@@ -103,6 +104,18 @@ class TraxStudioApp:
         if ref.source_sha256 not in seen_hashes:
             self._policies[ref.policy_id] = ref
 
+        seed_policies = [
+            (pol.policy_id, pol.label, pol.source)
+            for pol in self._policies.values()
+        ]
+        self.evolution = EvolutionLabController(
+            self.config,
+            self.driver,
+            self.workspace_dir,
+            self._lock,
+            seed_policies=seed_policies,
+        )
+
     def _active_release_id(self) -> str | None:
         reg_dir = self.workspace_dir / "registry"
         if (reg_dir / "registry.json").is_file():
@@ -147,6 +160,7 @@ class TraxStudioApp:
             },
             "live_runtime": self.driver.get_live_runtime(),
             "run_state": self._snapshot_run_state(),
+            "evolution": self.evolution.get_state(),
         }
 
     def get_state(self) -> dict[str, Any]:
@@ -393,6 +407,9 @@ def create_studio_server(
             if path == "/api/live":
                 self._send_json(app.get_live())
                 return
+            if path == "/api/evolve/state":
+                self._send_json(app.evolution.get_state())
+                return
             def _find_report(*rel_candidates: str) -> Path | None:
                 roots = [app.workspace_dir, app.workspace_dir.parent / "goal-v2-20261122", app.workspace_dir.parent / "goal-v3-simex-parity"]
                 for root in roots:
@@ -495,6 +512,29 @@ def create_studio_server(
                     return
                 if path == "/api/shift/run":
                     self._send_json(app.run_studio_shift(body))
+                    return
+                if path == "/api/evolve/probe":
+                    self._send_json(app.evolution.start_probe_async(body))
+                    return
+                if path == "/api/evolve/synthesize":
+                    self._send_json(app.evolution.start_synthesize_async(body))
+                    return
+                if path == "/api/evolve/execute":
+                    self._send_json(app.evolution.start_execute_async(body))
+                    return
+                if path == "/api/evolve/auto":
+                    self._send_json(app.evolution.start_closed_loop_async(body))
+                    return
+                if path == "/api/evolve/select":
+                    self._send_json(app.evolution.select_iteration(int(body.get("iter_index", 0))))
+                    return
+                if path == "/api/evolve/reset":
+                    self._send_json(
+                        app.evolution.reset_session(
+                            task_instruction=body.get("task_instruction"),
+                            scenario_key=body.get("scenario_key"),
+                        )
+                    )
                     return
                 self._send_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
             except Exception as exc:  # noqa: BLE001
