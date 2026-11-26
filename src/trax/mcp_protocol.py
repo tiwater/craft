@@ -251,8 +251,203 @@ def build_driver_mcp_server(
             "evidence_source": driver.evidence_source,
             "driver": driver.driver_name,
             "sdk_contract_sha256": (disc.sdk_contract_sha256 if disc else "")[:16],
+            "native_low_level": hasattr(driver, "low_level_get_robot_state"),
         },
     )
+
+    # Generic Low-Level Robotics Embodiment Backend (e.g. LeRobot SO-101 6-DoF)
+    if hasattr(driver, "low_level_get_robot_state"):
+        srv.register_tool(
+            MCPToolSpec(
+                name="get_robot_state",
+                description="Read current 5-DoF joint angles (rad), joint limits, 3D end-effector pose (m), gripper open ratio, grasped object, and workspace bounds.",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_get_robot_state(),  # type: ignore[attr-defined]
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="get_scene_objects",
+                description="Read authoritative tabletop objects (`id`, `world_m`, `height_above_table_m`, `grasped`) and named target zones (`target_zone_a`, `target_zone_b`, `station_pad`).",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_get_scene_objects(),  # type: ignore[attr-defined]
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="move_ee",
+                description="Move robot end-effector smoothly to Cartesian world pose [x, y, z] in meters via IK. Enforces workspace bounds and returns structured `limit_refusal` BEFORE moving if out of bounds.",
+                input_schema={
+                    "type": "object",
+                    "required": ["x", "y", "z"],
+                    "properties": {
+                        "x": {"type": "number", "default": 0.33, "description": "World X in meters"},
+                        "y": {"type": "number", "default": -0.02, "description": "World Y in meters"},
+                        "z": {"type": "number", "default": 1.15, "description": "World Z in meters (tabletop is ~1.00 m)"},
+                        "steps": {"type": "integer", "default": 36, "description": "Simulation integration steps (12..80)"},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_move_ee(  # type: ignore[attr-defined]
+                float(args.get("x", 0.33)),
+                float(args.get("y", -0.02)),
+                float(args.get("z", 1.15)),
+                steps=int(args.get("steps", 36)),
+            ),
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="set_gripper",
+                description="Control SO-101 moving jaw gripper: open_ratio=1.0 (fully open / release) or 0.0 (closed / grasp nearby object within contact radius).",
+                input_schema={
+                    "type": "object",
+                    "required": ["open_ratio"],
+                    "properties": {
+                        "open_ratio": {"type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_set_gripper(float(args.get("open_ratio", 0.0))),  # type: ignore[attr-defined]
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="move_joints",
+                description="Command 5-DoF arm joint angles [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll] in radians. Refuses out-of-range joints with `limit_refusal`.",
+                input_schema={
+                    "type": "object",
+                    "required": ["q_rad"],
+                    "properties": {
+                        "q_rad": {"type": "array", "items": {"type": "number"}, "minItems": 5, "maxItems": 5, "default": [0.0, -0.35, 0.55, 0.95, 0.0]},
+                        "steps": {"type": "integer", "default": 32},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_move_joints(list(args.get("q_rad") or [0.0, -0.35, 0.55, 0.95, 0.0]), steps=int(args.get("steps", 32))),  # type: ignore[attr-defined]
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="go_home",
+                description="Retract the SO-101 arm safely to its neutral home joint configuration.",
+                input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_go_home(),  # type: ignore[attr-defined]
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="reset_task",
+                description="Reset the tabletop environment for a specified task_id (`pick_and_place_zone`, `lift_red_object`, `place_and_activate_station`) and seed.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "task_id": {
+                            "type": "string",
+                            "default": "pick_and_place_zone",
+                            "enum": ["pick_and_place_zone", "lift_red_object", "place_and_activate_station"],
+                        },
+                        "seed": {"type": "integer", "default": 0},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_reset_task(str(args.get("task_id") or "pick_and_place_zone"), seed=int(args.get("seed", 0))),  # type: ignore[attr-defined]
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="activate_workstation",
+                description="NON-IDEMPOTENT: Trigger external workstation actuator once. Must pass a stable `command_id` and reconcile via `query_command_status` if receipt is `unknown`.",
+                input_schema={
+                    "type": "object",
+                    "required": ["command_id"],
+                    "properties": {
+                        "command_id": {"type": "string", "default": "station-cmd-1"},
+                    },
+                },
+                read_only=False,
+                idempotent=False,
+                destructive=True,
+                requires_reconciliation=True,
+            ),
+            lambda args: driver.low_level_activate_workstation(str(args.get("command_id") or "station-cmd-1")),  # type: ignore[attr-defined]
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="query_command_status",
+                description="Query host ledger for a prior non-idempotent `command_id` to reconcile unknown receipts before any retry.",
+                input_schema={
+                    "type": "object",
+                    "required": ["command_id"],
+                    "properties": {"command_id": {"type": "string", "default": "station-cmd-1"}},
+                },
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_query_command_status(str(args.get("command_id") or "station-cmd-1")),  # type: ignore[attr-defined]
+        )
+        srv.register_tool(
+            MCPToolSpec(
+                name="verify_task",
+                description="Run independent physics-based verification for the active tabletop task.",
+                input_schema={
+                    "type": "object",
+                    "properties": {"task_id": {"type": "string", "default": "pick_and_place_zone"}},
+                },
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: driver.low_level_verify_task(args.get("task_id")),  # type: ignore[attr-defined]
+        )
+        srv.register_resource(
+            MCPResourceSpec(
+                uri="trax://scene/state",
+                name="Live Robot & Tabletop Scene State",
+                description="Authoritative SO-101 joint/EE state and tabletop object poses.",
+                mime_type="application/json",
+            ),
+            lambda: (
+                "application/json",
+                json.dumps(
+                    {
+                        "robot": driver.low_level_get_robot_state(),  # type: ignore[attr-defined]
+                        "scene": driver.low_level_get_scene_objects(),  # type: ignore[attr-defined]
+                        "tasks": driver.low_level_task_catalog(),  # type: ignore[attr-defined]
+                    },
+                    indent=2,
+                ),
+            ),
+        )
+        for cam in driver.list_cameras():
+            cam_name = str(cam)
+
+            def _make_ll_cam_reader(c: str) -> Callable[[], tuple[str, bytes | str]]:
+                def _read() -> tuple[str, bytes | str]:
+                    img = driver.fetch_camera_image(c)
+                    return ("text/plain", f"Camera {c} unavailable") if img is None else (img[1], img[0])
+
+                return _read
+
+            srv.register_resource(
+                MCPResourceSpec(
+                    uri=f"trax://cameras/{cam_name}",
+                    name=f"Camera: {cam_name}",
+                    description=f"Live rendered camera frame from {authority} ({cam_name}).",
+                    mime_type="image/jpeg",
+                ),
+                _make_ll_cam_reader(cam_name),
+            )
+        return srv
 
     # 1. Core perception & read-only tools (always exposed)
     srv.register_tool(
@@ -819,6 +1014,17 @@ class MCPInspectorController:
             "response": resp_obj,
             "state": self.get_state(),
         }
+
+    def record_external_wire(self, entry: Mapping[str, Any]) -> None:
+        """Append a live JSON-RPC exchange emitted by TraxAgentEngine into the inspector wire log."""
+        with self._state_lock:
+            self._append_wire(
+                method=str(entry.get("method") or "rpc"),
+                request=dict(entry.get("request") or {}),
+                response=dict(entry.get("response") or {}),
+                latency_ms=float(entry.get("latency_ms") or 0.0),
+                journal_id=entry.get("journal_id"),
+            )
 
     def get_state(self) -> dict[str, Any]:
         with self._state_lock:

@@ -21,6 +21,7 @@ import os
 from pathlib import Path
 import random
 import threading
+import time
 from typing import Any, Mapping
 import xml.etree.ElementTree as ET
 
@@ -341,6 +342,12 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         self._gripper_jnt_id = mujoco.mj_name2id(self._model, mujoco.mjtObj.mjOBJ_JOINT, SO101_GRIPPER_JOINT)
         self._gripper_qpos_idx = int(self._model.jnt_qposadr[self._gripper_jnt_id])
         self._ee_site_id = mujoco.mj_name2id(self._model, mujoco.mjtObj.mjOBJ_SITE, "gripperframe")
+        self._grasped_obj_id: str | None = None
+        self._active_task_id: str = "pick_and_place_zone"
+        self._workstation_activations: int = 0
+        self._workstation_ledger: dict[str, dict[str, Any]] = {}
+        self._simulate_station_timeout: bool = False
+        self._grasp_contact_radius_m: float = 0.058
 
         self._act_ids = {
             name: mujoco.mj_name2id(self._model, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
@@ -466,15 +473,16 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
     def _step_physics(self, n_steps: int, *, carried_cup_id: str | None = None) -> None:
         import time
 
+        carry = carried_cup_id if carried_cup_id is not None else self._grasped_obj_id
         for i in range(n_steps):
             self._mj.mj_step(self._model, self._data)
             self._step_seq += 1
-            if carried_cup_id is not None:
+            if carry is not None:
                 tcp = self._data.site_xpos[self._ee_site_id]
-                ee_x, ee_y, ee_z = float(tcp[0]), float(tcp[1]), float(tcp[2]) - 0.010
-                self._set_free_body_pose(carried_cup_id, ee_x, ee_y, max(SO101_CUP_REST_Z, ee_z))
-            if self._realtime_pacing and (i % 6 == 0):
-                time.sleep(0.012)
+                ee_x, ee_y, ee_z = float(tcp[0]), float(tcp[1]), float(tcp[2]) - 0.012
+                self._set_free_body_pose(carry, ee_x, ee_y, max(SO101_CUP_REST_Z, ee_z))
+            if self._realtime_pacing and (i % 2 == 0):
+                time.sleep(0.016)
 
     def _transport_cup_physics(self, cup_id: str, dest_x: float, dest_y: float) -> bool:
         cur = self._get_cup_xy(cup_id)
@@ -610,6 +618,9 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             self._set_brew_stream(active=False)
             self._mj.mj_forward(self._model, self._data)
             self._step_physics(18)
+            self._grasped_obj_id = None
+            self._workstation_activations = 0
+            self._workstation_ledger = {}
             self._last_command = {"command_id": None, "status": "idle", "steps": []}
             return {
                 "status": "reset",
@@ -617,3 +628,338 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                 "simulator_engine": "mujoco",
                 "robot_model": "lerobot_so101_6dof",
             }
+
+    # -----------------------------------------------------------------------
+    # Generic Low-Level Tabletop Robotics Primitives (Embodiment-Native MCP)
+    # -----------------------------------------------------------------------
+
+    def low_level_task_catalog(self) -> dict[str, dict[str, Any]]:
+        return {
+            "pick_and_place_zone": {
+                "label": "Pick Red Object -> Place on Target Zone A",
+                "instruction": (
+                    "Explore the LeRobot SO-101 workspace and object pose, grasp the red object (`red_cylinder`), "
+                    "lift it cleanly above the table, transport it to `target_zone_a`, release the gripper, "
+                    "and retract safely so `verify_task` passes."
+                ),
+            },
+            "lift_red_object": {
+                "label": "Grasp & Lift Red Object (>= 10 cm)",
+                "instruction": (
+                    "Explore the SO-101 end-effector reachability and gripper closure over `red_cylinder`, "
+                    "then grasp and lift `red_cylinder` to at least 10 cm above the tabletop (z >= 1.13 m) "
+                    "without triggering workspace/joint limit refusals."
+                ),
+            },
+            "place_and_activate_station": {
+                "label": "Place on Station Pad + Non-Idempotent Latch (Lost-Ack Reconcile)",
+                "instruction": (
+                    "Pick `red_cylinder`, place it on `station_pad` within 25 mm, release the gripper, "
+                    "and trigger the non-idempotent `activate_workstation` tool ONCE. If the activation receipt "
+                    "returns `unknown` (simulated timeout), call `query_command_status` to reconcile instead of "
+                    "blindly re-triggering."
+                ),
+            },
+        }
+
+    def _low_level_zones(self) -> dict[str, list[float]]:
+        return {
+            "target_zone_a": [round(float(PICKUP_1_XY[0]), 4), round(float(PICKUP_1_XY[1]), 4), round(float(TABLE_TOP_Z), 4)],
+            "target_zone_b": [round(float(PICKUP_2_XY[0]), 4), round(float(PICKUP_2_XY[1]), 4), round(float(TABLE_TOP_Z), 4)],
+            "station_pad": [round(float(SPOUT_XY[0]), 4), round(float(SPOUT_XY[1]), 4), round(float(TABLE_TOP_Z), 4)],
+        }
+
+    def _public_obj_id(self, body_key: str | None) -> str | None:
+        if body_key == "obj-cup-a":
+            return "red_cylinder"
+        if body_key == "obj-bag-1":
+            return "brown_block"
+        return body_key
+
+    def low_level_get_robot_state(self) -> dict[str, Any]:
+        with self._lock:
+            q_rad = [round(float(self._data.qpos[idx]), 4) for idx in self._so101_qpos_idx]
+            j_lims = []
+            for jid in self._so101_jnt_ids:
+                lo, hi = self._model.jnt_range[jid]
+                j_lims.append([round(float(lo), 4), round(float(hi), 4)])
+            g_q = float(self._data.qpos[self._gripper_qpos_idx])
+            g_ratio = max(0.0, min(1.0, (g_q - SO101_GRIPPER_CLOSED) / max(1e-6, SO101_GRIPPER_OPEN - SO101_GRIPPER_CLOSED)))
+            tcp = self._data.site_xpos[self._ee_site_id]
+            ee_xyz = [round(float(tcp[0]), 4), round(float(tcp[1]), 4), round(float(tcp[2]), 4)]
+            return {
+                "robot_model": "lerobot_so101_6dof",
+                "evidence_source": self.evidence_source,
+                "joint_names": list(SO101_ARM_JOINTS),
+                "joint_pos_rad": q_rad,
+                "joint_limits_rad": j_lims,
+                "ee_pos_m": ee_xyz,
+                "base_pos_m": [round(float(v), 4) for v in SO101_BASE_XYZ],
+                "gripper_open_ratio": round(g_ratio, 3),
+                "grasped_object_id": self._public_obj_id(self._grasped_obj_id),
+                "workspace_bounds_m": {
+                    "radial_from_base_min_m": SO101_WORKSPACE_MIN_R,
+                    "radial_from_base_max_m": SO101_WORKSPACE_MAX_R,
+                    "z_min_m": round(SO101_WORKSPACE_MIN_Z, 4),
+                    "z_max_m": round(SO101_WORKSPACE_MAX_Z, 4),
+                    "table_top_z_m": round(TABLE_TOP_Z, 4),
+                },
+                "step_seq": int(self._step_seq),
+            }
+
+    def low_level_get_scene_objects(self) -> dict[str, Any]:
+        with self._lock:
+            objs: list[dict[str, Any]] = []
+            mapping = (("obj-cup-a", "red_cylinder"), ("obj-bag-1", "brown_block"))
+            for body_key, public_id in mapping:
+                bid = self._body_ids.get(body_key)
+                if bid is None:
+                    continue
+                pos = self._data.xpos[bid]
+                if float(pos[0]) > 1.2:
+                    continue
+                objs.append(
+                    {
+                        "id": public_id,
+                        "world_m": [round(float(pos[0]), 4), round(float(pos[1]), 4), round(float(pos[2]), 4)],
+                        "height_above_table_m": round(float(pos[2]) - TABLE_TOP_Z, 4),
+                        "grasped": self._grasped_obj_id == body_key,
+                    }
+                )
+            return {
+                "evidence_source": self.evidence_source,
+                "table_top_z_m": round(TABLE_TOP_Z, 4),
+                "objects": objs,
+                "zones": self._low_level_zones(),
+                "workstation": {
+                    "activation_count": int(self._workstation_activations),
+                    "active": self._workstation_activations > 0,
+                },
+                "step_seq": int(self._step_seq),
+            }
+
+    def low_level_move_ee(self, x: float, y: float, z: float, *, steps: int = 36) -> dict[str, Any]:
+        tx, ty, tz = float(x), float(y), float(z)
+        dx = tx - SO101_BASE_XYZ[0]
+        dy = ty - SO101_BASE_XYZ[1]
+        radial = math.hypot(dx, dy)
+        # Backend Hard Safeguard (RAX Sec 4.1 pattern): refuse out-of-bounds BEFORE moving
+        if radial < SO101_WORKSPACE_MIN_R or radial > SO101_WORKSPACE_MAX_R:
+            return {
+                "ok": False,
+                "status": "limit_refusal",
+                "violated_limit": f"radial_reach={radial:.4f}m outside [{SO101_WORKSPACE_MIN_R:.3f}, {SO101_WORKSPACE_MAX_R:.3f}]m from base {list(SO101_BASE_XYZ[:2])}",
+                "requested_xyz_m": [round(tx, 4), round(ty, 4), round(tz, 4)],
+                "ee_pos_m": self.low_level_get_robot_state()["ee_pos_m"],
+            }
+        if tz < SO101_WORKSPACE_MIN_Z or tz > SO101_WORKSPACE_MAX_Z:
+            return {
+                "ok": False,
+                "status": "limit_refusal",
+                "violated_limit": f"z={tz:.4f}m outside [{SO101_WORKSPACE_MIN_Z:.3f}, {SO101_WORKSPACE_MAX_Z:.3f}]m",
+                "requested_xyz_m": [round(tx, 4), round(ty, 4), round(tz, 4)],
+                "ee_pos_m": self.low_level_get_robot_state()["ee_pos_m"],
+            }
+        n_steps = max(12, min(80, int(steps)))
+        with self._lock:
+            tcp0 = self._data.site_xpos[self._ee_site_id].copy()
+            x0, y0, z0 = float(tcp0[0]), float(tcp0[1]), float(tcp0[2])
+            g_open = self._grasped_obj_id is None and float(self._data.qpos[self._gripper_qpos_idx]) >= 0.45
+            # Interpolate smoothly in 4 Cartesian sub-segments so motion is visibly continuous
+            segs = 4
+            sub_steps = max(4, n_steps // segs)
+            for s in range(1, segs + 1):
+                alpha = s / segs
+                wx = x0 + (tx - x0) * alpha
+                wy = y0 + (ty - y0) * alpha
+                wz = z0 + (tz - z0) * alpha
+                self._set_arm_ctrl_world(wx, wy, wz, gripper_open=g_open)
+                self._step_physics(sub_steps, carried_cup_id=self._grasped_obj_id)
+            tcp_end = self._data.site_xpos[self._ee_site_id]
+            ex, ey, ez = float(tcp_end[0]), float(tcp_end[1]), float(tcp_end[2])
+            err_mm = round(math.sqrt((ex - tx) ** 2 + (ey - ty) ** 2 + (ez - tz) ** 2) * 1000.0, 2)
+            return {
+                "ok": True,
+                "status": "done",
+                "requested_xyz_m": [round(tx, 4), round(ty, 4), round(tz, 4)],
+                "ee_pos_m": [round(ex, 4), round(ey, 4), round(ez, 4)],
+                "tracking_error_mm": err_mm,
+                "grasped_object_id": "red_cylinder" if self._grasped_obj_id == "obj-cup-a" else self._grasped_obj_id,
+            }
+
+    def low_level_set_gripper(self, open_ratio: float) -> dict[str, Any]:
+        ratio = max(0.0, min(1.0, float(open_ratio)))
+        target_q = SO101_GRIPPER_CLOSED + ratio * (SO101_GRIPPER_OPEN - SO101_GRIPPER_CLOSED)
+        with self._lock:
+            self._data.ctrl[self._act_ids[SO101_GRIPPER_JOINT]] = target_q
+            nearest_id = None
+            nearest_dist = 9.99
+            tcp = self._data.site_xpos[self._ee_site_id]
+            tx, ty, tz = float(tcp[0]), float(tcp[1]), float(tcp[2])
+
+            if ratio < 0.45:
+                # Closing gripper: check physical contact proximity to graspable tabletop objects
+                for body_key, public_id in (("obj-cup-a", "red_cylinder"), ("obj-bag-1", "brown_block")):
+                    bid = self._body_ids.get(body_key)
+                    if bid is None:
+                        continue
+                    pos = self._data.xpos[bid]
+                    if float(pos[0]) > 1.2:
+                        continue
+                    d_xy = math.hypot(tx - float(pos[0]), ty - float(pos[1]))
+                    d_z = abs(tz - (float(pos[2]) + 0.02))
+                    d3 = math.hypot(d_xy, d_z)
+                    if d3 < nearest_dist:
+                        nearest_dist = d3
+                        nearest_id = public_id
+                    if d_xy <= self._grasp_contact_radius_m and (TABLE_TOP_Z + 0.015) <= tz <= (TABLE_TOP_Z + 0.115):
+                        self._grasped_obj_id = body_key
+                self._step_physics(16, carried_cup_id=self._grasped_obj_id)
+            else:
+                # Opening gripper: release carried object cleanly onto table or drop height
+                released = self._grasped_obj_id
+                self._grasped_obj_id = None
+                if released is not None:
+                    self._set_free_body_pose(released, tx, ty, max(SO101_CUP_REST_Z + 0.002, tz - 0.015))
+                self._step_physics(22, carried_cup_id=None)
+
+            return {
+                "ok": True,
+                "status": "done",
+                "gripper_open_ratio": round(ratio, 3),
+                "grasped_object_id": "red_cylinder" if self._grasped_obj_id == "obj-cup-a" else self._grasped_obj_id,
+                "nearest_object": nearest_id,
+                "nearest_dist_m": round(nearest_dist, 4) if nearest_dist < 5.0 else None,
+                "ee_pos_m": [round(tx, 4), round(ty, 4), round(tz, 4)],
+            }
+
+    def low_level_move_joints(self, q_rad: list[float], *, steps: int = 32) -> dict[str, Any]:
+        if len(q_rad) != len(SO101_ARM_JOINTS):
+            return {
+                "ok": False,
+                "status": "limit_refusal",
+                "violated_limit": f"Expected {len(SO101_ARM_JOINTS)} joint angles, got {len(q_rad)}",
+            }
+        vals = [float(v) for v in q_rad]
+        for name, jid, val in zip(SO101_ARM_JOINTS, self._so101_jnt_ids, vals):
+            lo, hi = self._model.jnt_range[jid]
+            if val < float(lo) or val > float(hi):
+                return {
+                    "ok": False,
+                    "status": "limit_refusal",
+                    "violated_limit": f"joint {name}={val:.4f}rad outside [{float(lo):.4f}, {float(hi):.4f}]rad",
+                }
+        with self._lock:
+            for name, val in zip(SO101_ARM_JOINTS, vals):
+                self._data.ctrl[self._act_ids[name]] = val
+            self._step_physics(max(12, min(80, int(steps))), carried_cup_id=self._grasped_obj_id)
+        return {"ok": True, "status": "done", **self.low_level_get_robot_state()}
+
+    def low_level_go_home(self) -> dict[str, Any]:
+        return self.low_level_move_joints(list(SO101_HOME_QPOS), steps=30)
+
+    def low_level_reset_task(self, task_id: str = "pick_and_place_zone", *, seed: int = 0) -> dict[str, Any]:
+        rng = random.Random(int(seed))
+        jx = rng.uniform(-0.025, 0.025) if seed else 0.0
+        jy = rng.uniform(-0.025, 0.025) if seed else 0.0
+        self._active_task_id = str(task_id or "pick_and_place_zone")
+        self._simulate_station_timeout = self._active_task_id == "place_and_activate_station"
+        self.reset_scenario({"preset": "default", "cup_a_xy": [0.33 + jx, -0.02 + jy]})
+        return {
+            "status": "reset",
+            "task_id": self._active_task_id,
+            "seed": int(seed),
+            "scene": self.low_level_get_scene_objects(),
+            "robot": self.low_level_get_robot_state(),
+        }
+
+    def low_level_activate_workstation(self, command_id: str) -> dict[str, Any]:
+        cid = str(command_id or f"station-{time.time_ns()}")
+        with self._lock:
+            if cid in self._workstation_ledger:
+                rec = dict(self._workstation_ledger[cid])
+                rec["duplicate_blocked_by_host"] = True
+                return rec
+            self._workstation_activations += 1
+            self._set_brew_stream(active=True)
+            self._step_physics(16, carried_cup_id=self._grasped_obj_id)
+            self._set_brew_stream(active=False)
+            self._workstation_ledger[cid] = {
+                "command_id": cid,
+                "receipt": "done",
+                "activation_count": int(self._workstation_activations),
+            }
+            if self._simulate_station_timeout and self._workstation_activations == 1:
+                return {
+                    "command_id": cid,
+                    "receipt": "unknown",
+                    "detail": "Simulated transport ack timeout after physical dispatch; query_command_status required before retry.",
+                }
+            return dict(self._workstation_ledger[cid])
+
+    def low_level_query_command_status(self, command_id: str) -> dict[str, Any]:
+        cid = str(command_id or "")
+        with self._lock:
+            if cid in self._workstation_ledger:
+                return {"found": True, **self._workstation_ledger[cid]}
+            return {"found": False, "command_id": cid, "receipt": "not_found"}
+
+    def low_level_verify_task(self, task_id: str | None = None) -> dict[str, Any]:
+        tid = str(task_id or self._active_task_id or "pick_and_place_zone")
+        scene = self.low_level_get_scene_objects()
+        red = next((o for o in scene["objects"] if o["id"] == "red_cylinder"), None)
+        if red is None:
+            return {"task_id": tid, "passed": False, "detail": "red_cylinder missing from scene", "metrics": {}}
+        rx, ry, rz = red["world_m"]
+        h_above = float(red["height_above_table_m"])
+        zones = scene["zones"]
+
+        if tid == "lift_red_object":
+            passed = h_above >= 0.095
+            return {
+                "task_id": tid,
+                "passed": bool(passed),
+                "metrics": {
+                    "object_z_m": round(rz, 4),
+                    "lift_height_mm": round(h_above * 1000.0, 1),
+                    "target_min_mm": 95.0,
+                    "grasped": bool(red["grasped"]),
+                },
+                "detail": f"red_cylinder lifted {h_above*1000.0:.1f}mm above table (target >= 95mm)",
+            }
+
+        if tid == "place_and_activate_station":
+            sx, sy, _ = zones["station_pad"]
+            dist_mm = round(math.hypot(rx - sx, ry - sy) * 1000.0, 1)
+            acts = int(self._workstation_activations)
+            released = not bool(red["grasped"])
+            passed = (dist_mm <= 28.0) and released and (acts == 1)
+            return {
+                "task_id": tid,
+                "passed": bool(passed),
+                "metrics": {
+                    "pad_error_mm": dist_mm,
+                    "target_max_mm": 28.0,
+                    "released": released,
+                    "workstation_activations": acts,
+                    "duplicate_actuation": acts > 1,
+                },
+                "detail": f"pad_err={dist_mm}mm (<=28mm), released={released}, activations={acts} (must be == 1)",
+            }
+
+        # Default: pick_and_place_zone
+        zx, zy, _ = zones["target_zone_a"]
+        dist_mm = round(math.hypot(rx - zx, ry - zy) * 1000.0, 1)
+        released = not bool(red["grasped"])
+        passed = (dist_mm <= 32.0) and released and (h_above <= 0.065)
+        return {
+            "task_id": tid,
+            "passed": bool(passed),
+            "metrics": {
+                "zone_error_mm": dist_mm,
+                "target_max_mm": 32.0,
+                "released": released,
+                "height_above_table_mm": round(h_above * 1000.0, 1),
+            },
+            "detail": f"zone_err={dist_mm}mm (<=32mm), released={released}, height={h_above*1000.0:.1f}mm",
+        }

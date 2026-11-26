@@ -468,26 +468,26 @@ UI_HTML = r"""<!DOCTYPE html>
           <div class="explore-split">
             <div class="sub-box">
               <div class="sub-head">
-                <span>2D World Radar</span>
+                <span>2D Tabletop Map (MCP State)</span>
                 <button class="sm" onclick="clearTrail()">Clear</button>
               </div>
               <svg id="radar-svg" class="radar-svg" viewBox="0 0 360 220"></svg>
             </div>
             <div class="sub-box">
               <div class="sub-head">
-                <span>ActiveProbe Telemetry</span>
+                <span>MCP Exploration Telemetry</span>
                 <div style="display:flex;gap:5px;align-items:center">
                   <button class="sm" onclick="inspectProbeCode()">Probe Py</button>
-                  <span id="probe-badge" class="badge">UNPROBED</span>
+                  <span id="probe-badge" class="badge">UNEXPLORED</span>
                 </div>
               </div>
               <div id="probe-kv" class="probe-kv">
-                <div class="probe-row"><span class="probe-k">authority</span><span id="pk-auth" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">sdk_methods</span><span id="pk-sdk" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">objects</span><span id="pk-objs" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">cup_world_m</span><span id="pk-pos" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">l2_offset</span><span id="pk-l2" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">probe_wall</span><span id="pk-wall" class="probe-v">-</span></div>
+                <div class="probe-row"><span class="probe-k">mcp_server</span><span id="pk-auth" class="probe-v">-</span></div>
+                <div class="probe-row"><span class="probe-k">mcp_tools</span><span id="pk-sdk" class="probe-v">-</span></div>
+                <div class="probe-row"><span class="probe-k">explore_rounds</span><span id="pk-objs" class="probe-v">0</span></div>
+                <div class="probe-row"><span class="probe-k">ee_pos_m</span><span id="pk-pos" class="probe-v">-</span></div>
+                <div class="probe-row"><span class="probe-k">gripper</span><span id="pk-l2" class="probe-v">-</span></div>
+                <div class="probe-row"><span class="probe-k">grasped_obj</span><span id="pk-wall" class="probe-v">none</span></div>
               </div>
             </div>
           </div>
@@ -507,18 +507,25 @@ UI_HTML = r"""<!DOCTYPE html>
             <span id="loop-status-pill" class="badge">IDLE</span>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 195px;gap:7px;margin-bottom:7px">
+          <div style="display:grid;grid-template-columns:1fr 225px;gap:7px;margin-bottom:7px">
             <textarea id="task-instruction" class="prompt-in" rows="2"></textarea>
             <div style="display:flex;flex-direction:column;gap:5px">
-              <select id="scenario-select"></select>
-              <button class="sm" onclick="resetSession()">New Clean Session</button>
+              <select id="scenario-select" onchange="onTaskProfileChange()"></select>
+              <div style="display:grid;grid-template-columns:92px 1fr;gap:5px">
+                <select id="explore-rounds" title="Multi-turn LLM exploration rounds">
+                  <option value="1">Explore: 1R</option>
+                  <option value="2" selected>Explore: 2R</option>
+                  <option value="3">Explore: 3R</option>
+                </select>
+                <button class="sm" onclick="resetSession()">New Clean Session</button>
+              </div>
             </div>
           </div>
 
           <div class="ctrl-row">
-            <button id="btn-probe" onclick="runProbe()">1. Explore / Probe</button>
-            <button id="btn-synth" onclick="runSynthesize()">2. Synthesize Py (LLM)</button>
-            <button id="btn-exec" class="ok" onclick="runExecute()">3. Execute Py</button>
+            <button id="btn-probe" onclick="runProbe()">1. Agent Explore (MCP+LLM)</button>
+            <button id="btn-synth" onclick="runSynthesize()">2. Compile Policy (LLM)</button>
+            <button id="btn-exec" class="ok" onclick="runExecute()">3. Governed Execute</button>
             <button id="btn-auto" class="primary" onclick="runClosedLoop()">Run Closed Loop (1&rarr;4)</button>
           </div>
 
@@ -600,18 +607,18 @@ UI_HTML = r"""<!DOCTYPE html>
       <div>
         <div class="panel">
           <div class="panel-head">
-            <span class="panel-title">03 &middot; Oracle &amp; 4-Layer Attribution</span>
-            <span id="verdict-pill" class="badge">PENDING</span>
+            <span class="panel-title">03 &middot; Independent Verifier &amp; 4-Layer Attribution</span>
+            <span id="verdict-pill" class="badge">IDLE</span>
           </div>
           <div class="metric-grid">
             <div class="metric"><div class="metric-k">Attribution Layer</div><div id="m-layer" class="metric-v">-</div></div>
-            <div class="metric"><div class="metric-k">Failure Code</div><div id="m-code" class="metric-v">-</div></div>
-            <div class="metric"><div class="metric-k">Oracle Fill / Err</div><div id="m-oracle" class="metric-v">-</div></div>
-            <div class="metric"><div class="metric-k">Brew / Dup / Rec</div><div id="m-brew" class="metric-v">-</div></div>
+            <div class="metric"><div class="metric-k">Status / Failure Code</div><div id="m-code" class="metric-v">-</div></div>
+            <div class="metric"><div class="metric-k">Verifier Metrics</div><div id="m-oracle" class="metric-v">-</div></div>
+            <div class="metric"><div class="metric-k">MCP Calls / Non-Idemp</div><div id="m-brew" class="metric-v">-</div></div>
           </div>
 
           <div class="panel-head" style="margin-top:10px;margin-bottom:6px">
-            <span class="panel-title">SQLite Intent Journal &amp; SDK Trace</span>
+            <span class="panel-title">Governed MCP &amp; SQLite Intent Journal</span>
             <span id="journal-count" class="badge">0 ops</span>
           </div>
           <div class="journal-box">
@@ -1242,7 +1249,7 @@ function selectExecRun(idx) {
 
 function inspectProbeCode() {
   if (evoState && (evoState.executed_runs || []).length) {
-    const idx = evoState.executed_runs.findIndex(r => r.stage === '01_explore_probe');
+    const idx = evoState.executed_runs.findIndex(r => String(r.stage || '').startsWith('01_explore'));
     if (idx >= 0) selectedExecRunIdx = idx;
   }
   switchCodeTab('exec');
@@ -1408,65 +1415,82 @@ async function startVideoPump() {
 }
 
 function worldToRadar(x, y) {
-  const px = 30 + ((x - 0.22) / 0.43) * 300;
-  const py = 110 - (y / 0.32) * 95;
-  return [Math.max(12, Math.min(348, px)), Math.max(12, Math.min(208, py))];
+  const px = 36 + ((x - 0.10) / 0.42) * 290;
+  const py = 110 - (y / 0.30) * 92;
+  return [Math.max(14, Math.min(346, px)), Math.max(14, Math.min(206, py))];
 }
 
-function renderSpatialRadar(obs) {
+function renderSpatialRadar(obs, mcpTel) {
   const svg = document.getElementById('radar-svg');
   if (!svg) return;
-  const raw = (obs && obs.raw_snapshot) || {};
-  const objs = raw.objects || [];
-  const l2 = raw.l2_pouring_safety || {};
-  const filled = !!(raw.cup_filled || (raw.coffee_machine && raw.coffee_machine.cup_filled));
+  const scene = (mcpTel && mcpTel.scene) || null;
+  const robot = (mcpTel && mcpTel.robot) || null;
 
-  const [sx, sy] = worldToRadar(0.45, 0.0);
-  const [p1x, p1y] = worldToRadar(0.38, -0.17);
-  const [p2x, p2y] = worldToRadar(0.38, 0.17);
-  const [nzx, nzy] = worldToRadar(0.56, 0.22);
-
-  const cup = objs.find(o => o.semantic_class === 'dine_in_red') || objs.find(o => o.semantic_class === 'takeout_green');
-  if (cup && Array.isArray(cup.center_world_m)) {
-    const [cx, cy] = worldToRadar(cup.center_world_m[0], cup.center_world_m[1]);
+  // Dynamic MCP Tabletop Map (embodiment-agnostic: renders whatever zones, objects & EE exist)
+  if (scene && robot) {
+    const [bx, by] = worldToRadar((robot.base_pos_m || [0.13, 0])[0], (robot.base_pos_m || [0.13, 0])[1]);
+    const ee = robot.ee_pos_m || [0.32, 0.0, 1.15];
+    const [ex, ey] = worldToRadar(ee[0], ee[1]);
     const prev = cupTrail[cupTrail.length - 1];
-    if (!prev || Math.hypot(cx - prev[0], cy - prev[1]) > 2.5) {
-      cupTrail.push([cx, cy]);
-      if (cupTrail.length > 60) cupTrail.shift();
+    if (!prev || Math.hypot(ex - prev[0], ey - prev[1]) > 2.0) {
+      cupTrail.push([ex, ey]);
+      if (cupTrail.length > 80) cupTrail.shift();
     }
-  }
-  const trail = cupTrail.length > 1
-    ? `<polyline fill="none" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="4 3" opacity="0.8" points="${cupTrail.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/>`
-    : '';
+    const trail = cupTrail.length > 1
+      ? `<polyline fill="none" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="4 3" opacity="0.85" points="${cupTrail.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/>`
+      : '';
 
-  const marks = objs
-    .filter(o => o.semantic_class === 'dine_in_red' || o.semantic_class === 'takeout_green')
-    .map(o => {
-      const pos = o.center_world_m || o.world || [0.33, 0];
-      const [px, py] = worldToRadar(pos[0], pos[1]);
-      const col = o.semantic_class === 'dine_in_red' ? '#e11d48' : '#059669';
-      const ring = filled && o.semantic_class === 'dine_in_red' ? '#d97706' : 'var(--surface)';
+    const zones = scene.zones || {};
+    const zoneSvg = Object.entries(zones).map(([zName, zPos]) => {
+      const [zx, zy] = worldToRadar(zPos[0], zPos[1]);
+      const col = zName.includes('station') ? 'var(--amber)' : 'var(--green)';
+      const bg = zName.includes('station') ? 'var(--amber-bg)' : 'var(--green-bg)';
       return `<g>
-        <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="8" fill="${col}" stroke="${ring}" stroke-width="2"/>
-        <text x="${px.toFixed(1)}" y="${(py+17).toFixed(1)}" fill="var(--radar-txt)" font-size="8.5" font-family="monospace" text-anchor="middle">${o.object_id || o.id} (${(pos[0]*100).toFixed(1)},${(pos[1]*100).toFixed(1)}cm)</text>
+        <circle cx="${zx.toFixed(1)}" cy="${zy.toFixed(1)}" r="15" fill="${bg}" stroke="${col}" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text x="${zx.toFixed(1)}" y="${(zy + 25).toFixed(1)}" fill="${col}" font-size="8" font-weight="600" font-family="monospace" text-anchor="middle">${esc(zName)}</text>
       </g>`;
     }).join('');
 
-  const spCol = l2.safe_to_pour ? 'var(--green)' : 'var(--amber)';
+    const objSvg = (scene.objects || []).map(o => {
+      const pos = o.world_m || [0.33, 0, 1.03];
+      const [ox, oy] = worldToRadar(pos[0], pos[1]);
+      const col = o.id.includes('red') ? '#e11d48' : '#78716c';
+      const ring = o.grasped ? '#d97706' : 'var(--surface)';
+      return `<g>
+        <circle cx="${ox.toFixed(1)}" cy="${oy.toFixed(1)}" r="8" fill="${col}" stroke="${ring}" stroke-width="2"/>
+        <text x="${ox.toFixed(1)}" y="${(oy - 12).toFixed(1)}" fill="var(--radar-txt)" font-size="8" font-family="monospace" text-anchor="middle">${esc(o.id)} (${(pos[0]*100).toFixed(0)},${(pos[1]*100).toFixed(0)}cm)</text>
+      </g>`;
+    }).join('');
+
+    svg.innerHTML = `
+      <rect x="4" y="4" width="352" height="212" rx="6" fill="var(--radar-bg)" stroke="var(--border)"/>
+      <line x1="20" y1="110" x2="340" y2="110" stroke="var(--radar-grid)" stroke-dasharray="2 4"/>
+      <line x1="${bx.toFixed(1)}" y1="14" x2="${bx.toFixed(1)}" y2="206" stroke="var(--radar-grid)" stroke-dasharray="2 4"/>
+      <rect x="${(bx-9).toFixed(1)}" y="${(by-9).toFixed(1)}" width="18" height="18" rx="3" fill="var(--surface2)" stroke="var(--muted)" stroke-width="1.5"/>
+      <text x="${bx.toFixed(1)}" y="${(by+21).toFixed(1)}" fill="var(--muted)" font-size="7.5" font-family="monospace" text-anchor="middle">BASE</text>
+      ${zoneSvg}${trail}${objSvg}
+      <line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="var(--cyan)" stroke-width="1.4" opacity="0.45"/>
+      <circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="5" fill="var(--cyan)" stroke="var(--surface)" stroke-width="1.5"/>
+      <text x="${ex.toFixed(1)}" y="${(ey+14).toFixed(1)}" fill="var(--cyan)" font-size="8" font-weight="700" font-family="monospace" text-anchor="middle">EE z=${ee[2].toFixed(2)}m</text>
+    `;
+    return;
+  }
+
+  // Generic fallback when connected to a legacy driver without trax://scene/state
+  const raw = (obs && obs.raw_snapshot) || {};
+  const objs = raw.objects || [];
+  const objSvg = objs.map(o => {
+    const pos = o.center_world_m || o.world || [0.33, 0];
+    const [ox, oy] = worldToRadar(pos[0], pos[1]);
+    return `<g>
+      <circle cx="${ox.toFixed(1)}" cy="${oy.toFixed(1)}" r="7" fill="var(--cyan)" stroke="var(--surface)" stroke-width="1.5"/>
+      <text x="${ox.toFixed(1)}" y="${(oy+16).toFixed(1)}" fill="var(--radar-txt)" font-size="8" font-family="monospace" text-anchor="middle">${esc(o.object_id || o.id)}</text>
+    </g>`;
+  }).join('');
   svg.innerHTML = `
     <rect x="4" y="4" width="352" height="212" rx="6" fill="var(--radar-bg)" stroke="var(--border)"/>
-    <line x1="24" y1="110" x2="336" y2="110" stroke="var(--radar-grid)" stroke-dasharray="2 4"/>
-    <line x1="${sx.toFixed(1)}" y1="14" x2="${sx.toFixed(1)}" y2="206" stroke="var(--radar-grid)" stroke-dasharray="2 4"/>
-    <rect x="${(nzx-26).toFixed(1)}" y="${(nzy-15).toFixed(1)}" width="60" height="30" rx="4" fill="var(--red-bg)" stroke="var(--red)" stroke-dasharray="3 2"/>
-    <text x="${(nzx+4).toFixed(1)}" y="${(nzy+3).toFixed(1)}" fill="var(--red-txt)" font-size="8.5" font-family="monospace" text-anchor="middle">NO-GO</text>
-    <circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="16" fill="var(--cyan-bg)" stroke="${spCol}" stroke-width="1.7" stroke-dasharray="3 2"/>
-    <circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="2.2" fill="${spCol}"/>
-    <text x="${sx.toFixed(1)}" y="${(sy-21).toFixed(1)}" fill="${spCol}" font-size="8.5" font-weight="600" font-family="monospace" text-anchor="middle">SPOUT (L2)</text>
-    <circle cx="${p1x.toFixed(1)}" cy="${p1y.toFixed(1)}" r="14" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.4" stroke-dasharray="3 2"/>
-    <text x="${p1x.toFixed(1)}" y="${(p1y+24).toFixed(1)}" fill="var(--green-txt)" font-size="8.5" font-family="monospace" text-anchor="middle">SLOT_1</text>
-    <circle cx="${p2x.toFixed(1)}" cy="${p2y.toFixed(1)}" r="12" fill="none" stroke="var(--dim)" stroke-dasharray="2 3"/>
-    <text x="${p2x.toFixed(1)}" y="${(p2y-15).toFixed(1)}" fill="var(--dim)" font-size="8" font-family="monospace" text-anchor="middle">SLOT_2</text>
-    ${trail}${marks}
+    <line x1="20" y1="110" x2="340" y2="110" stroke="var(--radar-grid)" stroke-dasharray="2 4"/>
+    ${objSvg}
   `;
 }
 
@@ -1484,17 +1508,26 @@ function renderDiffHtml(diffText) {
 
 function updatePipelineBar(evo) {
   const phase = evo.phase || 'idle';
-  const hasProbe = !!evo.probe_report;
+  const hasExplore = (evo.exploration_findings || []).length > 0;
   const iters = evo.iterations || [];
   const cur = (evo.active_iter_index >= 0 && evo.active_iter_index < iters.length) ? iters[evo.active_iter_index] : null;
   const hasExec = !!(cur && cur.execution);
   const passed = !!(hasExec && cur.execution.task_passed);
 
   const setP = (id, cls) => { document.getElementById(id).className = 'pipe-step ' + cls; };
-  setP('ps-explore', phase === 'exploring' ? 'active' : (hasProbe ? 'done' : ''));
+  setP('ps-explore', phase === 'exploring' ? 'active' : (hasExplore ? 'done' : ''));
   setP('ps-synth', phase === 'synthesizing' ? 'active' : (cur ? 'done' : ''));
   setP('ps-exec', phase === 'executing' ? 'active' : (passed ? 'done' : (hasExec ? 'warn' : '')));
   setP('ps-iter', phase === 'iterating' ? 'active' : (passed ? 'done' : (hasExec && !passed ? 'warn' : '')));
+}
+
+function onTaskProfileChange() {
+  const sel = document.getElementById('scenario-select');
+  const ti = document.getElementById('task-instruction');
+  if (evoState && evoState.task_instructions && sel && ti) {
+    const inst = evoState.task_instructions[sel.value];
+    if (inst) ti.value = inst;
+  }
 }
 
 function renderEvolution(evo) {
@@ -1521,32 +1554,30 @@ function renderEvolution(evo) {
     ti.value = evo.task_instruction;
   }
   const sel = document.getElementById('scenario-select');
-  if (sel && evo.scenario_profiles && sel.options.length === 0) {
-    sel.innerHTML = Object.entries(evo.scenario_profiles)
+  const profiles = evo.task_profiles || evo.scenario_profiles;
+  if (sel && profiles && sel.options.length === 0) {
+    sel.innerHTML = Object.entries(profiles)
       .map(([k, lbl]) => `<option value="${esc(k)}">${esc(lbl)}</option>`).join('');
-    sel.value = evo.scenario_key || 'fault';
+    sel.value = evo.task_id || evo.scenario_key || Object.keys(profiles)[0];
   }
 
-  // Probe telemetry panel
-  const pr = evo.probe_report;
+  // MCP Exploration telemetry panel
+  const findings = evo.exploration_findings || [];
+  const srvInfo = evo.server_info || {};
   const pb = document.getElementById('probe-badge');
-  if (pr) {
-    pb.textContent = 'PROBED';
+  if (findings.length > 0) {
+    pb.textContent = `EXPLORED (${findings.length}R)`;
     pb.className = 'badge ok';
-    document.getElementById('pk-auth').textContent = pr.execution_authority || '-';
-    document.getElementById('pk-sdk').textContent = `${pr.allowed_methods_count} methods`;
-    document.getElementById('pk-objs').textContent = `${(pr.objects_observed || []).length} observed`;
-    const first = (pr.objects_observed || [])[0];
-    document.getElementById('pk-pos').textContent = first && first.world_m ? `[${first.world_m.slice(0,3).join(', ')}]` : '-';
-    document.getElementById('pk-l2').textContent = pr.l2_radial_offset_mm != null ? `${pr.l2_radial_offset_mm} mm` : '-';
-    document.getElementById('pk-wall').textContent = `${pr.probe_wall_s}s`;
+  } else if (evo.phase === 'exploring') {
+    pb.textContent = 'EXPLORING...';
+    pb.className = 'badge warn';
   } else {
-    pb.textContent = 'UNPROBED';
+    pb.textContent = 'UNEXPLORED';
     pb.className = 'badge';
-    for (const id of ['pk-auth','pk-sdk','pk-objs','pk-pos','pk-l2','pk-wall']) {
-      document.getElementById(id).textContent = '-';
-    }
   }
+  document.getElementById('pk-auth').textContent = srvInfo.name || evo.mcp_endpoint || '-';
+  document.getElementById('pk-sdk').textContent = evo.discovered_tools_count ? `${evo.discovered_tools_count} tools` : '-';
+  document.getElementById('pk-objs').textContent = `${findings.length} / ${evo.explore_rounds || 2} rounds`;
 
   // Iteration timeline strip
   const iters = evo.iterations || [];
@@ -1559,7 +1590,7 @@ function renderEvolution(evo) {
     return `<button class="iter-chip ${stCls} ${actCls}" onclick="selectIter(${idx})">
       <span class="dot"></span>it=${idx} [${esc(tag)}]
     </button>`;
-  }).join('') || '<span style="font-family:var(--mono);font-size:11px;color:var(--dim)">No iterations yet. Click 1. Explore / Probe or Run Closed Loop.</span>';
+  }).join('') || '<span style="font-family:var(--mono);font-size:11px;color:var(--dim)">No compiled policy yet. Click 1. Agent Explore (MCP+LLM) or Run Closed Loop (1->4).</span>';
 
   const cur = (evo.active_iter_index >= 0 && evo.active_iter_index < iters.length) ? iters[evo.active_iter_index] : null;
   if (cur) {
@@ -1580,14 +1611,14 @@ function renderEvolution(evo) {
     const subPayload = {
       iteration: cur.label,
       origin: cur.origin,
-      llm_meta: cur.llm_meta,
       ast_compliance: cur.ast_check,
       subroutines: cur.subroutines,
-      stage1_probe_report: pr || null,
+      discovered_mcp_tools: evo.discovered_tools || [],
+      exploration_findings: findings,
     };
     document.getElementById('subr-view').innerHTML = highlightJson(subPayload);
 
-    // Right pane: Oracle & Attribution & Journal
+    // Right pane: Independent Verifier & Attribution & Governed MCP Journal
     const ex = cur.execution;
     const attr = cur.attribution || {};
     const vp = document.getElementById('verdict-pill');
@@ -1596,10 +1627,11 @@ function renderEvolution(evo) {
       vp.className = 'badge ' + (ex.task_passed ? 'ok' : 'err');
       document.getElementById('m-layer').textContent = attr.layer || 'none';
       document.getElementById('m-code').textContent = attr.code || ex.host_runtime_status || '-';
-      const o = ex.oracle_post_run || {};
-      document.getElementById('m-oracle').textContent = `${o.cup_filled ? 'FILLED' : 'EMPTY'} / ${o.delivery_error_mm != null ? o.delivery_error_mm + 'mm' : '-'}`;
-      const bc = (ex.non_idempotent_counts || {}).start_coffee_machine ?? 0;
-      document.getElementById('m-brew').textContent = `${bc}x / dup=${ex.duplicate_non_idempotent ? 1 : 0} / unk=${ex.unknown_events_observed ?? 0}`;
+      const vm = (ex.verify_result && ex.verify_result.metrics) || {};
+      const vmParts = Object.entries(vm).slice(0, 2).map(([k, v]) => `${k}=${v}`);
+      document.getElementById('m-oracle').textContent = vmParts.length ? vmParts.join(' · ') : (ex.verify_result ? ex.verify_result.detail : '-');
+      const niTotal = Object.values(ex.non_idempotent_counts || {}).reduce((a, b) => a + Number(b || 0), 0);
+      document.getElementById('m-brew').textContent = `${(ex.methods||[]).length} calls · ni=${niTotal} · dup=${ex.duplicate_non_idempotent ? 1 : 0}`;
     } else {
       vp.textContent = 'UNEXECUTED';
       vp.className = 'badge';
@@ -1614,12 +1646,12 @@ function renderEvolution(evo) {
     document.getElementById('journal-tbody').innerHTML = jrows.length
       ? jrows.map((r, i) => {
           const st = String(r.state || '');
-          const cls = st.includes('UNKNOWN') || r.action === 'command_ack_timeout_unknown'
+          const cls = st.includes('UNKNOWN') || st.includes('LIMIT_REFUSAL')
             ? 'row-warn'
-            : (r.action === 'query_command_status' || st.includes('RECONCILED') ? 'row-ok' : (r.non_idempotent ? 'row-hi' : ''));
+            : (st.includes('RECONCILED') || st.includes('COMMITTED') ? 'row-ok' : (r.non_idempotent ? 'row-hi' : ''));
           return `<tr class="${cls}"><td>${i+1}</td><td>${esc(r.action)}</td><td>${esc(st)}</td></tr>`;
         }).join('')
-      : '<tr><td colspan="3" style="color:var(--dim)">Click 3. Execute Py to run inside AST sandbox + SQLite journal.</td></tr>';
+      : '<tr><td colspan="3" style="color:var(--dim)">Click 3. Governed Execute to run via MCP + SQLite Journal.</td></tr>';
   } else {
     const ed = document.getElementById('code-editor');
     if (ed && !editorDirty) {
@@ -1628,17 +1660,20 @@ function renderEvolution(evo) {
       syncCodeEditorHighlight();
     }
     const ab = document.getElementById('ast-badge');
-    ab.textContent = 'EMPTY';
+    ab.textContent = 'IDLE';
     ab.className = 'badge';
     document.getElementById('sha-badge').textContent = 'sha256:-';
-    document.getElementById('diff-view').innerHTML = '<span class="diff-ctx">Fresh session. Click 1. Explore / Probe, 2. Synthesize Py (LLM), or Run Closed Loop (1->4).</span>';
-    document.getElementById('subr-view').innerHTML = highlightJson({ status: 'fresh_session', stage1_probe_report: pr || null });
+    document.getElementById('diff-view').innerHTML = '<span class="diff-ctx">Ready. Click 1. Agent Explore (MCP+LLM) or Run Closed Loop (1->4).</span>';
+    document.getElementById('subr-view').innerHTML = highlightJson({
+      discovered_mcp_tools: evo.discovered_tools || [],
+      exploration_findings: findings,
+    });
     const vp = document.getElementById('verdict-pill');
     vp.textContent = 'IDLE';
     vp.className = 'badge';
     for (const id of ['m-layer','m-code','m-oracle','m-brew']) document.getElementById(id).textContent = '-';
     document.getElementById('journal-count').textContent = '0 ops';
-    document.getElementById('journal-tbody').innerHTML = '<tr><td colspan="3" style="color:var(--dim)">Fresh session ready. Click Run Closed Loop (1->4) or 1. Explore / Probe.</td></tr>';
+    document.getElementById('journal-tbody').innerHTML = '<tr><td colspan="3" style="color:var(--dim)">Click 1. Agent Explore (MCP+LLM) or Run Closed Loop (1->4).</td></tr>';
   }
 
   // Console log
@@ -1831,41 +1866,39 @@ function renderM1Archive(arc) {
 function updateLiveUI(live) {
   const obs = live.scene_observation || {};
   lastLiveScene = obs;
-  const raw = obs.raw_snapshot || {};
-  const cups = (obs.bound_objects && obs.bound_objects.coffee_cup) || [];
-  const l2 = raw.l2_pouring_safety || {};
-  const brewProg = Number(raw.brew_progress ?? (raw.cup_filled ? 1 : 0));
-  const radialMm = l2.current_radial_offset_m != null ? (Number(l2.current_radial_offset_m) * 1000).toFixed(1) : null;
+  const mcpTel = live.mcp_telemetry || null;
+  const robot = (mcpTel && mcpTel.robot) || null;
+  const evo = live.evolution;
 
   const hp = document.getElementById('hud-phase');
-  if (hp) hp.textContent = `phase: ${raw.phase || 'idle'}` + (raw.in_hand_cup ? ' [grasped]' : '');
   const hl2 = document.getElementById('hud-l2');
-  if (hl2) {
-    hl2.textContent = l2.safe_to_pour ? `L2: SAFE (${radialMm ?? '0.0'}mm)` : `L2: ${radialMm ?? '-'}mm`;
-    hl2.className = 'hud-pill ' + (l2.safe_to_pour ? 'ok' : 'warn');
-  }
   const bb = document.getElementById('hud-brew-bar');
   const bt = document.getElementById('hud-brew-txt');
-  if (bb) bb.style.width = `${Math.max(0, Math.min(100, Math.round(brewProg * 100)))}%`;
-  if (bt) bt.textContent = `brew ${Math.round(brewProg * 100)}%`;
-
   const ha = document.getElementById('hud-action');
-  const evo = live.evolution;
-  if (ha && evo) ha.textContent = evo.busy ? evo.busy_detail : `phase=${evo.phase} | iters=${(evo.iterations||[]).length}`;
+
+  if (robot) {
+    const ee = robot.ee_pos_m || [0, 0, 0];
+    const gRatio = Number(robot.gripper_open_ratio ?? 1.0);
+    if (hp) hp.textContent = `ee: [${ee.map(v => Number(v).toFixed(2)).join(', ')}]`;
+    if (hl2) {
+      hl2.textContent = robot.grasped_object_id ? `GRASPED: ${robot.grasped_object_id}` : `gripper: ${Math.round(gRatio * 100)}%`;
+      hl2.className = 'hud-pill ' + (robot.grasped_object_id ? 'ok' : '');
+    }
+    if (bb) bb.style.width = `${Math.round(gRatio * 100)}%`;
+    if (bt) bt.textContent = `step ${robot.step_seq || 0}`;
+    document.getElementById('pk-pos').textContent = `[${ee.map(v => Number(v).toFixed(3)).join(', ')}]`;
+    document.getElementById('pk-l2').textContent = `${Math.round(gRatio * 100)}% open`;
+    document.getElementById('pk-wall').textContent = robot.grasped_object_id || 'none';
+  } else {
+    const raw = obs.raw_snapshot || {};
+    if (hp) hp.textContent = `phase: ${raw.phase || 'idle'}`;
+    if (hl2) { hl2.textContent = `step ${raw.step_seq || 0}`; hl2.className = 'hud-pill'; }
+  }
+
+  if (ha && evo) ha.textContent = evo.busy ? evo.busy_detail : `phase=${evo.phase} | iters=${(evo.iterations||[]).length} | llm_calls=${(evo.llm_calls||[]).length}`;
 
   if (evo) renderEvolution(evo);
-  renderSpatialRadar(obs);
-
-  const ca = document.getElementById('confirm-alert');
-  if (cups.length >= 2) {
-    ca.classList.add('show');
-    document.getElementById('confirm-btns').innerHTML = cups.map(c => {
-      const oid = c.object_id || c.id;
-      return `<button class="warn sm" onclick="confirmCup('${oid}')">Confirm ${oid}</button>`;
-    }).join('');
-  } else {
-    ca.classList.remove('show');
-  }
+  renderSpatialRadar(obs, mcpTel);
 }
 
 async function refreshState() {
@@ -2132,11 +2165,13 @@ async function loadPolicyComparison() {
 
 async function runProbe() {
   cupTrail = [];
+  switchCodeTab('llm');
   await api('api/evolve/probe', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      scenario_key: document.getElementById('scenario-select').value,
+      task_id: document.getElementById('scenario-select').value,
       task_instruction: document.getElementById('task-instruction').value,
+      explore_rounds: Number(document.getElementById('explore-rounds').value || 2),
     }),
   });
   await pollLiveOnce();
@@ -2148,7 +2183,7 @@ async function runSynthesize() {
   await api('api/evolve/synthesize', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      scenario_key: document.getElementById('scenario-select').value,
+      task_id: document.getElementById('scenario-select').value,
       task_instruction: document.getElementById('task-instruction').value,
     }),
   });
@@ -2161,7 +2196,7 @@ async function runExecute() {
   await api('api/evolve/execute', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      scenario_key: document.getElementById('scenario-select').value,
+      task_id: document.getElementById('scenario-select').value,
       source: src,
     }),
   });
@@ -2172,11 +2207,13 @@ async function runExecute() {
 async function runClosedLoop() {
   cupTrail = [];
   editorDirty = false;
+  switchCodeTab('llm');
   await api('api/evolve/auto', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      scenario_key: document.getElementById('scenario-select').value,
+      task_id: document.getElementById('scenario-select').value,
       task_instruction: document.getElementById('task-instruction').value,
+      explore_rounds: Number(document.getElementById('explore-rounds').value || 2),
       max_iters: 3,
       fresh: true,
     }),
@@ -2198,11 +2235,13 @@ async function resetSession() {
   editorDirty = false;
   lastLoadedIterSha = '';
   document.getElementById('code-editor').value = '';
+  syncCodeEditorHighlight();
   const evo = await api('api/evolve/reset', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      scenario_key: document.getElementById('scenario-select').value,
+      task_id: document.getElementById('scenario-select').value,
       task_instruction: document.getElementById('task-instruction').value,
+      explore_rounds: Number(document.getElementById('explore-rounds').value || 2),
     }),
   });
   renderEvolution(evo);

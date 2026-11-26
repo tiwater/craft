@@ -15,6 +15,7 @@ import time
 from typing import Any, Mapping, Sequence
 from urllib.parse import parse_qs, urlparse
 
+from .agent_engine import TraxAgentEngine
 from .autonomy import AutonomyPromotionLedger
 from .benchmark import (
     PolicyEntry,
@@ -26,7 +27,7 @@ from .benchmark import (
 from .coffee_loop import OVEN_REQUIRED_METHODS, default_coffee_teaching_steps
 from .config import SceneConfig
 from .embodiments import EmbodimentManager, load_archived_policy_comparison
-from .evolution_lab import EvolutionLabController
+from .evolution_lab import EvolutionLabController, load_m1_archive
 from .host_driver import SceneHostDriver
 from .mcp_protocol import MCPInspectorController
 from .operations import run_continuous_shift
@@ -123,6 +124,33 @@ class TraxStudioApp:
             lambda: self.driver,
             self._lock,
         )
+        self._m1_archive = load_m1_archive(self.workspace_dir)
+
+        def _resolve_active_mcp():
+            client, label, _, _, _ = self.mcp._resolve_client({"transport": "auto"})
+            return client, label
+
+        self.agent = TraxAgentEngine(
+            self.workspace_dir,
+            _resolve_active_mcp,
+            on_wire=self.mcp.record_external_wire,
+        )
+
+    def get_agent_state(self) -> dict[str, Any]:
+        st = self.agent.get_state()
+        st["m1_archive"] = self._m1_archive
+        return st
+
+    def _fetch_live_mcp_telemetry(self) -> dict[str, Any] | None:
+        try:
+            client, _, _, _, _ = self.mcp._resolve_client({"transport": "auto"})
+            _, resp, _ = client.rpc("resources/read", {"uri": "trax://scene/state"})
+            contents = ((resp.get("result") or {}).get("contents") or [])
+            if contents and contents[0].get("text"):
+                return json.loads(str(contents[0]["text"]))
+        except Exception:  # noqa: BLE001
+            return None
+        return None
 
     def switch_embodiment(self, body: Mapping[str, Any]) -> dict[str, Any]:
         with self._lock:
@@ -134,7 +162,9 @@ class TraxStudioApp:
             )
             self.driver = drv
             self._cam_cache.clear()
-            self.evolution.set_driver(drv, label=str(meta.get("label") or drv.driver_name))
+            lbl = str(meta.get("label") or drv.driver_name)
+            self.evolution.set_driver(drv, label=lbl)
+            self.agent.set_backend_changed(lbl)
         return {
             "status": "switched",
             "active_embodiment": meta,
@@ -192,14 +222,16 @@ class TraxStudioApp:
     def get_live(self) -> dict[str, Any]:
         """Lightweight high-frequency telemetry payload for smooth live HUD & step animation."""
         obs = self.driver.observe_scene()
+        mcp_state = self._fetch_live_mcp_telemetry()
         return {
             "scene_observation": {
                 **obs.to_dict(),
                 "raw_snapshot": obs.raw_snapshot,
             },
+            "mcp_telemetry": mcp_state,
             "live_runtime": self.driver.get_live_runtime(),
             "run_state": self._snapshot_run_state(),
-            "evolution": self.evolution.get_state(),
+            "evolution": self.get_agent_state(),
         }
 
     def get_state(self) -> dict[str, Any]:
@@ -447,7 +479,7 @@ def create_studio_server(
                 self._send_json(app.get_live())
                 return
             if path == "/api/evolve/state":
-                self._send_json(app.evolution.get_state())
+                self._send_json(app.get_agent_state())
                 return
             if path == "/api/embodiments":
                 self._send_json(app.embodiments.snapshot())
@@ -577,25 +609,26 @@ def create_studio_server(
                     self._send_json(app.mcp.read_resource(body))
                     return
                 if path == "/api/evolve/probe":
-                    self._send_json(app.evolution.start_probe_async(body))
+                    self._send_json(app.agent.start_explore_async(body))
                     return
                 if path == "/api/evolve/synthesize":
-                    self._send_json(app.evolution.start_synthesize_async(body))
+                    self._send_json(app.agent.start_synthesize_async(body))
                     return
                 if path == "/api/evolve/execute":
-                    self._send_json(app.evolution.start_execute_async(body))
+                    self._send_json(app.agent.start_execute_async(body))
                     return
                 if path == "/api/evolve/auto":
-                    self._send_json(app.evolution.start_closed_loop_async(body))
+                    self._send_json(app.agent.start_closed_loop_async(body))
                     return
                 if path == "/api/evolve/select":
-                    self._send_json(app.evolution.select_iteration(int(body.get("iter_index", 0))))
+                    self._send_json(app.agent.select_iteration(int(body.get("iter_index", 0))))
                     return
                 if path == "/api/evolve/reset":
                     self._send_json(
-                        app.evolution.reset_session(
+                        app.agent.reset_session(
                             task_instruction=body.get("task_instruction"),
-                            scenario_key=body.get("scenario_key"),
+                            task_id=body.get("task_id") or body.get("scenario_key"),
+                            explore_rounds=body.get("explore_rounds"),
                         )
                     )
                     return
