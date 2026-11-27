@@ -400,6 +400,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         self._last_obs_ns: int = 0
         self._last_recon_cameras: list[dict[str, Any]] = []
         self._published_entity_xyz: dict[str, tuple[float, float, float]] = {}
+        self._entity_measured_primitives: dict[str, dict[str, Any]] = {}
         self._pinned_assessments: dict[str, dict[str, Any]] = {}
         self._recon_cache: tuple[Any, dict[str, Any]] | None = None
         try:
@@ -646,6 +647,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             self._recon_cache = None
             self._pinned_assessments = {}
             self._published_entity_xyz = {}
+            self._entity_measured_primitives = {}
             self._last_obs_ns = 0
             if self._scene_store is not None:
                 self._scene_store.reset(self._scene_store.snapshot().cursor)
@@ -1252,16 +1254,20 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
 
             # Publish unified committed SpatialSnapshot into EvidenceScene v3 SceneStore ("One Spatial State, Two Interfaces")
             self._last_recon_cameras = list(cameras_meta)
+            surfel_rgb_arr = np.array([[s[3], s[4], s[5]] for s in surfels_out], dtype=np.float64) if surfels_out else np.zeros((0, 3), dtype=np.float64)
             snapshot_meta = self._publish_to_scene_store(
                 pts=pts,
                 support=support,
                 cam_counts=cam_counts,
+                rgb_float=surfel_rgb_arr,
                 cloud_digest=digest([len(surfels_out), int(self._step_seq), corroborated_count])[:16],
             )
+            measured_mesh_dict = self._build_measured_planar_mesh_dict(pts=pts, rgb_float=surfel_rgb_arr)
         except ImportError:
             engine_name = "numpy_rgbd_fallback"
             perception_owner = "mujoco-rgbd-fallback"
             snapshot_meta = None
+            measured_mesh_dict = None
             # Graceful fallback if optional `evidencescene` package is not installed
             for kt, cs in list(voxel_color_sum.items())[: int(max_points)]:
                 cnt = voxel_color_cnt[kt]
@@ -1288,6 +1294,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             "corroborated_ratio": round(corroborated_count / max(1, total_surfels), 3),
             "observability": observability_report,
             "wall_ms": round((time.monotonic() - t0) * 1000.0, 1),
+            "measured_mesh": measured_mesh_dict,
             "surfels": surfels_out,
         }
         if snapshot_meta is not None:
@@ -1334,6 +1341,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                 "world_m": [round(float(v), 5) for v in mat[:3, 3].tolist()],
                 "scene_from_entity": [[round(float(x), 5) for x in row] for row in mat.tolist()],
                 "surface_points_count": int(len(pose.geometry.points_m)) if pose.geometry is not None else 0,
+                "measured_primitive": self._entity_measured_primitives.get(eid),
                 "geometry_ref": {
                     "owner_id": pose.geometry.reference.owner_id,
                     "owner_epoch": int(pose.geometry.reference.owner_epoch),
@@ -1387,12 +1395,61 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             "cameras": list(self._last_recon_cameras),
         }
 
+    def _build_measured_planar_mesh_dict(self, *, pts: Any, rgb_float: Any) -> dict[str, Any] | None:
+        """Build a triangulated EvidenceScene measured tabletop mesh (zero fabrication; unobserved cells remain open)."""
+        np = self._np
+        if len(pts) < 20 or len(rgb_float) != len(pts):
+            return None
+        try:
+            from evidencescene.surface.measured_mesh import SurfaceMeshConfig, reconstruct_planar_surface
+        except ImportError:
+            return None
+        _, obs_ns = self._sim_clock()
+        rgb_u8 = np.clip(np.round(rgb_float * 255.0), 0, 255).astype(np.uint8)
+        support_n = int(np.sum(np.abs(pts[:, 2] - TABLE_TOP_Z) <= 0.012))
+        if support_n < 20:
+            return None
+        mesh = reconstruct_planar_surface(
+            pts,
+            rgb_u8,
+            plane_normal=(0.0, 0.0, 1.0),
+            plane_offset_m=-float(TABLE_TOP_Z),
+            plane_support_count=support_n,
+            plane_rmse_m=0.002,
+            coordinate_frame="sim_world",
+            timestamp_ns=int(obs_ns),
+            source_id="so101-rgbd-2cam",
+            config=SurfaceMeshConfig(
+                cell_size_m=0.022,
+                maximum_edge_m=0.052,
+                maximum_plane_residual_m=0.012,
+                maximum_normal_step_m=0.012,
+                minimum_support=20,
+            ),
+        )
+        if not mesh.ready or not len(mesh.triangles):
+            return {"ready": False, "reason": str(mesh.reason), "vertices": [], "colors": [], "triangles": []}
+        verts = [round(float(v), 4) for v in mesh.vertices_m.reshape(-1).tolist()]
+        cols = [round(float(c) / 255.0, 3) for c in mesh.colors_rgb_u8.reshape(-1).tolist()]
+        tris = [int(i) for i in mesh.triangles.reshape(-1).tolist()]
+        return {
+            "ready": True,
+            "reason": str(mesh.reason),
+            "vertex_count": int(len(mesh.vertices_m)),
+            "triangle_count": int(len(mesh.triangles)),
+            "surface_area_m2": round(float(mesh.surface_area_m2), 4),
+            "vertices": verts,
+            "colors": cols,
+            "triangles": tris,
+        }
+
     def _publish_to_scene_store(
         self,
         *,
         pts: Any,
         support: Any,
         cam_counts: Any,
+        rgb_float: Any = None,
         cloud_digest: str,
     ) -> dict[str, Any] | None:
         """Publish calibrated tabletop and object surfels/poses into EvidenceScene v3 SceneStore."""
@@ -1465,9 +1522,11 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                 ent_mask = (r_xy <= rad_lim) & (np.abs(rel_w[:, 2]) <= z_lim) & (pts[:, 2] >= TABLE_TOP_Z + 0.005)
                 ent_pts_w = pts[ent_mask]
                 ent_sup = np.maximum(1, cam_counts[ent_mask].astype(np.int64))
+                ent_rgb = rgb_float[ent_mask] if (rgb_float is not None and len(rgb_float) == len(pts)) else None
             else:
                 ent_pts_w = np.zeros((0, 3), dtype=np.float64)
                 ent_sup = np.zeros((0,), dtype=np.int64)
+                ent_rgb = None
 
             if len(ent_pts_w) < 4:
                 if snap.is_active(eid):
@@ -1535,6 +1594,32 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             if prev_xyz is not None and math.dist(prev_xyz, cur_xyz) > 0.005:
                 cause = "physical_motion"
             self._published_entity_xyz[eid] = cur_xyz
+            # Record measured bounding primitive strictly derived from this entity's real RGB-D surfels
+            mean_rgb = (
+                [round(float(c), 3) for c in np.median(ent_rgb, axis=0).tolist()]
+                if (ent_rgb is not None and len(ent_rgb))
+                else [0.75, 0.78, 0.82]
+            )
+            if shape == "cylinder":
+                r_loc = np.hypot(ent_pts_local[:, 0], ent_pts_local[:, 1])
+                self._entity_measured_primitives[eid] = {
+                    "shape": "cylinder",
+                    "radius_m": round(max(0.012, float(np.percentile(r_loc, 85))), 4),
+                    "z_min_m": round(float(np.percentile(ent_pts_local[:, 2], 5)), 4),
+                    "z_max_m": round(float(np.percentile(ent_pts_local[:, 2], 95)), 4),
+                    "mean_rgb": mean_rgb,
+                    "measured_points": int(len(ent_pts_local)),
+                }
+            else:
+                p_lo = np.percentile(ent_pts_local, 5, axis=0)
+                p_hi = np.percentile(ent_pts_local, 95, axis=0)
+                self._entity_measured_primitives[eid] = {
+                    "shape": "box",
+                    "min_m": [round(float(v), 4) for v in p_lo.tolist()],
+                    "max_m": [round(float(v), 4) for v in p_hi.tolist()],
+                    "mean_rgb": mean_rgb,
+                    "measured_points": int(len(ent_pts_local)),
+                }
 
             self._geom_version += 1
             ent_surf = ObjectSurface.from_points(

@@ -128,6 +128,52 @@
     }
   }
 
+  function buildCylinderGeometry(radius, zMin, zMax, segs) {
+    const pos = [], nrm = [];
+    const r = Math.max(0.006, Number(radius) || 0.024);
+    const z0 = Number(zMin ?? -0.036), z1 = Math.max(z0 + 0.008, Number(zMax ?? 0.036));
+    const pushTri = (a, b, c, n) => {
+      pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
+      nrm.push(n[0], n[1], n[2], n[0], n[1], n[2], n[0], n[1], n[2]);
+    };
+    for (let i = 0; i < segs; i++) {
+      const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+      const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+      const p00 = [r*c0, r*s0, z0], p10 = [r*c1, r*s1, z0], p01 = [r*c0, r*s0, z1], p11 = [r*c1, r*s1, z1];
+      const n0 = [c0, s0, 0], n1 = [c1, s1, 0];
+      pos.push(...p00, ...p10, ...p11, ...p00, ...p11, ...p01);
+      nrm.push(...n0, ...n1, ...n1, ...n0, ...n1, ...n0);
+      pushTri([0, 0, z1], p01, p11, [0, 0, 1]);
+      pushTri([0, 0, z0], p10, p00, [0, 0, -1]);
+    }
+    return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), vertexCount: pos.length / 3 };
+  }
+
+  function buildBoxGeometry(minM, maxM) {
+    const [x0, y0, z0] = minM, [x1, y1, z1] = maxM;
+    const pos = [], nrm = [];
+    const quad = (a, b, c, d, n) => {
+      pos.push(...a, ...b, ...c, ...a, ...c, ...d);
+      for (let k = 0; k < 6; k++) nrm.push(n[0], n[1], n[2]);
+    };
+    quad([x0,y0,z1], [x1,y0,z1], [x1,y1,z1], [x0,y1,z1], [0,0,1]);
+    quad([x0,y1,z0], [x1,y1,z0], [x1,y0,z0], [x0,y0,z0], [0,0,-1]);
+    quad([x1,y0,z0], [x1,y1,z0], [x1,y1,z1], [x1,y0,z1], [1,0,0]);
+    quad([x0,y1,z0], [x0,y0,z0], [x0,y0,z1], [x0,y1,z1], [-1,0,0]);
+    quad([x0,y1,z0], [x0,y1,z1], [x1,y1,z1], [x1,y1,z0], [0,1,0]);
+    quad([x0,y0,z1], [x0,y0,z0], [x1,y0,z0], [x1,y0,z1], [0,-1,0]);
+    return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), vertexCount: pos.length / 3 };
+  }
+
+  function mat4FromRowMajor(T, baseWorld) {
+    return new Float32Array([
+      T[0][0], T[1][0], T[2][0], 0,
+      T[0][1], T[1][1], T[2][1], 0,
+      T[0][2], T[1][2], T[2][2], 0,
+      T[0][3] - baseWorld[0], T[1][3] - baseWorld[1], T[2][3] - baseWorld[2], 1,
+    ]);
+  }
+
   class TraxURDFViewer {
     constructor(canvas, statusEl) {
       this.canvas = canvas;
@@ -143,9 +189,12 @@
       this.refusalPoints = [];
       this.lastEeLocal = null;
 
-      this.layers = { surfels: true, env: true, traj: true, tf: true, cameras: true, urdf: true };
+      this.layers = { mesh: true, surfels: false, env: true, traj: true, tf: false, cameras: true, urdf: true };
       this.surfelBuffer = null;
       this.surfelCount = 0;
+      this.measuredMeshBuf = null;
+      this.measuredMeshCount = 0;
+      this.entitySolidDraws = [];
       this.rawSurfels = [];
       this.reconMeta = null;
       this.selectedTarget = null;
@@ -246,6 +295,23 @@
         aPos: gl.getAttribLocation(pprog, 'aPos'), aCol: gl.getAttribLocation(pprog, 'aCol'),
         uProj: gl.getUniformLocation(pprog, 'uProj'), uView: gl.getUniformLocation(pprog, 'uView'),
         uPointSize: gl.getUniformLocation(pprog, 'uPointSize'),
+      };
+
+      // Vertex-colored shaded surface shader for EvidenceScene triangulated measured meshes
+      const vvs = `
+        attribute vec3 aPos; attribute vec3 aCol;
+        uniform mat4 uProj, uView;
+        varying vec3 vCol;
+        void main() { gl_Position = uProj * uView * vec4(aPos, 1.0); vCol = aCol; }`;
+      const vfs = `precision mediump float; varying vec3 vCol; void main() { gl_FragColor = vec4(vCol * 0.94 + vec3(0.03), 1.0); }`;
+      const vprog = gl.createProgram();
+      gl.attachShader(vprog, this._compile(gl.VERTEX_SHADER, vvs));
+      gl.attachShader(vprog, this._compile(gl.FRAGMENT_SHADER, vfs));
+      gl.linkProgram(vprog);
+      this.vprog = vprog;
+      this.vloc = {
+        aPos: gl.getAttribLocation(vprog, 'aPos'), aCol: gl.getAttribLocation(vprog, 'aCol'),
+        uProj: gl.getUniformLocation(vprog, 'uProj'), uView: gl.getUniformLocation(vprog, 'uView'),
       };
 
       // Subtle tabletop coordinate grid
@@ -496,14 +562,63 @@
     }
 
     setReconstruction(recon) {
-      if (!recon || !Array.isArray(recon.surfels)) return;
+      if (!recon) return;
       this.reconMeta = recon;
-      this.rawSurfels = recon.surfels;
+      this.rawSurfels = Array.isArray(recon.surfels) ? recon.surfels : [];
       if ('selected_surface_target' in recon) this.selectedTarget = recon.selected_surface_target || null;
       this.cameraMeta = Array.isArray(recon.cameras) ? recon.cameras : [];
       this._rebuildCameraFrustums();
-      const pts = recon.surfels;
-      if (!this.gl || !pts.length) { this.surfelCount = 0; this._updateStatusText(); return; }
+      if (!this.gl) { this._updateStatusText(); return; }
+
+      // 1. Upload EvidenceScene triangulated measured planar surface mesh (smooth triangles, no raw dot noise)
+      const mm = recon.measured_mesh;
+      if (mm && mm.ready && Array.isArray(mm.triangles) && mm.triangles.length && Array.isArray(mm.vertices)) {
+        const verts = mm.vertices, cols = mm.colors || [], tris = mm.triangles;
+        const posArr = new Float32Array(tris.length * 3);
+        const colArr = new Float32Array(tris.length * 3);
+        const [bx, by, bz] = this.baseWorld;
+        for (let i = 0; i < tris.length; i++) {
+          const vi = tris[i] * 3;
+          posArr[i*3]   = Number(verts[vi]) - bx;
+          posArr[i*3+1] = Number(verts[vi+1]) - by;
+          posArr[i*3+2] = Number(verts[vi+2]) - bz - 0.0006;
+          colArr[i*3]   = Number(cols[vi] ?? 0.35);
+          colArr[i*3+1] = Number(cols[vi+1] ?? 0.38);
+          colArr[i*3+2] = Number(cols[vi+2] ?? 0.42);
+        }
+        this.measuredMeshBuf = this._uploadPoints(posArr, colArr);
+        this.measuredMeshCount = tris.length;
+      } else {
+        this.measuredMeshBuf = null;
+        this.measuredMeshCount = 0;
+      }
+
+      // 2. Upload shaded solid geometry for committed SceneStore object entities (strictly from measured extents)
+      this.entitySolidDraws = [];
+      const ents = recon.entities || {};
+      for (const [eid, ent] of Object.entries(ents)) {
+        const prim = ent && ent.measured_primitive;
+        const T = ent && ent.scene_from_entity;
+        if (!prim || !Array.isArray(T) || T.length < 3) continue;
+        let geom = null;
+        if (prim.shape === 'cylinder') {
+          geom = buildCylinderGeometry(prim.radius_m, prim.z_min_m, prim.z_max_m, 28);
+        } else if (prim.shape === 'box' && Array.isArray(prim.min_m) && Array.isArray(prim.max_m)) {
+          geom = buildBoxGeometry(prim.min_m, prim.max_m);
+        }
+        if (!geom || !geom.vertexCount) continue;
+        const rgb = Array.isArray(prim.mean_rgb) && prim.mean_rgb.length >= 3 ? prim.mean_rgb : [0.78, 0.25, 0.25];
+        this.entitySolidDraws.push({
+          eid,
+          buf: this._uploadMesh(geom),
+          modelMat: mat4FromRowMajor(T, this.baseWorld),
+          rgba: [Number(rgb[0]), Number(rgb[1]), Number(rgb[2]), 1.0],
+        });
+      }
+
+      // 3. Keep raw depth surfels ready for optional inspection (`Depth Pts` toggle, OFF by default)
+      const pts = this.rawSurfels;
+      if (!pts.length) { this.surfelCount = 0; this._updateStatusText(); return; }
       const pos = new Float32Array(pts.length * 3);
       const col = new Float32Array(pts.length * 3);
       for (let i = 0; i < pts.length; i++) {
@@ -512,7 +627,6 @@
         pos[i*3+1] = Number(pt[1]) - this.baseWorld[1];
         pos[i*3+2] = Number(pt[2]) - this.baseWorld[2];
         const camCnt = Number(pt[6] || 1);
-        // Subtle brightness boost for multi-camera corroborated surfels (cam_count >= 2)
         const boost = camCnt >= 2 ? 1.08 : 0.85;
         col[i*3]   = Math.min(1.0, Number(pt[3] ?? 0.15) * boost);
         col[i*3+1] = Math.min(1.0, Number(pt[4] ?? 0.72) * boost);
@@ -531,16 +645,19 @@
         const obs = this.reconMeta.observability || {};
         const cur = this.reconMeta.cursor;
         if (cur) parts.push(`SceneStore ep=${cur.epoch} rev=${cur.revision}`);
-        const pct = Math.round((this.reconMeta.corroborated_ratio || 0) * 100);
-        const cams = (this.reconMeta.cameras_used || []).join('+');
-        parts.push(`${this.reconMeta.total_surfels} surfels (${pct}% 2-cam${cams ? ' · ' + cams : ''})`);
+        const mm = this.reconMeta.measured_mesh;
+        if (this.layers.mesh && mm && mm.ready) {
+          parts.push(`Mesh ${mm.triangle_count} tris + ${this.entitySolidDraws.length} entities`);
+        } else {
+          parts.push(`${this.reconMeta.total_surfels || 0} surfels`);
+        }
         if (obs.rank != null) parts.push(`Schur ${obs.rank}/${obs.required_rank || 6}`);
       }
       if (this.selectedTarget && this.selectedTarget.scene_point_m) {
         const p = this.selectedTarget.scene_point_m.map((v) => Number(v).toFixed(3)).join(',');
         parts.push(`target=${this.selectedTarget.entity_id}@(${p})`);
       }
-      parts.push(this.pickMode ? 'CLICK surfel to commit target' : 'drag=orbit · shift+click=pick target');
+      parts.push(this.pickMode ? 'CLICK surface to commit target' : 'drag=orbit · shift+click=pick');
       this.statusEl.textContent = parts.join('  ·  ');
     }
 
@@ -633,11 +750,25 @@
       this.lastProj = proj;
       this.lastView = view;
 
+      // 1a. EvidenceScene Measured Planar Surface Mesh (Clean Solid Triangles, Default ON)
+      if (this.layers.mesh && this.measuredMeshBuf && this.measuredMeshCount > 0) {
+        gl.useProgram(this.vprog);
+        gl.uniformMatrix4fv(this.vloc.uProj, false, proj);
+        gl.uniformMatrix4fv(this.vloc.uView, false, view);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.measuredMeshBuf.posBuf);
+        gl.enableVertexAttribArray(this.vloc.aPos);
+        gl.vertexAttribPointer(this.vloc.aPos, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.measuredMeshBuf.colBuf);
+        gl.enableVertexAttribArray(this.vloc.aCol);
+        gl.vertexAttribPointer(this.vloc.aCol, 3, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, this.measuredMeshCount);
+      }
+
       gl.useProgram(this.pprog);
       gl.uniformMatrix4fv(this.ploc.uProj, false, proj);
       gl.uniformMatrix4fv(this.ploc.uView, false, view);
 
-      // 1. Grid
+      // 1b. Subtle coordinate grid
       gl.bindBuffer(gl.ARRAY_BUFFER, this.gridBuf.posBuf);
       gl.enableVertexAttribArray(this.ploc.aPos);
       gl.vertexAttribPointer(this.ploc.aPos, 3, gl.FLOAT, false, 0, 0);
@@ -685,7 +816,7 @@
         this._drawDynLines(tp, tc, gl.LINE_STRIP);
       }
 
-      // 5. Robot URDF + collect Joint TF frames
+      // 5. Committed Solid SceneStore Entities + Robot URDF + Joint TF frames
       const tfPos = [], tfCol = [];
       if (this.layers.tf) {
         pushTriad(tfPos, tfCol, mat4Identity(), 0.08);
@@ -693,31 +824,38 @@
           pushTriad(tfPos, tfCol, mat4Translate(this.lastEeLocal[0], this.lastEeLocal[1], this.lastEeLocal[2]), 0.045);
         }
       }
-      if (this.robot && this.robot.rootLink) {
+      if ((this.layers.mesh && this.entitySolidDraws.length) || (this.robot && this.robot.rootLink)) {
         gl.useProgram(this.prog);
         gl.uniformMatrix4fv(this.loc.uProj, false, proj);
         gl.uniformMatrix4fv(this.loc.uView, false, view);
-        const drawLink = (linkName, worldMat) => {
-          const link = this.robot.links[linkName];
-          if (this.layers.urdf && link) {
-            for (const v of link.visuals) {
-              const buf = this.meshBuffers.get(v.filename);
-              if (!buf) continue;
-              const visMat = mat4Mul(worldMat, mat4Mul(v.origin, mat4Scale(v.scale[0], v.scale[1], v.scale[2])));
-              this._drawMesh(buf, visMat, v.rgba);
-            }
+        if (this.layers.mesh) {
+          for (const item of this.entitySolidDraws) {
+            this._drawMesh(item.buf, item.modelMat, item.rgba);
           }
-          for (const j of this.robot.childrenByParent[linkName] || []) {
-            let childMat = mat4Mul(worldMat, j.origin);
-            if (j.type === 'revolute' || j.type === 'continuous') {
-              const q = Number(this.jointAngles[j.name] || 0);
-              childMat = mat4Mul(childMat, mat4AxisAngle(j.axis[0], j.axis[1], j.axis[2], q));
-              if (this.layers.tf) pushTriad(tfPos, tfCol, childMat, 0.032);
+        }
+        if (this.robot && this.robot.rootLink) {
+          const drawLink = (linkName, worldMat) => {
+            const link = this.robot.links[linkName];
+            if (this.layers.urdf && link) {
+              for (const v of link.visuals) {
+                const buf = this.meshBuffers.get(v.filename);
+                if (!buf) continue;
+                const visMat = mat4Mul(worldMat, mat4Mul(v.origin, mat4Scale(v.scale[0], v.scale[1], v.scale[2])));
+                this._drawMesh(buf, visMat, v.rgba);
+              }
             }
-            drawLink(j.child, childMat);
-          }
-        };
-        drawLink(this.robot.rootLink, mat4Identity());
+            for (const j of this.robot.childrenByParent[linkName] || []) {
+              let childMat = mat4Mul(worldMat, j.origin);
+              if (j.type === 'revolute' || j.type === 'continuous') {
+                const q = Number(this.jointAngles[j.name] || 0);
+                childMat = mat4Mul(childMat, mat4AxisAngle(j.axis[0], j.axis[1], j.axis[2], q));
+                if (this.layers.tf) pushTriad(tfPos, tfCol, childMat, 0.032);
+              }
+              drawLink(j.child, childMat);
+            }
+          };
+          drawLink(this.robot.rootLink, mat4Identity());
+        }
       }
 
       // 6. Draw Joint & TCP TF triads + Operator Selected Surface Target marker on top

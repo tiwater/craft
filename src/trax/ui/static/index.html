@@ -47,46 +47,41 @@
   <div id="tab-lab" class="tab-panel active">
     <div class="ide-grid">
 
-      <!-- PANE 1: LIVE ROBOT EMBODIMENT & STAGE 1 EXPLORATION -->
+      <!-- PANE 1: SIMULTANEOUS 3D DIGITAL TWIN + LIVE CAMERAS -->
       <div>
-        <div class="panel">
+        <div class="panel pane-embodiment">
           <div class="panel-head">
-            <span class="panel-title">01 &middot; Embodiment &amp; Active Exploration</span>
+            <span class="panel-title">01 &middot; 3D Twin &amp; Live Cameras</span>
             <div style="display:flex;gap:5px;align-items:center">
-              <button id="btn-mode-single" class="sm" onclick="setCamMode('single')">Single</button>
-              <button id="btn-mode-grid" class="sm" onclick="setCamMode('grid')">Dual</button>
-              <button id="btn-mode-urdf" class="sm" onclick="setCamMode('urdf')" title="3D Digital Twin: URDF + EvidenceScene Surfels + Camera Frustums + Safety Envelope + 3D Trajectory">3D Twin</button>
+              <div class="seg-mini">
+                <button id="btn-mode-split" class="sm" onclick="setCamMode('split')" title="Show 3D Digital Twin and live cameras simultaneously">Split</button>
+                <button id="btn-mode-twin" class="sm" onclick="setCamMode('twin')" title="Expand 3D Digital Twin">Twin</button>
+                <button id="btn-mode-cams" class="sm" onclick="setCamMode('cams')" title="Expand Live Cameras">Cams</button>
+              </div>
+              <button class="sm" onclick="clearTrail()" title="Clear 3D end-effector trajectory">Clear Trail</button>
               <button class="sm" onclick="resetEnv()">Reset Sim</button>
             </div>
           </div>
 
-          <div id="cam-stage"></div>
-          <div id="cam-thumbs" class="thumb-strip"></div>
+          <div id="twin-stage" class="twin-stage"></div>
+          <div id="cam-stage" class="cam-strip-stage"></div>
 
-          <div class="explore-split">
-            <div class="sub-box">
-              <div class="sub-head">
-                <span>2D Tabletop Map (MCP State)</span>
-                <button class="sm" onclick="clearTrail()">Clear</button>
+          <div class="telemetry-bar">
+            <div class="telemetry-head">
+              <span>MCP &amp; Spatial State Telemetry</span>
+              <div style="display:flex;gap:5px;align-items:center">
+                <span id="pk-cursor" class="badge">ep-:r-</span>
+                <button class="sm" onclick="inspectProbeCode()">Probe Py</button>
+                <span id="probe-badge" class="badge">UNEXPLORED</span>
               </div>
-              <svg id="radar-svg" class="radar-svg" viewBox="0 0 360 220"></svg>
             </div>
-            <div class="sub-box">
-              <div class="sub-head">
-                <span>MCP Exploration Telemetry</span>
-                <div style="display:flex;gap:5px;align-items:center">
-                  <button class="sm" onclick="inspectProbeCode()">Probe Py</button>
-                  <span id="probe-badge" class="badge">UNEXPLORED</span>
-                </div>
-              </div>
-              <div id="probe-kv" class="probe-kv">
-                <div class="probe-row"><span class="probe-k">mcp_server</span><span id="pk-auth" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">mcp_tools</span><span id="pk-sdk" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">explore_rounds</span><span id="pk-objs" class="probe-v">0</span></div>
-                <div class="probe-row"><span class="probe-k">ee_pos_m</span><span id="pk-pos" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">gripper</span><span id="pk-l2" class="probe-v">-</span></div>
-                <div class="probe-row"><span class="probe-k">grasped_obj</span><span id="pk-wall" class="probe-v">none</span></div>
-              </div>
+            <div id="probe-kv" class="telemetry-grid">
+              <div class="tel-cell"><span class="probe-k">server</span><span id="pk-auth" class="probe-v">-</span></div>
+              <div class="tel-cell"><span class="probe-k">tools</span><span id="pk-sdk" class="probe-v">-</span></div>
+              <div class="tel-cell"><span class="probe-k">explore</span><span id="pk-objs" class="probe-v">0</span></div>
+              <div class="tel-cell"><span class="probe-k">ee_pos_m</span><span id="pk-pos" class="probe-v">-</span></div>
+              <div class="tel-cell"><span class="probe-k">gripper</span><span id="pk-l2" class="probe-v">-</span></div>
+              <div class="tel-cell"><span class="probe-k">grasped</span><span id="pk-wall" class="probe-v">none</span></div>
             </div>
           </div>
 

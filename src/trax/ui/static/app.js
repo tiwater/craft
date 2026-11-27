@@ -1,6 +1,7 @@
 let camList = [];
 let activeCam = 'front_top';
-let camMode = 'single';
+let camMode = 'split';
+let focusedCam = null;
 let pumpRunning = false;
 let frameTimestamps = [];
 let cupTrail = [];
@@ -533,8 +534,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function setCamMode(mode) { camMode = mode; renderCameraShells(); }
-function selectCam(name) { activeCam = name; camMode = 'single'; renderCameraShells(); }
+function setCamMode(mode) {
+  camMode = mode;
+  if (mode !== 'cams') focusedCam = null;
+  renderCameraShells();
+}
+function selectCam(name) {
+  activeCam = name;
+  focusedCam = (focusedCam === name) ? null : name;
+  renderCameraShells();
+}
 function clearTrail() {
   cupTrail = [];
   if (urdfViewer) urdfViewer.clearTrail();
@@ -593,9 +602,16 @@ async function refreshSceneReconstruction(force) {
     if (badge && recon) {
       const obs = recon.observability || {};
       const ok = obs.status === 'observable';
-      const cur = recon.cursor ? ` · ep${recon.cursor.epoch}:r${recon.cursor.revision}` : '';
-      badge.textContent = `EvidenceScene v3: ${recon.total_surfels} surfels · rank ${obs.rank ?? '-'}/6${cur}`;
+      const cur = recon.cursor ? `ep${recon.cursor.epoch}:r${recon.cursor.revision}` : '';
+      const mm = recon.measured_mesh;
+      const geoTxt = (mm && mm.ready) ? `${mm.triangle_count} tris` : `${recon.total_surfels} pts`;
+      badge.textContent = `EvidenceScene v3 · ${geoTxt} · ${obs.rank ?? '-'}/6${cur ? ' · ' + cur : ''}`;
       badge.className = 'hud-pill ' + (ok ? 'ok' : 'warn');
+      const curBadge = document.getElementById('pk-cursor');
+      if (curBadge && cur) {
+        curBadge.textContent = cur;
+        curBadge.className = 'badge ' + (ok ? 'ok' : 'warn');
+      }
     }
   } catch (_) {
   } finally {
@@ -603,104 +619,96 @@ async function refreshSceneReconstruction(force) {
   }
 }
 
+function mountTwinViewer() {
+  const twinStage = document.getElementById('twin-stage');
+  if (!twinStage) return;
+  if (urdfViewer && document.getElementById('urdf-canvas')) return;
+  if (urdfViewer) { urdfViewer.dispose(); urdfViewer = null; }
+  twinStage.innerHTML = `
+    <div class="urdf-shell">
+      <canvas id="urdf-canvas"></canvas>
+      <div class="hud-tl">
+        <span class="hud-pill">3D TWIN</span>
+        <span class="hud-pill" id="hud-es-obs">EvidenceScene v3: loading...</span>
+      </div>
+      <div class="hud-tr" style="pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:64%">
+        <button id="tw-btn-mesh" class="twin-chip on" onclick="toggleTwinLayer('mesh')" title="Shaded EvidenceScene measured surface mesh &amp; committed entities">Mesh</button>
+        <button id="tw-btn-cameras" class="twin-chip on" onclick="toggleTwinLayer('cameras')" title="Calibrated camera frustums">Cameras</button>
+        <button id="tw-btn-env" class="twin-chip on" onclick="toggleTwinLayer('env')" title="Workspace safety envelope &amp; zone rings">Envelope</button>
+        <button id="tw-btn-traj" class="twin-chip on" onclick="toggleTwinLayer('traj')" title="Live 3D end-effector trajectory">Trail</button>
+        <button id="tw-btn-tf" class="twin-chip" onclick="toggleTwinLayer('tf')" title="Joint &amp; TCP coordinate axes">TF</button>
+        <button id="tw-btn-surfels" class="twin-chip" onclick="toggleTwinLayer('surfels')" title="Optional raw RGB-D depth points overlay">Depth Pts</button>
+        <button id="tw-btn-pick" class="twin-chip" onclick="toggleTwinPick()" title="Click surface to commit a shared target revision">Pick</button>
+        <button class="twin-chip" onclick="refreshSceneReconstruction(true)">Rescan</button>
+      </div>
+      <div id="urdf-status" class="urdf-status">Loading URDF + EvidenceScene v3 measured surface...</div>
+    </div>`;
+  const cv = document.getElementById('urdf-canvas');
+  const st = document.getElementById('urdf-status');
+  if (cv && window.TraxURDFViewer) {
+    urdfViewer = new window.TraxURDFViewer(cv, st);
+    urdfViewer.onSurfacePick = commitTwinSurfacePick;
+    if (lastMcpTelemetry) urdfViewer.setTelemetry(lastMcpTelemetry);
+    urdfViewer.loadUrdf('api/robot/urdf?t=' + Date.now());
+    lastReconStepSeq = -1;
+    refreshSceneReconstruction(true);
+  }
+}
+
 function renderCameraShells() {
-  const stage = document.getElementById('cam-stage');
-  const thumbs = document.getElementById('cam-thumbs');
+  const twinStage = document.getElementById('twin-stage');
+  const camStage = document.getElementById('cam-stage');
+  if (!twinStage || !camStage) return;
+
+  const setBtn = (id, on) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', !!on);
+  };
+  setBtn('btn-mode-split', camMode === 'split');
+  setBtn('btn-mode-twin', camMode === 'twin');
+  setBtn('btn-mode-cams', camMode === 'cams');
+
+  const showTwin = camMode === 'split' || camMode === 'twin';
+  const showCams = camMode === 'split' || camMode === 'cams';
+
+  // 1. Always keep 3D Digital Twin alive in Split and Twin modes
+  twinStage.style.display = showTwin ? 'flex' : 'none';
+  if (showTwin) {
+    mountTwinViewer();
+  } else if (urdfViewer) {
+    urdfViewer.dispose();
+    urdfViewer = null;
+    twinStage.innerHTML = '';
+  }
+
+  // 2. Always show Live Cameras simultaneously underneath in Split (or expanded in Cams)
+  camStage.style.display = showCams ? 'flex' : 'none';
+  camStage.classList.toggle('expanded', camMode === 'cams');
+  if (!showCams) {
+    camStage.innerHTML = '';
+    return;
+  }
   if (!camList.length) {
-    stage.innerHTML = '<div class="video-shell" style="color:var(--muted);font-family:var(--mono);font-size:11.5px">No camera stream</div>';
-    thumbs.innerHTML = '';
+    camStage.innerHTML = '<div class="video-shell" style="color:var(--muted);font-family:var(--mono);font-size:11px">Waiting for camera stream...</div>';
     return;
   }
   if (!camList.includes(activeCam)) activeCam = camList[0];
-  const setModeActive = (id, isAct) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.background = isAct ? 'var(--cyan-bg)' : '';
-    el.style.color = isAct ? 'var(--cyan)' : '';
-  };
-  const gridBtn = document.getElementById('btn-mode-grid');
-  if (gridBtn) gridBtn.textContent = camList.length === 2 ? 'Dual' : (camList.length > 2 ? 'Quad' : 'Split');
-  setModeActive('btn-mode-single', camMode === 'single');
-  setModeActive('btn-mode-grid', camMode === 'grid');
-  setModeActive('btn-mode-urdf', camMode === 'urdf');
-
-  if (camMode !== 'urdf' && urdfViewer) {
-    urdfViewer.dispose();
-    urdfViewer = null;
-  }
-
-  if (camMode === 'urdf') {
-    stage.innerHTML = `
-      <div class="urdf-shell">
-        <canvas id="urdf-canvas"></canvas>
-        <div class="hud-tl">
-          <span class="hud-pill">3D DIGITAL TWIN</span>
-          <span class="hud-pill" id="hud-es-obs">EvidenceScene: loading...</span>
-        </div>
-        <div class="hud-tr" style="pointer-events:auto">
-          <button id="tw-btn-surfels" class="twin-chip on" onclick="toggleTwinLayer('surfels')">Surfels</button>
-          <button id="tw-btn-cameras" class="twin-chip on" onclick="toggleTwinLayer('cameras')">Cameras</button>
-          <button id="tw-btn-env" class="twin-chip on" onclick="toggleTwinLayer('env')">Envelope</button>
-          <button id="tw-btn-traj" class="twin-chip on" onclick="toggleTwinLayer('traj')">3D Trail</button>
-          <button id="tw-btn-tf" class="twin-chip on" onclick="toggleTwinLayer('tf')">TF Axes</button>
-          <button id="tw-btn-pick" class="twin-chip" onclick="toggleTwinPick()" title="Click any measured EvidenceScene surfel to commit a shared target revision">Pick Target</button>
-          <button class="twin-chip" onclick="refreshSceneReconstruction(true)">Rescan</button>
-        </div>
-        <div id="urdf-status" class="urdf-status">Loading URDF + EvidenceScene RGB-D reconstruction...</div>
-      </div>`;
-    thumbs.style.display = 'none';
-    const cv = document.getElementById('urdf-canvas');
-    const st = document.getElementById('urdf-status');
-    if (cv && window.TraxURDFViewer) {
-      urdfViewer = new window.TraxURDFViewer(cv, st);
-      urdfViewer.onSurfacePick = commitTwinSurfacePick;
-      if (lastMcpTelemetry) urdfViewer.setTelemetry(lastMcpTelemetry);
-      urdfViewer.loadUrdf('api/robot/urdf?t=' + Date.now());
-      lastReconStepSeq = -1;
-      refreshSceneReconstruction(true);
-    }
-    return;
-  }
-
-  if (camMode === 'grid' && camList.length > 1) {
-    stage.innerHTML = '<div class="cam-grid-4">' + camList.map(c => `
-      <div class="cam-cell" onclick="selectCam('${c}')">
-        <canvas data-cam-canvas="${c}" width="640" height="360"></canvas>
-        <span class="hud-pill" style="position:absolute;top:6px;left:6px">${c}</span>
-      </div>
-    `).join('') + '</div>';
-    thumbs.style.display = 'none';
-  } else {
-    stage.innerHTML = `
-      <div class="video-shell">
-        <canvas id="main-cam-canvas" data-cam-canvas="${activeCam}" width="800" height="450"></canvas>
-        <div class="hud-tl">
-          <span class="hud-pill" id="hud-cam">cam: ${activeCam}</span>
-          <span class="hud-pill" id="hud-fps">-- FPS</span>
-          <span class="hud-pill" id="hud-phase">phase: idle</span>
-        </div>
-        <div class="hud-tr"><span class="hud-pill" id="hud-l2">L2: --</span></div>
-        <div class="hud-bot">
-          <div class="hud-bot-row">
-            <span id="hud-action">idle</span>
-            <span id="hud-brew-txt">brew 0%</span>
+  const visibleCams = (focusedCam && camList.includes(focusedCam)) ? [focusedCam] : camList;
+  const singleCls = visibleCams.length === 1 ? 'single-focus' : '';
+  camStage.innerHTML = `
+    <div class="cam-dual-row ${singleCls}">
+      ${visibleCams.map((c, idx) => `
+        <div class="cam-tile" onclick="selectCam('${c}')" title="Click to ${focusedCam === c ? 'restore dual cameras' : 'focus ' + c}">
+          <canvas data-cam-canvas="${c}" width="640" height="360"></canvas>
+          <div class="hud-tl">
+            <span class="hud-pill">${c}</span>
+            ${idx === 0 ? '<span class="hud-pill" id="hud-fps">-- FPS</span>' : ''}
           </div>
-          <div class="bar-bg"><div id="hud-brew-bar" class="bar-fg"></div></div>
+          ${idx === 0 ? '<div class="hud-tr"><span class="hud-pill" id="hud-l2">gripper: --</span></div>' : ''}
+          ${idx === 0 ? '<div class="hud-bot"><div class="hud-bot-row"><span id="hud-action">idle</span><span id="hud-brew-txt">step 0</span></div><div class="bar-bg"><div id="hud-brew-bar" class="bar-fg"></div></div></div>' : ''}
         </div>
-      </div>`;
-    if (camList.length > 1) {
-      thumbs.style.display = 'grid';
-      thumbs.style.gridTemplateColumns = `repeat(${Math.min(camList.length, 4)}, 1fr)`;
-      thumbs.innerHTML = camList.map(c => `
-        <button class="thumb ${c === activeCam ? 'active' : ''}" onclick="selectCam('${c}')">
-          <canvas data-thumb-canvas="${c}" width="320" height="180"></canvas>
-          <span>${c}</span>
-        </button>
-      `).join('');
-    } else {
-      thumbs.style.display = 'none';
-    }
-  }
+      `).join('')}
+    </div>`;
   if (!pumpRunning) startVideoPump();
 }
 
@@ -725,34 +733,19 @@ function drawCamToCanvas(cam, canvas) {
 
 async function startVideoPump() {
   pumpRunning = true;
-  let tick = 0;
   while (true) {
     const t0 = performance.now();
     const onLab = document.getElementById('tab-lab').classList.contains('active');
-    if (onLab && camList.length) {
-      if (camMode === 'grid' && camList.length > 1) {
-        await Promise.all(camList.map(c => {
-          const cv = document.querySelector(`canvas[data-cam-canvas="${c}"]`);
-          return cv ? drawCamToCanvas(c, cv) : Promise.resolve();
-        }));
-      } else {
-        const mainCv = document.getElementById('main-cam-canvas');
-        if (mainCv) {
-          const ok = await drawCamToCanvas(activeCam, mainCv);
-          if (ok) {
-            const now = performance.now();
-            frameTimestamps.push(now);
-            frameTimestamps = frameTimestamps.filter(t => now - t <= 2000);
-            const el = document.getElementById('hud-fps');
-            if (el) el.textContent = (frameTimestamps.length / 2).toFixed(1) + ' FPS';
-          }
-        }
-        tick = (tick + 1) % 5;
-        if (tick === 0 && camList.length > 1) {
-          Promise.all(camList.map(c => {
-            const tv = document.querySelector(`canvas[data-thumb-canvas="${c}"]`);
-            return tv ? drawCamToCanvas(c, tv) : Promise.resolve();
-          }));
+    if (onLab && camList.length && (camMode === 'split' || camMode === 'cams')) {
+      const canvases = [...document.querySelectorAll('#cam-stage canvas[data-cam-canvas]')];
+      if (canvases.length) {
+        const results = await Promise.all(canvases.map(cv => drawCamToCanvas(cv.dataset.camCanvas, cv)));
+        if (results[0]) {
+          const now = performance.now();
+          frameTimestamps.push(now);
+          frameTimestamps = frameTimestamps.filter(t => now - t <= 2000);
+          const el = document.getElementById('hud-fps');
+          if (el) el.textContent = (frameTimestamps.length / 2).toFixed(1) + ' FPS';
         }
       }
     }
@@ -1342,7 +1335,7 @@ async function refreshState() {
     document.getElementById('pill-authority').textContent = d.execution_authority || st.driver;
     document.getElementById('pill-evidence').textContent = `evidence=${st.evidence_source}`;
 
-    if (JSON.stringify(st.cameras || []) !== JSON.stringify(camList)) {
+    if (JSON.stringify(st.cameras || []) !== JSON.stringify(camList) || !urdfViewer) {
       camList = st.cameras || [];
       activeCam = camList.includes('front_top') ? 'front_top' : (camList.includes('overview') ? 'overview' : (camList[0] || ''));
       renderCameraShells();
@@ -1742,8 +1735,11 @@ async function resetSession() {
 
 async function resetEnv() {
   cupTrail = [];
+  if (urdfViewer) urdfViewer.clearTrail();
   await api('api/reset', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({preset:'default'}) });
   await pollLiveOnce();
+  lastReconStepSeq = -1;
+  refreshSceneReconstruction(true);
 }
 
 async function confirmCup(oid) {

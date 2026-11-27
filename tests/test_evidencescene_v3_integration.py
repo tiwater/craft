@@ -36,6 +36,11 @@ def test_so101_unified_scene_store_task_observability_revalidation_and_active_pe
         assert snap["clock_id"] == "mujoco-time"
         assert "fixed_tabletop" in snap["entities"]
         assert "red_cylinder" in snap["entities"]
+        # Measured triangulated tabletop mesh + measured solid entity primitives (no raw point soup required)
+        assert recon["measured_mesh"]["ready"] is True
+        assert recon["measured_mesh"]["triangle_count"] > 100
+        assert recon["entities"]["red_cylinder"]["measured_primitive"]["shape"] == "cylinder"
+        assert recon["entities"]["brown_block"]["measured_primitive"]["shape"] == "box"
 
         # Verify pure-stdlib TRAX consumer parser parses EvidenceScene v3 snapshot natively
         meta = parse_spatial_snapshot_meta(snap)

@@ -558,7 +558,7 @@ button.danger:hover { background: #b91c1c; }
 button.danger:disabled { opacity: 0.35; background: var(--surface2); color: var(--dim); }
 
 .urdf-shell {
-  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  position: relative; width: 100%; height: 100%; min-height: 210px;
   border-radius: 10px; overflow: hidden; border: none;
   background: var(--radar-bg);
 }
@@ -568,13 +568,68 @@ button.danger:disabled { opacity: 0.35; background: var(--surface2); color: var(
   position: absolute; left: 8px; bottom: 8px; right: 8px;
   padding: 4px 9px; border-radius: 6px;
   background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(6px); color: #f8fafc;
-  font-family: var(--mono); font-size: 10.5px; pointer-events: none;
+  font-family: var(--mono); font-size: 10px; pointer-events: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
+/* Simultaneous 3D Twin + Live Camera Strip Layout (Pane 1) */
+.pane-embodiment { gap: 8px; }
+.pane-embodiment > .panel-head { margin-bottom: 2px; }
+.seg-mini {
+  display: inline-flex; gap: 2px; padding: 2px;
+  background: var(--surface2); border-radius: 7px;
+}
+.seg-mini button.sm { background: transparent; color: var(--muted); padding: 3px 8px; }
+.seg-mini button.sm:hover { color: var(--text-strong); background: transparent; }
+.seg-mini button.sm.active {
+  background: var(--surface); color: var(--cyan);
+  box-shadow: var(--pill-shadow);
+}
+.twin-stage {
+  flex: 1 1 0; min-height: 220px; display: flex; flex-direction: column;
+}
+.cam-strip-stage {
+  flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px;
+}
+.cam-strip-stage.expanded { flex: 1 1 0; min-height: 260px; justify-content: center; }
+.cam-dual-row {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+}
+.cam-dual-row.single-focus { grid-template-columns: 1fr; }
+.cam-tile {
+  position: relative; background: #040812; border: none;
+  border-radius: 9px; overflow: hidden; aspect-ratio: 16 / 9; cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+.cam-tile:hover { box-shadow: 0 0 0 2px var(--cyan); }
+.cam-tile canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam-tile .hud-tl { top: 6px; left: 6px; gap: 4px; }
+.cam-tile .hud-tr { top: 6px; right: 6px; gap: 4px; }
+.cam-tile .hud-pill { padding: 2px 6px; font-size: 9.5px; }
+
+.telemetry-bar {
+  flex: 0 0 auto; background: var(--well); border: none; border-radius: 10px;
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;
+}
+.telemetry-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--muted); font-family: var(--mono);
+}
+.telemetry-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 10px;
+  font-family: var(--mono); font-size: 10.5px;
+}
+.tel-cell {
+  display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  padding: 2px 0; min-width: 0;
+}
+.tel-cell .probe-v { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .twin-chip {
-  background: rgba(8, 13, 24, 0.72); color: #94a3b8; border: none;
-  padding: 3px 7px; border-radius: 5px; font-size: 10px; font-weight: 700;
+  background: rgba(8, 13, 24, 0.72); color: #cbd5e1; border: none;
+  padding: 3px 6.5px; border-radius: 5px; font-size: 9.5px; font-weight: 700;
   font-family: var(--mono); cursor: pointer; backdrop-filter: blur(6px);
 }
-.twin-chip.on { background: rgba(2, 132, 199, 0.85); color: #fff; }
-.twin-chip:hover { background: rgba(2, 132, 199, 0.95); color: #fff; }
+.twin-chip.on { background: rgba(2, 132, 199, 0.88); color: #fff; }
+.twin-chip:hover { background: rgba(2, 132, 199, 0.98); color: #fff; }
