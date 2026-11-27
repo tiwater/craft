@@ -233,6 +233,7 @@ def main() -> None:
     simhost.add_argument("--realtime-pacing", action="store_true", help="Enable smooth real-time arm motion pacing")
     simhost.add_argument("--sensor-noise", action="store_true", help="Enable realistic RGB CMOS + 3D pose estimation noise")
     simhost.add_argument("--domain-randomization", action="store_true", help="Enable per-episode mass/friction/placement randomization")
+    simhost.add_argument("--evidencescene-url", default=None, help="Standalone EvidenceScene v3 Spatial State Runtime URL (e.g. http://127.0.0.1:8895)")
 
     gzexp = sub.add_parser(
         "gazebo-export",
@@ -584,6 +585,8 @@ def main() -> None:
         if getattr(args, "domain_randomization", False) and hasattr(driver, "_default_domain_randomization"):
             driver._default_domain_randomization = True
             driver._domain_randomization_active = True
+        if getattr(args, "evidencescene_url", None) and hasattr(driver, "set_evidencescene_url"):
+            driver.set_evidencescene_url(args.evidencescene_url)
         app = StandaloneSimHostApp(driver)
         server = create_sim_host_server(app, host=args.host, port=args.port)
         print(

@@ -145,3 +145,92 @@ def test_knowledge_base_persists_declarative_spatial_requirements(tmp_path: Path
     assert meta["spatial_requirements"] == [req.to_dict()]
     skill_md = (meta_path.parent / "SKILL.md").read_text(encoding="utf-8")
     assert "spatial_requirements:" in skill_md
+
+
+@pytest.mark.skipif(not (HAS_MUJOCO and HAS_ES_V3), reason="Requires optional mujoco and evidencescene v3 service")
+def test_three_service_architecture_sim_host_evidencescene_and_trax_ui(tmp_path: Path) -> None:
+    """Verify full 3-service separation: Sim Host -> EvidenceScene Runtime Service -> TRAX UI proxy."""
+    import threading
+    import urllib.request
+
+    from evidencescene.service import EvidenceSceneHTTPApp, EvidenceSceneRuntime, create_evidencescene_server
+    from evidencescene.surface.mesh_codec import decode_surface_mesh_binary
+    from trax.mujoco_so101_driver import MuJoCoSO101HostDriver
+    from trax.sim_host_server import StandaloneSimHostApp, create_sim_host_server
+    from trax.ui.server import TraxUIApp, create_ui_server
+
+    cfg = SceneConfig.from_file(Path("examples/single_cup_coffee_config.json"))
+    driver = MuJoCoSO101HostDriver(cfg)
+    sim_server = create_sim_host_server(StandaloneSimHostApp(driver), host="127.0.0.1", port=0)
+    sim_port = sim_server.server_address[1]
+    sim_url = f"http://127.0.0.1:{sim_port}"
+
+    es_rt = EvidenceSceneRuntime("sim_world")
+    es_app = EvidenceSceneHTTPApp(es_rt, sensor_host_url=sim_url)
+    es_server = create_evidencescene_server(es_app, host="127.0.0.1", port=0)
+    es_port = es_server.server_address[1]
+    es_url = f"http://127.0.0.1:{es_port}"
+
+    # Wire sim_host spatial MCP tools to the standalone EvidenceScene HTTP service
+    driver.set_evidencescene_url(es_url)
+
+    ui_app = TraxUIApp(cfg, driver, tmp_path / "ws", evidencescene_url=es_url)
+    ui_server = create_ui_server(ui_app, host="127.0.0.1", port=0)
+    ui_port = ui_server.server_address[1]
+    ui_url = f"http://127.0.0.1:{ui_port}"
+
+    threads = [
+        threading.Thread(target=s.serve_forever, daemon=True)
+        for s in (sim_server, es_server, ui_server)
+    ]
+    for t in threads:
+        t.start()
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        # 1. Human Visual Interface served by EvidenceScene and proxied cleanly under /trax/evidencescene/viewer
+        with opener.open(f"{ui_url}/trax/evidencescene/viewer", timeout=5) as r:
+            assert r.status == 200
+            assert "EvidenceScene v3" in r.read().decode("utf-8")
+
+        # 2. EvidenceScene pulls raw calibrated RGB-D from Sim Host and serves unified SpatialSnapshot + ESTM binary mesh
+        with opener.open(f"{ui_url}/trax/evidencescene/v1/snapshot?refresh=1", timeout=12) as r:
+            snap_human = json.loads(r.read().decode("utf-8"))
+        assert snap_human["schema_version"] == 1
+        assert snap_human["surfaces"]["tabletop"]["ready"] is True
+        assert snap_human["surfaces"]["tabletop"]["triangle_count"] > 100
+
+        with opener.open(f"{ui_url}/trax/evidencescene/v1/surfaces/tabletop.estm", timeout=5) as r:
+            decoded_mesh = decode_surface_mesh_binary(r.read())
+        assert decoded_mesh["ready"] is True
+        assert decoded_mesh["cursor"] == snap_human["cursor"]
+
+        # 3. Authoritative robot kinematics (19 visual meshes, zero frontend FK) + STL assets load 200 OK
+        with opener.open(f"{ui_url}/trax/evidencescene/v1/robot/kinematics", timeout=5) as r:
+            kin = json.loads(r.read().decode("utf-8"))
+        assert kin["available"] is True
+        assert len(kin["meshes"]) == 19
+        sample_asset = kin["meshes"][0]["asset_path"]
+        with opener.open(f"{ui_url}/trax/evidencescene/v1/robot/assets/{sample_asset}", timeout=5) as r:
+            assert r.status == 200
+            assert len(r.read()) > 500
+
+        # 4. Human selection committed on EvidenceScene viewer is immediately visible via TRAX host MCP snapshot (same cursor!)
+        req = urllib.request.Request(
+            f"{ui_url}/trax/evidencescene/v1/select_surface",
+            data=json.dumps({"entity_id": "fixed_tabletop", "target_xyz_m": [0.34, -0.08, 1.0]}).encode("utf-8"),
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        with opener.open(req, timeout=5) as r:
+            sel = json.loads(r.read().decode("utf-8"))
+        assert sel["ok"] is True
+
+        snap_machine = driver.get_spatial_snapshot_dict(refresh=False)
+        assert snap_machine["cursor"] == sel["cursor"]
+        assert snap_machine["selected_surface_target"]["entity_id"] == "fixed_tabletop"
+    finally:
+        ui_server.shutdown(); ui_server.server_close()
+        es_server.shutdown(); es_server.server_close()
+        sim_server.shutdown(); sim_server.server_close()
+        ui_app.close()
+        driver.close()

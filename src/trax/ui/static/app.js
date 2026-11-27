@@ -18,10 +18,9 @@ let currentExecRawSource = '';
 let embSnapshot = null;
 let matrixFilter = 'all';
 let compareMode = 'split';
-let urdfViewer = null;
+let esViewerFrame = null;
 let lastMcpTelemetry = null;
 let lastReconStepSeq = -1;
-let reconInFlight = false;
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -546,117 +545,44 @@ function selectCam(name) {
 }
 function clearTrail() {
   cupTrail = [];
-  if (urdfViewer) urdfViewer.clearTrail();
+  if (esViewerFrame && esViewerFrame.contentWindow) {
+    esViewerFrame.contentWindow.postMessage({ type: 'evidencescene:clearTrail' }, '*');
+  }
   if (lastLiveScene) renderSpatialRadar(lastLiveScene);
 }
 
-function toggleTwinLayer(key) {
-  if (!urdfViewer) return;
-  const on = urdfViewer.toggleLayer(key);
-  const el = document.getElementById('tw-btn-' + key);
-  if (el) el.className = 'twin-chip' + (on ? ' on' : '');
-}
-
-function toggleTwinPick() {
-  if (!urdfViewer) return;
-  const on = urdfViewer.setPickMode(!urdfViewer.pickMode);
-  const el = document.getElementById('tw-btn-pick');
-  if (el) el.className = 'twin-chip' + (on ? ' on' : '');
-}
-
-async function commitTwinSurfacePick(worldXyz) {
-  try {
-    const res = await api('api/scene/select_surface', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        entity_id: 'auto',
-        target_xyz_m: worldXyz,
-        reviewer_id: 'ui_operator',
-        reason: '3d_twin_surface_selection',
-      }),
-    });
-    if (res && res.ok && urdfViewer) {
-      urdfViewer.setSelectedTarget(res.selected_surface_target);
-      urdfViewer.setPickMode(false);
-      const el = document.getElementById('tw-btn-pick');
-      if (el) el.className = 'twin-chip';
-      refreshSceneReconstruction(true);
+window.addEventListener('message', (ev) => {
+  const d = ev.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'evidencescene:cursor' && d.cursor) {
+    const curBadge = document.getElementById('pk-cursor');
+    if (curBadge) {
+      const ok = d.snapshot && d.snapshot.observability && d.snapshot.observability.status === 'observable';
+      curBadge.textContent = `ep${d.cursor.epoch}:r${d.cursor.revision}`;
+      curBadge.className = 'badge ' + (ok ? 'ok' : 'warn');
     }
-  } catch (e) {
-    console.warn('Surface selection failed:', e);
   }
-}
+});
 
-async function refreshSceneReconstruction(force) {
-  if (!urdfViewer || reconInFlight) return;
+function refreshSceneReconstruction(force) {
+  if (!esViewerFrame || !esViewerFrame.contentWindow) return;
   const seq = (lastMcpTelemetry && lastMcpTelemetry.robot && lastMcpTelemetry.robot.step_seq != null)
     ? Number(lastMcpTelemetry.robot.step_seq) : 0;
   if (!force && seq === lastReconStepSeq) return;
-  reconInFlight = true;
-  try {
-    const recon = await api('api/scene/reconstruction');
-    lastReconStepSeq = recon.step_seq != null ? Number(recon.step_seq) : seq;
-    if (urdfViewer) urdfViewer.setReconstruction(recon);
-    const badge = document.getElementById('hud-es-obs');
-    if (badge && recon) {
-      const obs = recon.observability || {};
-      const ok = obs.status === 'observable';
-      const cur = recon.cursor ? `ep${recon.cursor.epoch}:r${recon.cursor.revision}` : '';
-      const mm = recon.measured_mesh;
-      const geoTxt = (mm && mm.ready) ? `${mm.triangle_count} tris` : `${recon.total_surfels} pts`;
-      badge.textContent = `${geoTxt} · ${obs.rank ?? '-'}/6${cur ? ' · ' + cur : ''}`;
-      badge.className = 'twin-meta ' + (ok ? 'ok' : 'warn');
-      const curBadge = document.getElementById('pk-cursor');
-      if (curBadge && cur) {
-        curBadge.textContent = cur;
-        curBadge.className = 'badge ' + (ok ? 'ok' : 'warn');
-      }
-    }
-  } catch (_) {
-  } finally {
-    reconInFlight = false;
-  }
+  lastReconStepSeq = seq;
+  esViewerFrame.contentWindow.postMessage({ type: 'evidencescene:sync', force: !!force }, '*');
 }
 
 function mountTwinViewer() {
   const twinStage = document.getElementById('twin-stage');
   if (!twinStage) return;
-  if (urdfViewer && document.getElementById('urdf-canvas')) return;
-  if (urdfViewer) { urdfViewer.dispose(); urdfViewer = null; }
+  if (esViewerFrame && document.getElementById('es-viewer-iframe')) return;
   twinStage.innerHTML = `
     <div class="urdf-shell">
-      <div class="twin-bar">
-        <div class="twin-bar-left">
-          <span class="twin-tag">3D TWIN</span>
-          <span class="twin-meta" id="hud-es-obs">EvidenceScene v3: loading...</span>
-        </div>
-        <div class="twin-bar-right">
-          <button id="tw-btn-mesh" class="twin-chip on" onclick="toggleTwinLayer('mesh')" title="Shaded EvidenceScene measured tabletop mesh &amp; committed entities">Mesh</button>
-          <button id="tw-btn-cameras" class="twin-chip on" onclick="toggleTwinLayer('cameras')" title="Calibrated camera frustums">Cams</button>
-          <button id="tw-btn-traj" class="twin-chip on" onclick="toggleTwinLayer('traj')" title="Live 3D end-effector trajectory">Trail</button>
-          <button id="tw-btn-env" class="twin-chip" onclick="toggleTwinLayer('env')" title="Workspace radial/Z reachability envelope">Limits</button>
-          <button id="tw-btn-tf" class="twin-chip" onclick="toggleTwinLayer('tf')" title="Joint &amp; TCP coordinate axes">TF</button>
-          <button id="tw-btn-surfels" class="twin-chip" onclick="toggleTwinLayer('surfels')" title="Raw RGB-D depth points">Pts</button>
-          <button id="tw-btn-pick" class="twin-chip" onclick="toggleTwinPick()" title="Click measured surface to commit a shared target revision">Pick</button>
-          <button class="twin-chip" onclick="refreshSceneReconstruction(true)">Rescan</button>
-        </div>
-      </div>
-      <div class="urdf-canvas-wrap">
-        <canvas id="urdf-canvas"></canvas>
-        <div id="urdf-status" class="urdf-status">Loading URDF + EvidenceScene v3 measured surface...</div>
-      </div>
+      <iframe id="es-viewer-iframe" class="es-viewer-frame" src="evidencescene/viewer?embed=1" title="EvidenceScene v3 Human Visual Interface"></iframe>
     </div>`;
-  const cv = document.getElementById('urdf-canvas');
-  const st = document.getElementById('urdf-status');
-  if (cv && window.TraxURDFViewer) {
-    urdfViewer = new window.TraxURDFViewer(cv, st);
-    urdfViewer.onSurfacePick = commitTwinSurfacePick;
-    if (lastMcpTelemetry) urdfViewer.setTelemetry(lastMcpTelemetry);
-    urdfViewer.loadUrdf('api/robot/urdf?t=' + Date.now());
-    lastReconStepSeq = -1;
-    refreshSceneReconstruction(true);
-  }
+  esViewerFrame = document.getElementById('es-viewer-iframe');
+  lastReconStepSeq = -1;
 }
 
 function renderCameraShells() {
@@ -679,9 +605,8 @@ function renderCameraShells() {
   twinStage.style.display = showTwin ? 'flex' : 'none';
   if (showTwin) {
     mountTwinViewer();
-  } else if (urdfViewer) {
-    urdfViewer.dispose();
-    urdfViewer = null;
+  } else if (esViewerFrame) {
+    esViewerFrame = null;
     twinStage.innerHTML = '';
   }
 
@@ -1321,8 +1246,7 @@ function updateLiveUI(live) {
   if (ha && evo) ha.textContent = evo.busy ? evo.busy_detail : `phase=${evo.phase} | iters=${(evo.iterations||[]).length} | llm_calls=${(evo.llm_calls||[]).length}`;
 
   if (evo) renderEvolution(evo);
-  if (urdfViewer && mcpTel) {
-    urdfViewer.setTelemetry(mcpTel);
+  if (esViewerFrame && mcpTel) {
     refreshSceneReconstruction(false);
   }
   renderSpatialRadar(obs, mcpTel);
@@ -1339,7 +1263,7 @@ async function refreshState() {
     document.getElementById('pill-authority').textContent = d.execution_authority || st.driver;
     document.getElementById('pill-evidence').textContent = `evidence=${st.evidence_source}`;
 
-    if (JSON.stringify(st.cameras || []) !== JSON.stringify(camList) || !urdfViewer) {
+    if (JSON.stringify(st.cameras || []) !== JSON.stringify(camList) || !esViewerFrame) {
       camList = st.cameras || [];
       activeCam = camList.includes('front_top') ? 'front_top' : (camList.includes('overview') ? 'overview' : (camList[0] || ''));
       renderCameraShells();
@@ -1739,7 +1663,9 @@ async function resetSession() {
 
 async function resetEnv() {
   cupTrail = [];
-  if (urdfViewer) urdfViewer.clearTrail();
+  if (esViewerFrame && esViewerFrame.contentWindow) {
+    esViewerFrame.contentWindow.postMessage({ type: 'evidencescene:clearTrail' }, '*');
+  }
   await api('api/reset', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({preset:'default'}) });
   await pollLiveOnce();
   lastReconStepSeq = -1;

@@ -10,11 +10,13 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import threading
 import time
 from typing import Any, Mapping, Sequence
 from urllib.parse import parse_qs, urlparse
+import urllib.error
 import urllib.request
 
 from trax.agent_engine import TraxAgentEngine
@@ -88,6 +90,7 @@ class TraxUIApp:
         policies: Sequence[PolicyEntry] = (),
         default_mcp_url: str | None = None,
         default_mcp_stdio: str | None = None,
+        evidencescene_url: str | None = None,
     ) -> None:
         self.config = config
         self.driver = driver
@@ -95,6 +98,9 @@ class TraxUIApp:
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self._opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        self.evidencescene_url = (
+            (evidencescene_url or os.environ.get("TRAX_EVIDENCESCENE_URL") or "http://127.0.0.1:8895").strip().rstrip("/")
+        )
         self._run_state: dict[str, Any] = {
             "running": False,
             "label": "",
@@ -230,7 +236,13 @@ class TraxUIApp:
         return None
 
     def fetch_scene_snapshot(self) -> dict[str, Any] | None:
-        """Fetch committed EvidenceScene v3 SpatialSnapshot v1 from active host."""
+        """Fetch committed EvidenceScene v3 SpatialSnapshot v1 from standalone EvidenceScene service or host."""
+        if self.evidencescene_url:
+            try:
+                with self._opener.open(f"{self.evidencescene_url}/v1/snapshot", timeout=6.0) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except Exception:  # noqa: BLE001
+                pass
         fn = getattr(self.driver, "get_spatial_snapshot_dict", None)
         if callable(fn):
             return fn()
@@ -243,8 +255,55 @@ class TraxUIApp:
                 return None
         return None
 
+    def proxy_evidencescene(
+        self,
+        method: str,
+        subpath: str,
+        *,
+        query: str = "",
+        body: bytes | None = None,
+        if_none_match: str = "",
+    ) -> tuple[int, bytes, str, str]:
+        """Reverse-proxy EvidenceScene v3 Human Visual Interface & Machine API cleanly under `/evidencescene/*`."""
+        cleaned = "/" + subpath.lstrip("/")
+        url = f"{self.evidencescene_url}{cleaned}"
+        if query:
+            url = f"{url}?{query}"
+        headers: dict[str, str] = {}
+        if body is not None:
+            headers["Content-Type"] = "application/json"
+        if if_none_match:
+            headers["If-None-Match"] = if_none_match
+        req = urllib.request.Request(url, data=body, method=method, headers=headers)
+        try:
+            with self._opener.open(req, timeout=12.0) as resp:
+                data = resp.read()
+                mime = resp.headers.get("Content-Type") or "application/octet-stream"
+                etag = resp.headers.get("ETag") or ""
+                return int(resp.status), data, mime, etag
+        except urllib.error.HTTPError as exc:
+            err_body = exc.read()
+            mime = exc.headers.get("Content-Type") if exc.headers else "application/json; charset=utf-8"
+            etag = exc.headers.get("ETag") if exc.headers else ""
+            return int(exc.code), err_body, mime or "application/json; charset=utf-8", etag or ""
+        except Exception as exc:  # noqa: BLE001
+            payload = json.dumps({"error": f"EvidenceScene service unavailable at {self.evidencescene_url}: {exc}"}).encode("utf-8")
+            return int(HTTPStatus.BAD_GATEWAY), payload, "application/json; charset=utf-8", ""
+
     def select_scene_surface(self, body: Mapping[str, Any]) -> dict[str, Any]:
-        """Commit an operator-selected measured surface vertex into the host's EvidenceScene v3 SceneStore."""
+        """Commit an operator-selected measured surface vertex into the EvidenceScene v3 SceneStore."""
+        if self.evidencescene_url:
+            try:
+                req = urllib.request.Request(
+                    f"{self.evidencescene_url}/v1/select_surface",
+                    data=json.dumps(dict(body)).encode("utf-8"),
+                    method="POST",
+                    headers={"Content-Type": "application/json", "Accept": "application/json"},
+                )
+                with self._opener.open(req, timeout=8.0) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except Exception:  # noqa: BLE001
+                pass
         fn = getattr(self.driver, "low_level_select_surface_target", None)
         if callable(fn):
             return fn(
@@ -558,6 +617,23 @@ def create_ui_server(
                 else:
                     self._send_bytes(asset[0], asset[1])
                 return
+            if path == "/evidencescene" or path.startswith("/evidencescene/"):
+                sub = path[len("/evidencescene") :] or "/viewer"
+                status, data, mime, etag = app.proxy_evidencescene(
+                    "GET",
+                    sub,
+                    query=parsed.query,
+                    if_none_match=self.headers.get("If-None-Match") or "",
+                )
+                if status == HTTPStatus.NOT_MODIFIED:
+                    self.send_response(HTTPStatus.NOT_MODIFIED)
+                    if etag:
+                        self.send_header("ETag", etag)
+                    self.end_headers()
+                    return
+                cc = "public, max-age=3600" if "/robot/assets/" in sub else "no-store"
+                self._send_bytes(data, mime, status=status, cache_control=cc, etag=etag)
+                return
             if path.startswith("/static/"):
                 rel = path[len("/static/") :]
                 asset = _read_static_asset(rel)
@@ -664,7 +740,15 @@ def create_ui_server(
             self._send_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
 
         def do_POST(self) -> None:  # noqa: N802
-            path = self._strip_subpath(urlparse(self.path).path)
+            parsed = urlparse(self.path)
+            path = self._strip_subpath(parsed.path)
+            if path.startswith("/evidencescene/"):
+                sub = path[len("/evidencescene") :]
+                length = int(self.headers.get("Content-Length") or 0)
+                raw = self.rfile.read(length) if length > 0 else b"{}"
+                status, data, mime, etag = app.proxy_evidencescene("POST", sub, query=parsed.query, body=raw)
+                self._send_bytes(data, mime, status=status, etag=etag)
+                return
             try:
                 body = self._read_json()
                 if path == "/api/confirm":

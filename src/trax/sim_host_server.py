@@ -242,6 +242,20 @@ def create_sim_host_server(
             if path == "/health":
                 self._send_json({"status": "ok", "driver": app.driver.driver_name, "evidence_source": app.driver.evidence_source})
                 return
+            if path == "/sensors/rgbd":
+                fn = getattr(app.driver, "capture_rgbd_bundle", None)
+                if callable(fn):
+                    self._send_json(fn())
+                else:
+                    self._send_json({"error": "Active driver does not expose calibrated RGB-D sensor stream"}, HTTPStatus.NOT_FOUND)
+                return
+            if path == "/robot/kinematics":
+                fn = getattr(app.driver, "get_robot_kinematics", None)
+                if callable(fn):
+                    self._send_json(fn())
+                else:
+                    self._send_json({"error": "Active driver does not expose authoritative robot kinematics"}, HTTPStatus.NOT_FOUND)
+                return
             if path == "/scene/reconstruction":
                 fn = getattr(app.driver, "reconstruct_scene_evidencescene", None)
                 if callable(fn):

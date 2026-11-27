@@ -26,6 +26,7 @@ AGNOSTIC_CORE_FILES = (
     "plugin.py",
     "mcp_protocol.py",
     "spatial_contract.py",
+    "evidencescene_client.py",
     "sandbox.py",
     "attribution.py",
     "agent_engine.py",

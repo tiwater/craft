@@ -26,6 +26,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--evaluator-base", "--sim-base", dest="sim_base", help="Override evaluator/sim base URL")
     parser.add_argument("--mcp-url", help="Connect directly to an external Streamable HTTP MCP robot endpoint (zero-code unknown robot)")
     parser.add_argument("--mcp-stdio", help="Connect directly to an external persistent stdio MCP robot command")
+    parser.add_argument("--evidencescene-url", default=None, help="Standalone EvidenceScene v3 Spatial State Runtime URL (default http://127.0.0.1:8895)")
     parser.add_argument("--allow-actuation", action="store_true")
     parser.add_argument("--allow-sim-reset", action="store_true")
 
@@ -49,6 +50,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         policies=policies,
         default_mcp_url=args.mcp_url,
         default_mcp_stdio=args.mcp_stdio,
+        evidencescene_url=args.evidencescene_url,
     )
     server = create_ui_server(app, host=args.host, port=args.port)
     print(

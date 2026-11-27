@@ -15,6 +15,7 @@ Strictly preserves TRAX ownership separation:
 from __future__ import annotations
 
 import atexit
+import base64
 from concurrent.futures import ThreadPoolExecutor
 import math
 import os
@@ -375,6 +376,8 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         }
 
         self._step_seq = 0
+        self._physics_seq = 0
+        self._reset_seq = 0
         self._preset = "default"
         self._dual_cup_active = False
         self._confirmed_cup_id: str | None = None
@@ -394,22 +397,104 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         self._persistent_reconciled_after_unknown = True
         self._host_command_ledger: dict[str, dict[str, Any]] = {}
         self._last_command: dict[str, Any] = {"command_id": None, "status": "idle", "steps": []}
-        self._scene_store: Any = None
-        self._geom_epoch: int = 0
-        self._geom_version: int = 0
         self._last_obs_ns: int = 0
-        self._last_recon_cameras: list[dict[str, Any]] = []
-        self._published_entity_xyz: dict[str, tuple[float, float, float]] = {}
-        self._entity_measured_primitives: dict[str, dict[str, Any]] = {}
-        self._pinned_assessments: dict[str, dict[str, Any]] = {}
-        self._recon_cache: tuple[Any, dict[str, Any]] | None = None
-        try:
-            from evidencescene.spatial_state import SceneStore
-
-            self._scene_store = SceneStore("sim_world")
-        except ImportError:
-            self._scene_store = None
+        self._evidencescene_url: str | None = (os.environ.get("TRAX_EVIDENCESCENE_URL") or "").strip().rstrip("/") or None
+        self._es_client: Any = None
+        self._local_es_runtime: Any = None
+        self._last_synced_step_seq: int = -1
+        self._robot_visual_geoms = self._discover_robot_visual_geoms()
         self.reset_scenario({"preset": "default"})
+
+    def _discover_robot_visual_geoms(self) -> list[dict[str, Any]]:
+        """Discover all visual mesh geoms under the SO-101 base body for authoritative 4x4 kinematics export."""
+        mj = self._mj
+        np = self._np
+        base_id = int(mj.mj_name2id(self._model, mj.mjtObj.mjOBJ_BODY, "base"))
+        robot_bodies: set[int] = set()
+        for bid in range(self._model.nbody):
+            cur = bid
+            while cur > 0:
+                if cur == base_id:
+                    robot_bodies.add(bid)
+                    break
+                cur = int(self._model.body_parentid[cur])
+
+        def _quat_wxyz_to_R(q: Any) -> Any:
+            w, x, y, z = float(q[0]), float(q[1]), float(q[2]), float(q[3])
+            return np.array(
+                [
+                    [1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - z * w), 2.0 * (x * z + y * w)],
+                    [2.0 * (x * y + z * w), 1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z - x * w)],
+                    [2.0 * (x * z - y * w), 2.0 * (y * z + x * w), 1.0 - 2.0 * (x * x + y * y)],
+                ],
+                dtype=np.float64,
+            )
+
+        geoms: list[dict[str, Any]] = []
+        for gid in range(self._model.ngeom):
+            bid = int(self._model.geom_bodyid[gid])
+            if bid not in robot_bodies:
+                continue
+            if int(self._model.geom_type[gid]) != int(mj.mjtGeom.mjGEOM_MESH):
+                continue
+            if int(self._model.geom_group[gid]) == 3:  # skip collision-only geoms
+                continue
+            mid = int(self._model.geom_dataid[gid])
+            mname = mj.mj_id2name(self._model, mj.mjtObj.mjOBJ_MESH, mid)
+            if not mname:
+                continue
+            mat_id = int(self._model.geom_matid[gid])
+            rgba = self._model.mat_rgba[mat_id].tolist() if mat_id >= 0 else self._model.geom_rgba[gid].tolist()
+            geoms.append(
+                {
+                    "geom_id": gid,
+                    "body_name": mj.mj_id2name(self._model, mj.mjtObj.mjOBJ_BODY, bid) or "",
+                    "mesh_name": mname,
+                    "asset_path": f"assets/{mname}.stl",
+                    "rgba": [round(float(v), 3) for v in rgba],
+                    "mesh_pos": self._model.mesh_pos[mid].copy(),
+                    "mesh_R_T": _quat_wxyz_to_R(self._model.mesh_quat[mid]).T,
+                }
+            )
+        return geoms
+
+    def set_evidencescene_url(self, url: str | None) -> None:
+        cleaned = (url or "").strip().rstrip("/") or None
+        self._evidencescene_url = cleaned
+        self._es_client = None
+        self._last_synced_step_seq = -1
+
+    def _get_es_client(self) -> Any:
+        if not self._evidencescene_url:
+            return None
+        if self._es_client is None:
+            from .evidencescene_client import EvidenceSceneClient
+
+            self._es_client = EvidenceSceneClient(self._evidencescene_url)
+        return self._es_client
+
+    def _get_local_es_runtime(self) -> Any:
+        """Fallback in-process EvidenceSceneRuntime (owned by `evidencescene.service`) for offline unit tests."""
+        if self._local_es_runtime is None:
+            try:
+                from evidencescene.service.runtime import EvidenceSceneRuntime
+
+                self._local_es_runtime = EvidenceSceneRuntime("sim_world")
+            except ImportError:
+                return None
+        return self._local_es_runtime
+
+    def _reset_spatial_runtime(self, reason: str = "host_reset") -> None:
+        self._last_synced_step_seq = -1
+        client = self._get_es_client()
+        if client is not None:
+            try:
+                client.reset(reason=reason)
+            except Exception:  # noqa: BLE001
+                pass
+            return
+        if self._local_es_runtime is not None:
+            self._local_es_runtime.reset(reason=reason)
 
     def clamp_world_target(self, wx: float, wy: float, wz: float) -> tuple[float, float, float]:
         """Enforce host-owned SO-101 tabletop workspace safety bounds."""
@@ -499,6 +584,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         for i in range(n_steps):
             self._mj.mj_step(self._model, self._data)
             self._step_seq += 1
+            self._physics_seq += 1
             if carry is not None:
                 tcp = self._data.site_xpos[self._ee_site_id]
                 ee_x, ee_y, ee_z = float(tcp[0]), float(tcp[1]), float(tcp[2]) - 0.012
@@ -644,15 +730,9 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             self._workstation_activations = 0
             self._workstation_ledger = {}
             self._last_command = {"command_id": None, "status": "idle", "steps": []}
-            self._recon_cache = None
-            self._pinned_assessments = {}
-            self._published_entity_xyz = {}
-            self._entity_measured_primitives = {}
             self._last_obs_ns = 0
-            if self._scene_store is not None:
-                self._scene_store.reset(self._scene_store.snapshot().cursor)
-                self._geom_epoch += 1
-                self._geom_version = 0
+            self._reset_seq += 1
+            self._reset_spatial_runtime(reason="scenario_reset")
             return {
                 "status": "reset",
                 "preset": self._preset,
@@ -768,33 +848,17 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                 },
                 "step_seq": int(self._step_seq),
             }
-            if self._scene_store is not None:
-                snap = self._scene_store.snapshot()
-                out["schema_version"] = int(snap.schema_version)
-                out["frame_id"] = str(snap.frame_id)
-                out["clock_id"] = "mujoco-time"
-                out["observation_ns"] = round(float(self._data.time) * 1e9)
-                out["cursor"] = {
-                    "scene_id": snap.cursor.scene_id,
-                    "epoch": int(snap.cursor.epoch),
-                    "revision": int(snap.cursor.revision),
-                }
-                sel = snap.selected_surface_target()
-                if sel is not None:
-                    out["selected_surface_target"] = {
-                        "entity_id": sel.selection.entity_id,
-                        "point_index": int(sel.selection.point_index),
-                        "entity_point_m": [round(float(v), 5) for v in sel.selection.entity_point_m],
-                        "scene_point_m": [round(float(v), 5) for v in sel.scene_point_m] if sel.scene_point_m else None,
-                        "reviewer_id": sel.selection.reviewer_id,
-                        "reason": sel.selection.reason,
-                        "committed_cursor": {
-                            "scene_id": sel.selection.committed_cursor.scene_id,
-                            "epoch": int(sel.selection.committed_cursor.epoch),
-                            "revision": int(sel.selection.committed_cursor.revision),
-                        },
-                    }
-            return out
+        snap = self._read_spatial_snapshot_if_available()
+        if snap is not None and snap.get("schema_version") == 1:
+            out["schema_version"] = 1
+            out["frame_id"] = snap.get("frame_id", "sim_world")
+            out["clock_id"] = snap.get("clock_id", "mujoco-time")
+            out["observation_ns"] = snap.get("observation_ns", round(float(self._data.time) * 1e9))
+            if snap.get("cursor") is not None:
+                out["cursor"] = snap["cursor"]
+            if snap.get("selected_surface_target") is not None:
+                out["selected_surface_target"] = snap["selected_surface_target"]
+        return out
 
     def low_level_move_ee(self, x: float, y: float, z: float, *, steps: int = 36) -> dict[str, Any]:
         tx, ty, tz = float(x), float(y), float(z)
@@ -1082,6 +1146,183 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             "step_seq": step_seq,
         }
 
+    def _sim_clock(self) -> tuple[str, int]:
+        obs_ns = max(self._last_obs_ns, round(float(self._data.time) * 1e9))
+        self._last_obs_ns = obs_ns
+        return ("mujoco-time", obs_ns)
+
+    def get_robot_kinematics(self) -> dict[str, Any]:
+        """Authoritative 4x4 world transforms for all SO-101 visual meshes (single source of truth; zero frontend FK)."""
+        np = self._np
+        with self._lock:
+            self._mj.mj_forward(self._model, self._data)
+            meshes: list[dict[str, Any]] = []
+            for g in self._robot_visual_geoms:
+                gid = g["geom_id"]
+                R_g = self._data.geom_xmat[gid].reshape(3, 3)
+                t_g = self._data.geom_xpos[gid]
+                # Exact raw-STL -> world transform: R_w = geom_xmat @ R_mesh.T, t_w = geom_xpos - R_w @ mesh_pos
+                R_w = R_g @ g["mesh_R_T"]
+                t_w = t_g - R_w @ g["mesh_pos"]
+                T = np.eye(4, dtype=np.float64)
+                T[:3, :3] = R_w
+                T[:3, 3] = t_w
+                meshes.append(
+                    {
+                        "body": g["body_name"],
+                        "mesh": g["mesh_name"],
+                        "asset_path": g["asset_path"],
+                        "rgba": g["rgba"],
+                        "world_from_mesh": [[round(float(v), 6) for v in row] for row in T.tolist()],
+                    }
+                )
+            tcp = self._data.site_xpos[self._ee_site_id]
+            return {
+                "robot_model": "lerobot_so101_6dof",
+                "evidence_source": self.evidence_source,
+                "frame_id": "sim_world",
+                "step_seq": int(self._physics_seq),
+                "reset_seq": int(self._reset_seq),
+                "base_pos_m": [round(float(v), 5) for v in SO101_BASE_XYZ],
+                "ee_pos_m": [round(float(tcp[0]), 5), round(float(tcp[1]), 5), round(float(tcp[2]), 5)],
+                "workspace_bounds_m": {
+                    "radial_from_base_min_m": SO101_WORKSPACE_MIN_R,
+                    "radial_from_base_max_m": SO101_WORKSPACE_MAX_R,
+                    "z_min_m": round(SO101_WORKSPACE_MIN_Z, 4),
+                    "z_max_m": round(SO101_WORKSPACE_MAX_Z, 4),
+                    "table_top_z_m": round(TABLE_TOP_Z, 4),
+                },
+                "zones": self._low_level_zones(),
+                "meshes": meshes,
+            }
+
+    def capture_rgbd_bundle(
+        self,
+        *,
+        cameras: tuple[str, ...] = ("front_top", "wrist"),
+        stride: int = 3,
+    ) -> dict[str, Any]:
+        """Pure sensor producer: emit calibrated multi-camera RGB-D frames for EvidenceScene Runtime ingestion."""
+        np = self._np
+        raw_frames = [self._render_executor.submit(self._render_rgbd_on_egl_thread, c).result(timeout=10.0) for c in cameras]
+        clock_id, obs_ns = self._sim_clock()
+
+        entity_hints: list[dict[str, Any]] = []
+        with self._lock:
+            for body_key, eid, shape, r_xy, hz in (
+                ("obj-cup-a", "red_cylinder", "cylinder", 0.048, 0.065),
+                ("obj-bag-1", "brown_block", "box", 0.068, 0.045),
+            ):
+                bid = self._body_ids.get(body_key)
+                if bid is None:
+                    continue
+                pos = self._data.xpos[bid].copy()
+                if float(pos[0]) > 1.2:
+                    continue
+                rot = self._data.xmat[bid].reshape(3, 3).copy()
+                T_se = np.eye(4, dtype=np.float64)
+                T_se[:3, :3] = rot
+                T_se[:3, 3] = pos
+                entity_hints.append(
+                    {
+                        "entity_id": eid,
+                        "scene_from_entity": T_se.tolist(),
+                        "shape_class": shape,
+                        "crop_radius_xy_m": r_xy,
+                        "crop_half_z_m": hz,
+                        "source_id": "so101-rgbd-2cam",
+                    }
+                )
+            step_seq = int(self._physics_seq)
+            reset_seq = int(self._reset_seq)
+
+        encoded_frames: list[dict[str, Any]] = []
+        for fr in raw_frames:
+            rgb_u8 = np.ascontiguousarray(fr["rgb"], dtype=np.uint8)
+            depth_f32 = np.ascontiguousarray(fr["depth_m"], dtype=np.float32)
+            encoded_frames.append(
+                {
+                    "camera_id": fr["camera"],
+                    "mount": fr["mount"],
+                    "width": int(rgb_u8.shape[1]),
+                    "height": int(rgb_u8.shape[0]),
+                    "rgb_u8_b64": base64.b64encode(rgb_u8.tobytes()).decode("ascii"),
+                    "depth_f32_b64": base64.b64encode(depth_f32.tobytes()).decode("ascii"),
+                    "K": fr["K"].tolist(),
+                    "world_from_camera": fr["T_world_cam"].tolist(),
+                    "fovy_deg": float(fr["fovy_deg"]),
+                    "aspect": float(fr["aspect"]),
+                }
+            )
+
+        return {
+            "clock_id": clock_id,
+            "observation_ns": int(obs_ns),
+            "evidence_source": self.evidence_source,
+            "step_seq": step_seq,
+            "reset_seq": reset_seq,
+            "stride": int(stride),
+            "roi_bounds_m": [[0.02, 0.72], [-0.34, 0.34], [TABLE_TOP_Z - 0.008, TABLE_TOP_Z + 0.36]],
+            "plane_hint": {
+                "owner_id": "tabletop",
+                "normal": [0.0, 0.0, 1.0],
+                "offset_m": -float(TABLE_TOP_Z),
+                "rmse_m": 0.002,
+            },
+            "entity_hints": entity_hints,
+            "frames": encoded_frames,
+        }
+
+    # -----------------------------------------------------------------------
+    # Thin Delegation to EvidenceScene v3 Spatial State Runtime Service
+    # (Zero perception/meshing/observability logic owned by TRAX host driver)
+    # -----------------------------------------------------------------------
+
+    def _sync_local_es_runtime(self, *, force: bool = False) -> dict[str, Any]:
+        rt = self._get_local_es_runtime()
+        if rt is None:
+            return {
+                "schema_version": 0,
+                "availability": "unavailable",
+                "detail": "EvidenceScene v3 runtime not configured or installed",
+            }
+        if not force and self._last_synced_step_seq == int(self._step_seq) and rt.store.snapshot().entity_poses:
+            return rt.snapshot_dict()
+        from evidencescene.service.server import decode_rgbd_bundle_json
+
+        bundle = self.capture_rgbd_bundle()
+        frames, clock_id, obs_ns, ev_src, stride, roi, plane_hint, entity_hints = decode_rgbd_bundle_json(bundle)
+        snap = rt.ingest_rgbd_bundle(
+            frames,
+            clock_id=clock_id,
+            observation_ns=obs_ns,
+            evidence_source=ev_src,
+            stride=stride,
+            roi_bounds_m=roi,
+            plane_hint=plane_hint,
+            entity_hints=entity_hints,
+        )
+        self._last_synced_step_seq = int(self._step_seq)
+        return snap
+
+    def _read_spatial_snapshot_if_available(self) -> dict[str, Any] | None:
+        client = self._get_es_client()
+        if client is not None:
+            try:
+                return client.get_snapshot(refresh=False)
+            except Exception:  # noqa: BLE001
+                return None
+        if self._local_es_runtime is not None:
+            return self._local_es_runtime.snapshot_dict()
+        return None
+
+    def get_spatial_snapshot_dict(self, *, refresh: bool = False) -> dict[str, Any]:
+        """Return canonical EvidenceScene v3 SpatialSnapshot v1 from the EvidenceScene service."""
+        client = self._get_es_client()
+        if client is not None:
+            return client.get_snapshot(refresh=refresh)
+        return self._sync_local_es_runtime(force=refresh)
+
     def reconstruct_scene_evidencescene(
         self,
         *,
@@ -1090,624 +1331,23 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         max_points: int = 4200,
         stride: int = 3,
     ) -> dict[str, Any]:
-        """Reconstruct 3D scene surfels and 6-DoF Schur observability from calibrated 2-camera RGB-D (front_top + wrist) via EvidenceScene."""
-        np = self._np
-        cache_key = (int(self._step_seq), cameras, round(voxel_size_m, 4), int(max_points))
-        cached = getattr(self, "_recon_cache", None)
-        if cached is not None and cached[0] == cache_key:
-            return cached[1]
-
-        t0 = time.monotonic()
-        frames = [self._render_executor.submit(self._render_rgbd_on_egl_thread, c).result(timeout=10.0) for c in cameras]
-
-        # Back-project calibrated metric depth rays inside tabletop ROI into world coordinates
-        obs_by_cam: dict[str, tuple[str, Any]] = {}
-        voxel_color_sum: dict[tuple[int, int, int], Any] = {}
-        voxel_color_cnt: dict[tuple[int, int, int], int] = {}
-        world_from_cam_map: dict[int, Any] = {}
-        cameras_meta: list[dict[str, Any]] = []
-        inv_voxel = 1.0 / float(voxel_size_m)
-
-        for cam_idx, fr in enumerate(frames):
-            rgb = fr["rgb"][::stride, ::stride]
-            depth = fr["depth_m"][::stride, ::stride]
-            K = fr["K"]
-            T = fr["T_world_cam"]
-            world_from_cam_map[cam_idx] = T
-            cameras_meta.append(
-                {
-                    "name": fr["camera"],
-                    "mount": fr["mount"],
-                    "pos_m": [round(float(v), 4) for v in T[:3, 3].tolist()],
-                    "T_world_cam": [[round(float(x), 5) for x in row] for row in T.tolist()],
-                    "fovy_deg": float(fr["fovy_deg"]),
-                    "aspect": float(fr["aspect"]),
-                }
-            )
-            h, w = depth.shape
-            uu = np.arange(0, w * stride, stride, dtype=np.float64)
-            vv = np.arange(0, h * stride, stride, dtype=np.float64)
-            u_grid, v_grid = np.meshgrid(uu, vv)
-
-            valid = np.isfinite(depth) & (depth > 0.04) & (depth < 2.2)
-            z = depth[valid]
-            x = (u_grid[valid] - K[0, 2]) * z / K[0, 0]
-            y = (v_grid[valid] - K[1, 2]) * z / K[1, 1]
-            pts_cam = np.column_stack((x, y, z))
-            pts_world = pts_cam @ T[:3, :3].T + T[:3, 3]
-            cols = rgb[valid].astype(np.float32) / 255.0
-
-            # Restrict strictly to physical tabletop + manipulator ROI (no far walls/floor clutter)
-            roi = (
-                (pts_world[:, 0] >= 0.02)
-                & (pts_world[:, 0] <= 0.72)
-                & (pts_world[:, 1] >= -0.34)
-                & (pts_world[:, 1] <= 0.34)
-                & (pts_world[:, 2] >= TABLE_TOP_Z - 0.008)
-                & (pts_world[:, 2] <= TABLE_TOP_Z + 0.36)
-            )
-            pts_roi = np.ascontiguousarray(pts_world[roi], dtype=np.float64)
-            cols_roi = cols[roi]
-            if len(pts_roi) == 0:
-                continue
-            obs_by_cam[fr["camera"]] = (fr["camera"], pts_roi)
-
-            # Accumulate voxel colors keyed identically to EvidenceScene floor(p / voxel_size_m)
-            keys = np.floor(pts_roi * inv_voxel).astype(np.int64)
-            # Fast unique voxel color averaging per camera
-            uniq_keys, inv_idx, counts = np.unique(keys, axis=0, return_inverse=True, return_counts=True)
-            c_sum = np.zeros((len(uniq_keys), 3), dtype=np.float64)
-            np.add.at(c_sum, inv_idx, cols_roi)
-            for uk, cs, cnt in zip(uniq_keys.tolist(), c_sum, counts.tolist()):
-                kt = (uk[0], uk[1], uk[2])
-                if kt in voxel_color_sum:
-                    voxel_color_sum[kt] = voxel_color_sum[kt] + cs
-                    voxel_color_cnt[kt] += cnt
-                else:
-                    voxel_color_sum[kt] = cs.copy()
-                    voxel_color_cnt[kt] = cnt
-
-        engine_name = "evidencescene.RevisableSurfelMap"
-        perception_owner = "evidencescene"
-        surfels_out: list[list[float]] = []
-        corroborated_count = 0
-        total_surfels = 0
-        observability_report: dict[str, Any] = {
-            "status": "unavailable",
-            "rank": 0,
-            "required_rank": 6,
-            "min_translational_sv": None,
-            "detail": "EvidenceScene observability not evaluated",
-        }
-
-        try:
-            from evidencescene.observability.factor_graph_observability import (
-                build_se3_landmark_jacobians,
-                evaluate_schur_observability_gate,
-            )
-            from evidencescene.surface.object_surface_fusion import RevisableSurfelMap
-
-            smap = RevisableSurfelMap(
-                voxel_size_m=float(voxel_size_m),
-                maximum_voxels=36000,
-                maximum_live_bytes=32_000_000,
-            )
-            smap.update(obs_by_cam)
-            pts, support, cam_counts, vkeys = smap.snapshot(
-                minimum_observation_support=1,
-                maximum_point_count=int(max_points),
-                include_voxel_keys=True,
-            )
-            total_surfels = int(len(pts))
-            corroborated_count = int(np.sum(cam_counts >= 2)) if len(cam_counts) else 0
-            for p, cc, vk in zip(pts.tolist(), cam_counts.tolist(), vkeys.tolist()):
-                kt = (vk[0], vk[1], vk[2])
-                if kt in voxel_color_sum and voxel_color_cnt[kt] > 0:
-                    rgb_avg = voxel_color_sum[kt] / float(voxel_color_cnt[kt])
-                    r_c, g_c, b_c = float(rgb_avg[0]), float(rgb_avg[1]), float(rgb_avg[2])
-                else:
-                    r_c, g_c, b_c = 0.25, 0.70, 0.90
-                surfels_out.append(
-                    [
-                        round(p[0], 4),
-                        round(p[1], 4),
-                        round(p[2], 4),
-                        round(r_c, 3),
-                        round(g_c, 3),
-                        round(b_c, 3),
-                        int(cc),
-                    ]
-                )
-
-            # Evaluate authentic 6-DoF Schur observability across multi-camera corroborated landmarks
-            if total_surfels >= 8 and len(world_from_cam_map) >= 2:
-                corr_mask = cam_counts >= 2
-                lm_pts = pts[corr_mask] if int(np.sum(corr_mask)) >= 8 else pts
-                sel_idx = np.linspace(0, len(lm_pts) - 1, min(16, len(lm_pts)), dtype=int)
-                landmarks_map = {int(i): lm_pts[j] for i, j in enumerate(sel_idx)}
-                pose_lm_obs = [
-                    (cam_i, lm_i, 1.0)
-                    for cam_i in sorted(world_from_cam_map.keys())
-                    for lm_i in landmarks_map.keys()
-                ]
-                ax, ay, _, _ = build_se3_landmark_jacobians(
-                    world_from_camera_poses=world_from_cam_map,
-                    landmarks_world_m=landmarks_map,
-                    pose_landmark_observations=pose_lm_obs,
-                    prior_pose_ids=(0,),
-                )
-                rep = evaluate_schur_observability_gate(
-                    pose_jacobian_ax=ax,
-                    landmark_jacobian_ay=ay,
-                    candidate_pose_index=len(world_from_cam_map) - 1,
-                    required_pose_rank=6,
-                )
-                observability_report = {
-                    "status": "observable" if rep.admitted else "not_observable",
-                    "rank": int(rep.marginal_pose_rank),
-                    "required_rank": 6,
-                    "min_translational_sv": round(float(rep.translational_min_singular_value), 5),
-                    "condition_number": round(float(rep.translational_condition_number), 2),
-                    "reason": str(rep.reason),
-                    "detail": f"Schur 6-DoF marginal rank={rep.marginal_pose_rank}/6 across {len(world_from_cam_map)} calibrated RGB-D cameras",
-                }
-
-            # Publish unified committed SpatialSnapshot into EvidenceScene v3 SceneStore ("One Spatial State, Two Interfaces")
-            self._last_recon_cameras = list(cameras_meta)
-            surfel_rgb_arr = np.array([[s[3], s[4], s[5]] for s in surfels_out], dtype=np.float64) if surfels_out else np.zeros((0, 3), dtype=np.float64)
-            snapshot_meta = self._publish_to_scene_store(
-                pts=pts,
-                support=support,
-                cam_counts=cam_counts,
-                rgb_float=surfel_rgb_arr,
-                cloud_digest=digest([len(surfels_out), int(self._step_seq), corroborated_count])[:16],
-            )
-            measured_mesh_dict = self._build_measured_planar_mesh_dict(pts=pts, rgb_float=surfel_rgb_arr)
-        except ImportError:
-            engine_name = "numpy_rgbd_fallback"
-            perception_owner = "mujoco-rgbd-fallback"
-            snapshot_meta = None
-            measured_mesh_dict = None
-            # Graceful fallback if optional `evidencescene` package is not installed
-            for kt, cs in list(voxel_color_sum.items())[: int(max_points)]:
-                cnt = voxel_color_cnt[kt]
-                cx = (kt[0] + 0.5) * voxel_size_m
-                cy = (kt[1] + 0.5) * voxel_size_m
-                cz = (kt[2] + 0.5) * voxel_size_m
-                surfels_out.append(
-                    [round(cx, 4), round(cy, 4), round(cz, 4), round(float(cs[0] / cnt), 3), round(float(cs[1] / cnt), 3), round(float(cs[2] / cnt), 3), 1]
-                )
-            total_surfels = len(surfels_out)
-            observability_report["detail"] = "Optional evidencescene package not installed; using raw RGB-D voxel fallback"
-
-        payload = {
-            "schema_version": 1,
-            "perception_owner": perception_owner,
-            "engine": engine_name,
-            "evidence_source": self.evidence_source,
-            "step_seq": int(self._step_seq),
-            "cameras_used": list(obs_by_cam.keys()),
-            "cameras": cameras_meta,
-            "voxel_size_m": float(voxel_size_m),
-            "total_surfels": total_surfels,
-            "corroborated_surfels": corroborated_count,
-            "corroborated_ratio": round(corroborated_count / max(1, total_surfels), 3),
-            "observability": observability_report,
-            "wall_ms": round((time.monotonic() - t0) * 1000.0, 1),
-            "measured_mesh": measured_mesh_dict,
-            "surfels": surfels_out,
-        }
-        if snapshot_meta is not None:
-            payload.update(snapshot_meta)
-        self._recon_cache = (cache_key, payload)
-        return payload
-
-    def _sim_clock(self) -> tuple[str, int]:
-        obs_ns = max(self._last_obs_ns, round(float(self._data.time) * 1e9))
-        self._last_obs_ns = obs_ns
-        return ("mujoco-time", obs_ns)
-
-    def _serialize_selected_target(self, snap: Any) -> dict[str, Any] | None:
-        sel = snap.selected_surface_target()
-        if sel is None:
-            return None
-        return {
-            "entity_id": sel.selection.entity_id,
-            "point_index": int(sel.selection.point_index),
-            "entity_point_m": [round(float(v), 5) for v in sel.selection.entity_point_m],
-            "scene_point_m": [round(float(v), 5) for v in sel.scene_point_m] if sel.scene_point_m else None,
-            "support": int(sel.selection.support),
-            "reviewer_id": sel.selection.reviewer_id,
-            "reason": sel.selection.reason,
-            "committed_cursor": {
-                "scene_id": sel.selection.committed_cursor.scene_id,
-                "epoch": int(sel.selection.committed_cursor.epoch),
-                "revision": int(sel.selection.committed_cursor.revision),
-            },
-        }
-
-    def _serialize_snapshot(self, snap: Any) -> dict[str, Any]:
-        entities: dict[str, dict[str, Any]] = {}
-        for eid, pose in snap.entity_poses.items():
-            mat = pose.scene_from_entity
-            entities[eid] = {
-                "entity_id": eid,
-                "entity_revision": int(pose.revision),
-                "lifecycle": "active",
-                "source_id": pose.source_id,
-                "observation_id": pose.observation_id,
-                "sensor_clock_id": pose.sensor_clock_id,
-                "observation_ns": int(pose.observation_ns),
-                "world_m": [round(float(v), 5) for v in mat[:3, 3].tolist()],
-                "scene_from_entity": [[round(float(x), 5) for x in row] for row in mat.tolist()],
-                "surface_points_count": int(len(pose.geometry.points_m)) if pose.geometry is not None else 0,
-                "measured_primitive": self._entity_measured_primitives.get(eid),
-                "geometry_ref": {
-                    "owner_id": pose.geometry.reference.owner_id,
-                    "owner_epoch": int(pose.geometry.reference.owner_epoch),
-                    "owner_version": int(pose.geometry.reference.owner_version),
-                }
-                if pose.geometry is not None
-                else None,
-                "observability": {
-                    "status": "sufficient" if pose.marginal_pose_rank >= 5 else "insufficient",
-                    "rank": int(pose.marginal_pose_rank),
-                    "required_rank": 6,
-                    "reason": pose.admission_reason,
-                    "tangent": {
-                        "transform": pose.admission.tangent.transform,
-                        "perturbation_side": pose.admission.tangent.perturbation_side,
-                        "order": pose.admission.tangent.order,
-                    }
-                    if pose.admission and pose.admission.tangent
-                    else None,
-                },
-            }
-        unavailable = {
-            eid: {
-                "entity_id": eid,
-                "revision": int(u.revision),
-                "source_id": u.source_id,
-                "observation_id": u.observation_id,
-                "sensor_clock_id": u.sensor_clock_id,
-                "observation_ns": int(u.observation_ns),
-                "reason": u.reason,
-            }
-            for eid, u in snap.unavailable_poses.items()
-        }
-        obs_ns = max((int(p.observation_ns) for p in snap.entity_poses.values()), default=self._last_obs_ns)
-        return {
-            "schema_version": int(snap.schema_version),
-            "cursor": {
-                "scene_id": snap.cursor.scene_id,
-                "epoch": int(snap.cursor.epoch),
-                "revision": int(snap.cursor.revision),
-            },
-            "frame_id": str(snap.frame_id),
-            "clock_id": "mujoco-time",
-            "observation_ns": int(obs_ns),
-            "published_monotonic_ns": int(snap.published_monotonic_ns),
-            "publication_clock_id": str(snap.publication_clock_id),
-            "entities": entities,
-            "unavailable_poses": unavailable,
-            "retired_entities": {k: int(v) for k, v in snap.retired_entities.items()},
-            "selected_surface_target": self._serialize_selected_target(snap),
-            "cameras": list(self._last_recon_cameras),
-        }
-
-    def _build_measured_planar_mesh_dict(self, *, pts: Any, rgb_float: Any) -> dict[str, Any] | None:
-        """Build a triangulated EvidenceScene measured tabletop mesh (zero fabrication; unobserved cells remain open)."""
-        np = self._np
-        if len(pts) < 20 or len(rgb_float) != len(pts):
-            return None
-        try:
-            from evidencescene.surface.measured_mesh import SurfaceMeshConfig, reconstruct_planar_surface
-        except ImportError:
-            return None
-        _, obs_ns = self._sim_clock()
-        rgb_u8 = np.clip(np.round(rgb_float * 255.0), 0, 255).astype(np.uint8)
-        support_n = int(np.sum(np.abs(pts[:, 2] - TABLE_TOP_Z) <= 0.012))
-        if support_n < 20:
-            return None
-        mesh = reconstruct_planar_surface(
-            pts,
-            rgb_u8,
-            plane_normal=(0.0, 0.0, 1.0),
-            plane_offset_m=-float(TABLE_TOP_Z),
-            plane_support_count=support_n,
-            plane_rmse_m=0.002,
-            coordinate_frame="sim_world",
-            timestamp_ns=int(obs_ns),
-            source_id="so101-rgbd-2cam",
-            config=SurfaceMeshConfig(
-                cell_size_m=0.022,
-                maximum_edge_m=0.052,
-                maximum_plane_residual_m=0.012,
-                maximum_normal_step_m=0.012,
-                minimum_support=20,
-            ),
-        )
-        if not mesh.ready or not len(mesh.triangles):
-            return {"ready": False, "reason": str(mesh.reason), "vertices": [], "colors": [], "triangles": []}
-        verts = [round(float(v), 4) for v in mesh.vertices_m.reshape(-1).tolist()]
-        cols = [round(float(c) / 255.0, 3) for c in mesh.colors_rgb_u8.reshape(-1).tolist()]
-        tris = [int(i) for i in mesh.triangles.reshape(-1).tolist()]
-        return {
-            "ready": True,
-            "reason": str(mesh.reason),
-            "vertex_count": int(len(mesh.vertices_m)),
-            "triangle_count": int(len(mesh.triangles)),
-            "surface_area_m2": round(float(mesh.surface_area_m2), 4),
-            "vertices": verts,
-            "colors": cols,
-            "triangles": tris,
-        }
-
-    def _publish_to_scene_store(
-        self,
-        *,
-        pts: Any,
-        support: Any,
-        cam_counts: Any,
-        rgb_float: Any = None,
-        cloud_digest: str,
-    ) -> dict[str, Any] | None:
-        """Publish calibrated tabletop and object surfels/poses into EvidenceScene v3 SceneStore."""
-        if self._scene_store is None:
-            return None
-        from evidencescene.observability.factor_graph_observability import evaluate_schur_observability_gate
-        from evidencescene.observability.task_observability import inspection_point_jacobian
-        from evidencescene.spatial_state import GeometryRef, ObjectSurface, PoseTangent
-
-        np = self._np
-        store = self._scene_store
-        clock_id, obs_ns = self._sim_clock()
-        tangent = PoseTangent("entity_from_scene", "right")
-        obs_id = f"rgbd-step-{int(self._step_seq)}-{cloud_digest}"
-
-        # 1. Fixed tabletop surface (known simulator world frame prior + measured tabletop surfels)
-        table_mask = np.abs(pts[:, 2] - TABLE_TOP_Z) <= 0.012 if len(pts) else np.zeros((0,), dtype=bool)
-        table_pts = pts[table_mask] if len(pts) else np.zeros((0, 3), dtype=np.float64)
-        table_sup = np.maximum(1, cam_counts[table_mask].astype(np.int64)) if len(table_pts) else np.zeros((0,), dtype=np.int64)
-        self._geom_version += 1
-        table_surf = (
-            ObjectSurface.from_points(
-                "fixed_tabletop",
-                GeometryRef("so101-rgbd", self._geom_epoch, self._geom_version),
-                (obs_id,),
-                table_pts,
-                table_sup,
-            )
-            if len(table_pts)
-            else None
-        )
-        prior_gate = evaluate_schur_observability_gate(pose_jacobian_ax=np.eye(6), candidate_pose_index=0)
-        snap = store.publish_pose(
-            store.snapshot().cursor,
-            "fixed_tabletop",
-            np.eye(4, dtype=np.float64),
-            frame_id="sim_world",
-            gate=prior_gate,
-            source_id="known_sim_world_frame",
-            observation_id=obs_id,
-            sensor_clock_id=clock_id,
-            observation_ns=obs_ns,
-            geometry=table_surf,
-            tangent=tangent,
-        )
-
-        # 2. Tabletop dynamic entities with point-to-plane surface normal SE(3) information matrices
-        with self._lock:
-            entity_poses_sim: list[tuple[str, Any, Any, str]] = []
-            for body_key, eid, shape in (("obj-cup-a", "red_cylinder", "cylinder"), ("obj-bag-1", "brown_block", "box")):
-                bid = self._body_ids.get(body_key)
-                if bid is None:
-                    continue
-                pos = self._data.xpos[bid].copy()
-                if float(pos[0]) > 1.2:
-                    continue
-                rot = self._data.xmat[bid].reshape(3, 3).copy()
-                entity_poses_sim.append((eid, pos, rot, shape))
-
-        for eid, pos, rot, shape in entity_poses_sim:
-            T_se = np.eye(4, dtype=np.float64)
-            T_se[:3, :3] = rot
-            T_se[:3, 3] = pos
-            # Crop measured RGB-D surfels in the entity's physical bounding volume
-            if len(pts):
-                rel_w = pts - pos[None, :]
-                r_xy = np.hypot(rel_w[:, 0], rel_w[:, 1])
-                rad_lim = 0.048 if shape == "cylinder" else 0.068
-                z_lim = 0.065 if shape == "cylinder" else 0.045
-                ent_mask = (r_xy <= rad_lim) & (np.abs(rel_w[:, 2]) <= z_lim) & (pts[:, 2] >= TABLE_TOP_Z + 0.005)
-                ent_pts_w = pts[ent_mask]
-                ent_sup = np.maximum(1, cam_counts[ent_mask].astype(np.int64))
-                ent_rgb = rgb_float[ent_mask] if (rgb_float is not None and len(rgb_float) == len(pts)) else None
-            else:
-                ent_pts_w = np.zeros((0, 3), dtype=np.float64)
-                ent_sup = np.zeros((0,), dtype=np.int64)
-                ent_rgb = None
-
-            if len(ent_pts_w) < 4:
-                if snap.is_active(eid):
-                    snap = store.report_pose_unavailable(
-                        snap.cursor,
-                        eid,
-                        source_id="so101-rgbd-2cam",
-                        observation_id=obs_id,
-                        sensor_clock_id=clock_id,
-                        observation_ns=obs_ns,
-                        reason="insufficient_visible_surfels",
-                    )
-                continue
-
-            # Transform measured world surfels into entity-local frame.
-            # Under PoseTangent("scene_from_entity", "right"), T_se exp(xi) maps p_loc -> R(p_loc + w x p_loc + v) + t,
-            # so point-to-plane residual Jacobian is n_loc^T [-[p_loc]_x, I_3] = [(p_loc x n_loc)^T, n_loc^T].
-            # For a vertical cylinder, radial normals yield exact rank=5 with ker(H) = span{e_wz} (pure axial yaw)
-            # while translational Schur block stays full-rank 3x3!
-            ent_pts_local = (ent_pts_w - pos[None, :]) @ rot
-            rows_jac: list[Any] = []
-            inv_sigma = 1.0 / 0.004
-            for p_loc, sup_val in zip(ent_pts_local, ent_sup.tolist()):
-                w_obs = math.sqrt(float(sup_val)) * inv_sigma
-                if shape == "cylinder":
-                    if p_loc[2] >= 0.022:
-                        n_loc = np.array([0.0, 0.0, 1.0], dtype=np.float64)
-                    else:
-                        nr = math.hypot(float(p_loc[0]), float(p_loc[1]))
-                        if nr < 1e-4:
-                            continue
-                        n_loc = np.array([float(p_loc[0]) / nr, float(p_loc[1]) / nr, 0.0], dtype=np.float64)
-                else:
-                    ax_idx = int(np.argmax(np.abs(p_loc)))
-                    n_loc = np.zeros(3, dtype=np.float64)
-                    n_loc[ax_idx] = 1.0 if p_loc[ax_idx] >= 0.0 else -1.0
-                rot_row = np.cross(p_loc, n_loc)
-                rows_jac.append((w_obs * np.concatenate([rot_row, n_loc])).astype(np.float64))
-
-            if len(rows_jac) < 5:
-                continue
-            A_ent = np.vstack(rows_jac)
-            req_rank = 5 if shape == "cylinder" else 6
-            gate = evaluate_schur_observability_gate(
-                pose_jacobian_ax=A_ent,
-                candidate_pose_index=0,
-                required_pose_rank=req_rank,
-            )
-            if not gate.admitted:
-                if snap.is_active(eid):
-                    snap = store.report_pose_unavailable(
-                        snap.cursor,
-                        eid,
-                        source_id="so101-rgbd-2cam",
-                        observation_id=obs_id,
-                        sensor_clock_id=clock_id,
-                        observation_ns=obs_ns,
-                        reason=str(gate.reason),
-                    )
-                continue
-
-            prev_xyz = self._published_entity_xyz.get(eid)
-            cur_xyz = (float(pos[0]), float(pos[1]), float(pos[2]))
-            cause = "observation"
-            if prev_xyz is not None and math.dist(prev_xyz, cur_xyz) > 0.005:
-                cause = "physical_motion"
-            self._published_entity_xyz[eid] = cur_xyz
-            # Record measured bounding primitive strictly derived from this entity's real RGB-D surfels
-            mean_rgb = (
-                [round(float(c), 3) for c in np.median(ent_rgb, axis=0).tolist()]
-                if (ent_rgb is not None and len(ent_rgb))
-                else [0.75, 0.78, 0.82]
-            )
-            if shape == "cylinder":
-                r_loc = np.hypot(ent_pts_local[:, 0], ent_pts_local[:, 1])
-                self._entity_measured_primitives[eid] = {
-                    "shape": "cylinder",
-                    "radius_m": round(max(0.012, float(np.percentile(r_loc, 85))), 4),
-                    "z_min_m": round(float(np.percentile(ent_pts_local[:, 2], 5)), 4),
-                    "z_max_m": round(float(np.percentile(ent_pts_local[:, 2], 95)), 4),
-                    "mean_rgb": mean_rgb,
-                    "measured_points": int(len(ent_pts_local)),
-                }
-            else:
-                p_lo = np.percentile(ent_pts_local, 5, axis=0)
-                p_hi = np.percentile(ent_pts_local, 95, axis=0)
-                self._entity_measured_primitives[eid] = {
-                    "shape": "box",
-                    "min_m": [round(float(v), 4) for v in p_lo.tolist()],
-                    "max_m": [round(float(v), 4) for v in p_hi.tolist()],
-                    "mean_rgb": mean_rgb,
-                    "measured_points": int(len(ent_pts_local)),
-                }
-
-            self._geom_version += 1
-            ent_surf = ObjectSurface.from_points(
-                eid,
-                GeometryRef("so101-rgbd", self._geom_epoch, self._geom_version),
-                (obs_id,),
-                ent_pts_local,
-                ent_sup,
-            )
-            snap = store.publish_pose(
-                snap.cursor,
-                eid,
-                T_se,
-                frame_id="sim_world",
-                gate=gate,
-                source_id="so101-rgbd-2cam",
-                observation_id=obs_id,
-                sensor_clock_id=clock_id,
-                observation_ns=obs_ns,
-                geometry=ent_surf,
-                cause=cause,
-                tangent=PoseTangent("scene_from_entity", "right"),
-            )
-
-        return self._serialize_snapshot(snap)
-
-    def get_spatial_snapshot_dict(self, *, refresh: bool = False) -> dict[str, Any]:
-        """Return canonical EvidenceScene v3 SpatialSnapshot JSON (unified human/machine state)."""
-        if self._scene_store is None:
-            return {
-                "schema_version": 0,
-                "availability": "unavailable",
-                "detail": "Optional evidencescene v3 spatial_state runtime not installed",
-            }
-        snap = self._scene_store.snapshot()
-        if refresh or not snap.entity_poses:
-            self.reconstruct_scene_evidencescene()
-            snap = self._scene_store.snapshot()
-        return self._serialize_snapshot(snap)
-
-    def _point_jacobian_for_tangent(self, transform: Any, pt_local: Any, tangent: Any) -> Any:
-        """Exact 3x6 point Jacobian d(p_scene)/d(xi) matching the pose's declared PoseTangent."""
-        from evidencescene.observability.task_observability import inspection_point_jacobian
-
-        np = self._np
-        if tangent is not None and tangent.transform == "scene_from_entity" and tangent.perturbation_side == "right":
-            # T exp(xi) maps p_loc -> R (p_loc + w x p_loc + v) + t = R (-[p_loc]_x w + v) + p_scene
-            px, py, pz = float(pt_local[0]), float(pt_local[1]), float(pt_local[2])
-            neg_skew = np.array([[0.0, pz, -py], [-pz, 0.0, px], [py, -px, 0.0]], dtype=float)
-            return transform[:3, :3] @ np.hstack([neg_skew, np.eye(3, dtype=float)])
-        return inspection_point_jacobian(transform, pt_local)
-
-    def _build_task_jacobian(
-        self,
-        transform: Any,
-        task_mode: str,
-        entity_point_m: Sequence[float] | None = None,
-        tangent: Any = None,
-    ) -> tuple[Any, list[float]]:
-        np = self._np
-        mode = str(task_mode or "body_grasp").strip().lower()
-        if mode == "handle_grasp":
-            pt = np.array(entity_point_m if entity_point_m is not None else [0.028, 0.0, 0.0], dtype=float)
+        """Delegate RGB-D reconstruction & SpatialSnapshot query to EvidenceScene v3 Runtime."""
+        client = self._get_es_client()
+        if client is not None:
+            snap = client.get_snapshot(refresh=False)
+            surfels = client.get_surfels()
         else:
-            pt = np.array(entity_point_m if entity_point_m is not None else [0.0, 0.0, 0.0], dtype=float)
-
-        pt_jac = self._point_jacobian_for_tangent(transform, pt, tangent)
-        if mode in ("body_grasp", "handle_grasp"):
-            if tangent is not None and tangent.transform == "scene_from_entity" and tangent.perturbation_side == "right":
-                # Local Z axis under right perturbation: d(R e_z)/d(w) = R (w x e_z) = R (-[e_z]_x w)
-                # Two tangent coordinates on S^2 at e_z are local X and local Y: rows [0, 1, 0, 0,0,0] and [-1, 0, 0, 0,0,0]
-                angular_rows = np.array(
-                    [[0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
-                    dtype=float,
-                )
-            else:
-                direction = transform[:3, :3] @ np.array([0.0, 0.0, 1.0], dtype=float)
-                x, y, z = direction
-                axis_rows = np.array([[0.0, -z, y, 0.0, 0.0, 0.0], [z, 0.0, -x, 0.0, 0.0, 0.0], [-y, x, 0.0, 0.0, 0.0, 0.0]])
-                basis = np.eye(3)[int(np.argmin(np.abs(direction)))]
-                first = np.cross(direction, basis)
-                first /= np.linalg.norm(first)
-                angular_rows = np.stack((first, np.cross(direction, first))) @ axis_rows
-            rows = np.vstack([pt_jac, angular_rows])
-        else:
-            rows = pt_jac
-        scene_pt = (transform[:3, :3] @ pt + transform[:3, 3]).tolist()
-        return rows, [round(float(v), 5) for v in scene_pt]
+            snap = self._sync_local_es_runtime(force=False)
+            rt = self._get_local_es_runtime()
+            surfels = rt.surfels_payload() if rt is not None else {"surfels": [], "voxel_size_m": voxel_size_m}
+        table_meta = (snap.get("surfaces") or {}).get("tabletop")
+        out = dict(snap)
+        out["step_seq"] = int(self._step_seq)
+        out["voxel_size_m"] = float(surfels.get("voxel_size_m", voxel_size_m))
+        out["surfels"] = list(surfels.get("surfels") or [])
+        if table_meta is not None:
+            out["measured_mesh"] = dict(table_meta)
+        return out
 
     def low_level_assess_spatial_requirements(
         self,
@@ -1718,259 +1358,78 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         max_stddev_m: float | None = None,
         entity_point_m: Sequence[float] | None = None,
     ) -> dict[str, Any]:
-        """Assess task-conditioned observability (ker(H) <= ker(J_task)) via EvidenceScene v3."""
-        if self._scene_store is None:
-            return {"status": "unavailable_evidence", "detail": "EvidenceScene v3 SceneStore unavailable"}
-        from evidencescene.spatial_state import PoseTangent
-
-        self.reconstruct_scene_evidencescene()
-        snap = self._scene_store.snapshot()
         clock_id, ref_ns = self._sim_clock()
-        max_age_ns = max(0, round(float(max_age_ms) * 1e6))
-        mode = str(task_mode or "body_grasp").strip().lower()
-
-        if mode == "selected_point":
-            if snap.selected_point is None:
-                return {
-                    "status": "unknown",
-                    "detail": "No operator surface target selected yet; call select_surface_target first.",
-                    "cursor": {
-                        "scene_id": snap.cursor.scene_id,
-                        "epoch": int(snap.cursor.epoch),
-                        "revision": int(snap.cursor.revision),
-                    },
-                }
-            limits = [float(max_stddev_m)] * 3 if max_stddev_m is not None else None
-            assessment = snap.assess_selected_point(
-                reference_ns=ref_ns,
+        client = self._get_es_client()
+        if client is not None:
+            return client.assess_spatial_requirements(
+                entity_id=entity_id,
+                task_mode=task_mode,
                 reference_clock_id=clock_id,
-                maximum_age_ns=max_age_ns,
-                maximum_model_stddev=limits,
-            )
-            sel_tgt = snap.selected_surface_target()
-            scene_pt = [round(float(v), 5) for v in sel_tgt.scene_point_m] if sel_tgt and sel_tgt.scene_point_m else None
-            resolved_entity = snap.selected_point.entity_id
-            resolved_pt = list(snap.selected_point.entity_point_m)
-        else:
-            if entity_id not in snap.entity_poses:
-                unavail = snap.unavailable_poses.get(entity_id)
-                return {
-                    "status": "unknown" if unavail is None else "unavailable_evidence",
-                    "entity_id": entity_id,
-                    "detail": unavail.reason if unavail is not None else f"Entity {entity_id!r} not in committed snapshot",
-                    "cursor": {
-                        "scene_id": snap.cursor.scene_id,
-                        "epoch": int(snap.cursor.epoch),
-                        "revision": int(snap.cursor.revision),
-                    },
-                }
-            pose = snap.entity_poses[entity_id]
-            pose_tangent = pose.admission.tangent if pose.admission and pose.admission.tangent else PoseTangent("entity_from_scene", "right")
-            rows, scene_pt = self._build_task_jacobian(pose.scene_from_entity, mode, entity_point_m, tangent=pose_tangent)
-            limits = [float(max_stddev_m)] * len(rows) if max_stddev_m is not None else None
-            assessment = snap.assess_spatial_requirements(
-                entity_id,
-                rows,
                 reference_ns=ref_ns,
-                reference_clock_id=clock_id,
-                maximum_age_ns=max_age_ns,
-                maximum_model_stddev=limits,
-                required_tangent=pose_tangent,
+                max_age_ms=max_age_ms,
+                max_stddev_m=max_stddev_m,
+                entity_point_m=entity_point_m,
+                refresh=True,
             )
-            resolved_entity = entity_id
-            resolved_pt = list(entity_point_m) if entity_point_m is not None else ([0.028, 0.0, 0.0] if mode == "handle_grasp" else [0.0, 0.0, 0.0])
-
-        aid = f"assess-{snap.cursor.epoch}-{snap.cursor.revision}-{len(self._pinned_assessments) + 1}"
-        self._pinned_assessments[aid] = {
-            "assessment": assessment,
-            "snapshot": snap,
-            "entity_id": resolved_entity,
-            "task_mode": mode,
-            "entity_point_m": resolved_pt,
-        }
-        obs_eval = assessment.evidence.assessment
-        return {
-            "assessment_id": aid,
-            "entity_id": resolved_entity,
-            "task_mode": mode,
-            "status": str(assessment.status),
-            "cursor": {
-                "scene_id": snap.cursor.scene_id,
-                "epoch": int(snap.cursor.epoch),
-                "revision": int(snap.cursor.revision),
-            },
-            "pose_revision": int(assessment.evidence.pose_revision),
-            "freshness": {
-                "status": assessment.freshness.status,
-                "reason": assessment.freshness.reason,
-                "age_ms": round(assessment.freshness.age_ns / 1e6, 2) if assessment.freshness.age_ns is not None else None,
-            },
-            "observability": {
-                "status": "sufficient" if assessment.status == "satisfied" else ("insufficient" if assessment.status == "unsatisfied" else "unknown"),
-                "rank": int(obs_eval.pose_rank) if obs_eval is not None else None,
-                "status_by_row": list(obs_eval.status_by_row) if obs_eval is not None else [],
-                "model_stddev_by_row": [
-                    round(float(v), 6) if v is not None else None
-                    for v in (obs_eval.model_stddev_by_row if obs_eval is not None else ())
-                ],
-            },
-            "missing_evidence": list(assessment.missing_evidence),
-            "scene_point_m": scene_pt,
-            "detail": f"task_mode={mode}, status={assessment.status}, missing={list(assessment.missing_evidence)}",
-        }
+        self._sync_local_es_runtime(force=False)
+        rt = self._get_local_es_runtime()
+        if rt is None:
+            return {"status": "unavailable_evidence", "detail": "EvidenceScene v3 runtime unavailable"}
+        return rt.assess_spatial_requirements(
+            entity_id=entity_id,
+            task_mode=task_mode,
+            reference_clock_id=clock_id,
+            reference_ns=ref_ns,
+            max_age_ms=max_age_ms,
+            max_stddev_m=max_stddev_m,
+            entity_point_m=entity_point_m,
+        )
 
     def low_level_revalidate_spatial_requirements(self, assessment_id: str) -> dict[str, Any]:
-        """Revalidate a pinned assessment against the current committed SceneStore snapshot."""
-        if self._scene_store is None:
-            return {"decision": "hold", "status": "unavailable_evidence", "reason": "scene_store_unavailable"}
-        rec = self._pinned_assessments.get(str(assessment_id or ""))
-        if rec is None:
-            return {
-                "decision": "invalidate_plan",
-                "status": "unknown",
-                "reason": "unknown_assessment_id",
-                "resnapshot_required": True,
-                "detail": f"Assessment {assessment_id!r} was cleared (e.g. after epoch reset) or does not exist.",
-            }
-        prev = rec["assessment"]
-        snap = self._scene_store.snapshot()
         clock_id, ref_ns = self._sim_clock()
-        check = snap.revalidate_spatial_requirements(prev, reference_clock_id=clock_id, reference_ns=ref_ns)
-        scene_pt = None
-        if check.status == "satisfied":
-            decision = "target_available"
-            pose = snap.entity_poses[prev.evidence.entity_id]
-            pt = self._np.asarray(rec["entity_point_m"], dtype=float)
-            scene_pt = [round(float(v), 5) for v in (pose.scene_from_entity[:3, :3] @ pt + pose.scene_from_entity[:3, 3]).tolist()]
-        elif check.reason in ("task_requires_new_linearization", "scene_scope_changed", "entity_retired", "surface_selection_changed"):
-            decision = "invalidate_plan"
-        else:
-            decision = "hold"
-        resnap = check.reason in ("scene_scope_changed",)
-        return {
-            "assessment_id": assessment_id,
-            "decision": decision,
-            "status": str(check.status),
-            "reason": str(check.reason),
-            "resnapshot_required": resnap,
-            "planned_cursor": {
-                "scene_id": prev.evidence.cursor.scene_id,
-                "epoch": int(prev.evidence.cursor.epoch),
-                "revision": int(prev.evidence.cursor.revision),
-            },
-            "cursor": {
-                "scene_id": check.cursor.scene_id,
-                "epoch": int(check.cursor.epoch),
-                "revision": int(check.cursor.revision),
-            },
-            "scene_point_m": scene_pt,
-            "missing_evidence": list(check.assessment.missing_evidence) if check.assessment is not None else [check.reason],
-            "detail": f"decision={decision}, reason={check.reason}, status={check.status}",
-        }
+        client = self._get_es_client()
+        if client is not None:
+            return client.revalidate_spatial_requirements(
+                assessment_id,
+                reference_clock_id=clock_id,
+                reference_ns=ref_ns,
+            )
+        rt = self._get_local_es_runtime()
+        if rt is None:
+            return {"decision": "hold", "status": "unavailable_evidence", "reason": "evidencescene_unavailable"}
+        return rt.revalidate_spatial_requirements(
+            assessment_id,
+            reference_clock_id=clock_id,
+            reference_ns=ref_ns,
+        )
 
     def low_level_evaluate_wrist_viewpoints(
         self,
         assessment_id: str,
         candidates_xyz_m: Sequence[Sequence[float]] | None = None,
     ) -> dict[str, Any]:
-        """Active perception forecast via EvidenceScene v3 `evaluate_observation` over reachable SO-101 wrist poses."""
-        if self._scene_store is None:
-            return {"status": "unavailable_evidence", "detail": "EvidenceScene v3 SceneStore unavailable"}
-        rec = self._pinned_assessments.get(str(assessment_id or ""))
-        if rec is None:
-            return {"status": "unknown", "reason": "unknown_assessment_id", "selected_candidate": None}
-        from evidencescene.observability.task_observability import inspection_point_jacobian
-        from evidencescene.spatial_state import PoseTangent
-
-        np = self._np
-        req = rec["assessment"]
-        snap = rec["snapshot"]
-        eid = rec["entity_id"]
-        if eid not in snap.entity_poses:
-            return {"status": "unknown", "reason": "entity_absent", "selected_candidate": None}
-        pose = snap.entity_poses[eid]
-        ent_xyz = pose.scene_from_entity[:3, 3]
-        ee_now = np.asarray(self.low_level_get_robot_state()["ee_pos_m"], dtype=float)
-
-        if candidates_xyz_m:
-            raw_cands = [(f"wrist_cand_{i}", tuple(float(v) for v in xyz[:3])) for i, xyz in enumerate(candidates_xyz_m)]
-        else:
-            raw_cands = [
-                ("wrist_left_closeup", (float(ent_xyz[0] - 0.04), float(ent_xyz[1] + 0.09), TABLE_TOP_Z + 0.16)),
-                ("wrist_right_closeup", (float(ent_xyz[0] - 0.04), float(ent_xyz[1] - 0.09), TABLE_TOP_Z + 0.16)),
-                ("wrist_top_closeup", (float(ent_xyz[0] - 0.02), float(ent_xyz[1]), TABLE_TOP_Z + 0.19)),
-            ]
-
-        tangent = pose.admission.tangent if pose.admission and pose.admission.tangent else PoseTangent("entity_from_scene", "right")
-        target_local = np.asarray(rec["entity_point_m"], dtype=float)
-        J_feat = self._point_jacobian_for_tangent(pose.scene_from_entity, target_local, tangent)
-        evaluated: list[dict[str, Any]] = []
-        eligible: list[tuple[float, str, list[float]]] = []
-
-        for cid, raw_xyz in raw_cands:
-            cx, cy, cz = self.clamp_world_target(*raw_xyz)
-            cand_xyz = np.array([cx, cy, cz], dtype=float)
-            dist_to_obj = max(0.08, float(np.linalg.norm(cand_xyz - ent_xyz)))
-            motion_m = float(np.linalg.norm(cand_xyz - ee_now))
-            # Expected depth/feature noise scales linearly with standoff distance (3mm @ 0.15m)
-            sigma_m = 0.003 * (dist_to_obj / 0.15)
-            # Only side viewpoints with horizontal offset break cylindrical yaw ambiguity on a side feature
-            horiz_offset = float(np.hypot(cand_xyz[0] - ent_xyz[0], cand_xyz[1] - ent_xyz[1]))
-            if horiz_offset < 0.045:
-                # Top-down view constrains Z and XY center well, weaker tangential yaw discrimination
-                B = np.vstack([J_feat[2:3] / sigma_m, J_feat[0:2] / (sigma_m * 1.6)])
-            else:
-                B = J_feat / sigma_m
-
-            fc = snap.evaluate_observation(req, candidate_id=cid, tangent=tangent, whitened_pose_jacobian=B)
-            pred = fc.predicted
-            unmet: list[int] = []
-            if pred is not None:
-                limits = req.maximum_model_stddev
-                for i, st in enumerate(pred.status_by_row):
-                    dev = pred.model_stddev_by_row[i]
-                    if st != "observable" or (limits is not None and (dev is None or dev > limits[i])):
-                        unmet.append(i)
-            meets = pred is not None and not unmet and req.freshness.status == "fresh"
-            if meets:
-                eligible.append((motion_m, cid, [round(cx, 4), round(cy, 4), round(cz, 4)]))
-            evaluated.append(
-                {
-                    "candidate_id": cid,
-                    "ee_xyz_m": [round(cx, 4), round(cy, 4), round(cz, 4)],
-                    "estimated_motion_m": round(motion_m, 4),
-                    "standoff_m": round(dist_to_obj, 4),
-                    "forecast_reason": fc.reason,
-                    "predicted_rank": int(pred.pose_rank) if pred is not None else None,
-                    "predicted_status_by_row": list(pred.status_by_row) if pred is not None else [],
-                    "unmet_task_rows": unmet if pred is not None else None,
-                    "predicted_to_meet_requirements": meets,
-                }
+        ee_now = self.low_level_get_robot_state()["ee_pos_m"]
+        clamped_cands = (
+            [list(self.clamp_world_target(float(c[0]), float(c[1]), float(c[2]))) for c in candidates_xyz_m]
+            if candidates_xyz_m
+            else None
+        )
+        client = self._get_es_client()
+        if client is not None:
+            return client.evaluate_viewpoints(
+                assessment_id,
+                candidates_xyz_m=clamped_cands,
+                reference_xyz_m=ee_now,
             )
-
-        selected_id = None
-        selected_xyz = None
-        if req.status == "satisfied":
-            reason = "already_satisfied"
-        elif eligible:
-            _, selected_id, selected_xyz = min(eligible, key=lambda x: x[0])
-            reason = "least_motion_wrist_viewpoint_meeting_requirements"
-        else:
-            reason = "no_single_candidate_meets_requirements"
-
-        return {
-            "assessment_id": assessment_id,
-            "cursor": {
-                "scene_id": snap.cursor.scene_id,
-                "epoch": int(snap.cursor.epoch),
-                "revision": int(snap.cursor.revision),
-            },
-            "current_status": str(req.status),
-            "selected_candidate": selected_id,
-            "recommended_ee_xyz_m": selected_xyz,
-            "reason": reason,
-            "candidates": evaluated,
-        }
+        rt = self._get_local_es_runtime()
+        if rt is None:
+            return {"status": "unavailable_evidence", "detail": "EvidenceScene v3 runtime unavailable"}
+        return rt.evaluate_viewpoints(
+            assessment_id,
+            candidates_xyz_m=clamped_cands,
+            reference_xyz_m=ee_now,
+            clamp_fn=self.clamp_world_target,
+        )
 
     def low_level_select_surface_target(
         self,
@@ -1981,63 +1440,26 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         reviewer_id: str = "operator",
         reason: str = "3d_twin_surface_selection",
     ) -> dict[str, Any]:
-        """Commit an operator-selected measured surface vertex into EvidenceScene v3 SceneStore."""
-        if self._scene_store is None:
-            return {"ok": False, "status": "unavailable_evidence", "detail": "EvidenceScene v3 SceneStore unavailable"}
-        snap = self._scene_store.snapshot()
-        if not snap.entity_poses:
-            self.reconstruct_scene_evidencescene()
-            snap = self._scene_store.snapshot()
-
-        eid = str(entity_id or "fixed_tabletop")
-        if eid == "auto" and target_xyz_m is not None and len(target_xyz_m) >= 3:
-            tgt = self._np.asarray([float(target_xyz_m[0]), float(target_xyz_m[1]), float(target_xyz_m[2])], dtype=float)
-            best_eid, best_dist = "fixed_tabletop", 1e9
-            for cand_eid in ("red_cylinder", "brown_block", "fixed_tabletop"):
-                cand_pose = snap.entity_poses.get(cand_eid)
-                if cand_pose is None or cand_pose.geometry is None or not len(cand_pose.geometry.points_m):
-                    continue
-                dmin = float(self._np.linalg.norm(cand_pose.surface_points_in_scene() - tgt[None, :], axis=1).min())
-                # Prefer object surface if click is within 2.8cm of a tracked object
-                if cand_eid != "fixed_tabletop" and dmin <= 0.028:
-                    best_eid, best_dist = cand_eid, dmin
-                    break
-                if dmin < best_dist:
-                    best_eid, best_dist = cand_eid, dmin
-            eid = best_eid
-        pose = snap.entity_poses.get(eid)
-        if pose is None or pose.geometry is None or not len(pose.geometry.points_m):
-            return {"ok": False, "status": "missing_object", "detail": f"Entity {eid!r} has no measured surface points"}
-
-        pts_scene = pose.surface_points_in_scene()
-        if point_index is not None:
-            idx = int(point_index)
-        elif target_xyz_m is not None and len(target_xyz_m) >= 3:
-            tgt = self._np.asarray([float(target_xyz_m[0]), float(target_xyz_m[1]), float(target_xyz_m[2])], dtype=float)
-            idx = int(self._np.linalg.norm(pts_scene - tgt[None, :], axis=1).argmin())
-        else:
-            idx = len(pts_scene) // 2
-
-        new_snap = self._scene_store.select_surface_point(
-            snap.cursor,
-            eid,
-            idx,
-            reviewer_id=str(reviewer_id or "operator"),
-            reason=str(reason or "3d_twin_surface_selection"),
+        client = self._get_es_client()
+        if client is not None:
+            return client.select_surface_target(
+                entity_id=entity_id,
+                point_index=point_index,
+                target_xyz_m=target_xyz_m,
+                reviewer_id=reviewer_id,
+                reason=reason,
+            )
+        self._sync_local_es_runtime(force=False)
+        rt = self._get_local_es_runtime()
+        if rt is None:
+            return {"ok": False, "status": "unavailable_evidence", "detail": "EvidenceScene v3 runtime unavailable"}
+        return rt.select_surface_target(
+            entity_id=entity_id,
+            point_index=point_index,
+            target_xyz_m=target_xyz_m,
+            reviewer_id=reviewer_id,
+            reason=reason,
         )
-        # Invalidate cached reconstruction so next poll reflects updated cursor & selection
-        self._recon_cache = None
-        sel_dict = self._serialize_selected_target(new_snap)
-        return {
-            "ok": True,
-            "status": "selected",
-            "cursor": {
-                "scene_id": new_snap.cursor.scene_id,
-                "epoch": int(new_snap.cursor.epoch),
-                "revision": int(new_snap.cursor.revision),
-            },
-            "selected_surface_target": sel_dict,
-        }
 
     def embodiment_manifest(self) -> Any:
         from .plugin import EmbodimentManifest
