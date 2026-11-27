@@ -558,16 +558,31 @@ button.danger:hover { background: #b91c1c; }
 button.danger:disabled { opacity: 0.35; background: var(--surface2); color: var(--dim); }
 
 .urdf-shell {
-  position: relative; width: 100%; height: 100%; min-height: 210px;
+  position: relative; width: 100%; height: 100%; min-height: 330px;
   border-radius: 10px; overflow: hidden; border: none;
-  background: var(--radar-bg);
+  background: #0e1523; display: flex; flex-direction: column;
 }
-.urdf-shell canvas { width: 100%; height: 100%; display: block; cursor: grab; }
-.urdf-shell canvas:active { cursor: grabbing; }
+.twin-bar {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap; padding: 7px 10px;
+  background: #141e31; border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+.twin-bar-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.twin-bar-right { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.twin-tag {
+  font-family: var(--mono); font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+  color: #f8fafc; background: rgba(56, 189, 248, 0.22); padding: 2px 6px; border-radius: 4px;
+}
+.twin-meta { font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: #94a3b8; }
+.twin-meta.ok { color: #86efac; }
+.twin-meta.warn { color: #fde047; }
+.urdf-canvas-wrap { position: relative; flex: 1 1 0; min-height: 270px; width: 100%; }
+.urdf-canvas-wrap canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+.urdf-canvas-wrap canvas:active { cursor: grabbing; }
 .urdf-status {
   position: absolute; left: 8px; bottom: 8px; right: 8px;
   padding: 4px 9px; border-radius: 6px;
-  background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(6px); color: #f8fafc;
+  background: rgba(8, 13, 24, 0.72); backdrop-filter: blur(6px); color: #cbd5e1;
   font-family: var(--mono); font-size: 10px; pointer-events: none;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }

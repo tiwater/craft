@@ -605,8 +605,8 @@ async function refreshSceneReconstruction(force) {
       const cur = recon.cursor ? `ep${recon.cursor.epoch}:r${recon.cursor.revision}` : '';
       const mm = recon.measured_mesh;
       const geoTxt = (mm && mm.ready) ? `${mm.triangle_count} tris` : `${recon.total_surfels} pts`;
-      badge.textContent = `EvidenceScene v3 · ${geoTxt} · ${obs.rank ?? '-'}/6${cur ? ' · ' + cur : ''}`;
-      badge.className = 'hud-pill ' + (ok ? 'ok' : 'warn');
+      badge.textContent = `${geoTxt} · ${obs.rank ?? '-'}/6${cur ? ' · ' + cur : ''}`;
+      badge.className = 'twin-meta ' + (ok ? 'ok' : 'warn');
       const curBadge = document.getElementById('pk-cursor');
       if (curBadge && cur) {
         curBadge.textContent = cur;
@@ -626,22 +626,26 @@ function mountTwinViewer() {
   if (urdfViewer) { urdfViewer.dispose(); urdfViewer = null; }
   twinStage.innerHTML = `
     <div class="urdf-shell">
-      <canvas id="urdf-canvas"></canvas>
-      <div class="hud-tl">
-        <span class="hud-pill">3D TWIN</span>
-        <span class="hud-pill" id="hud-es-obs">EvidenceScene v3: loading...</span>
+      <div class="twin-bar">
+        <div class="twin-bar-left">
+          <span class="twin-tag">3D TWIN</span>
+          <span class="twin-meta" id="hud-es-obs">EvidenceScene v3: loading...</span>
+        </div>
+        <div class="twin-bar-right">
+          <button id="tw-btn-mesh" class="twin-chip on" onclick="toggleTwinLayer('mesh')" title="Shaded EvidenceScene measured tabletop mesh &amp; committed entities">Mesh</button>
+          <button id="tw-btn-cameras" class="twin-chip on" onclick="toggleTwinLayer('cameras')" title="Calibrated camera frustums">Cams</button>
+          <button id="tw-btn-traj" class="twin-chip on" onclick="toggleTwinLayer('traj')" title="Live 3D end-effector trajectory">Trail</button>
+          <button id="tw-btn-env" class="twin-chip" onclick="toggleTwinLayer('env')" title="Workspace radial/Z reachability envelope">Limits</button>
+          <button id="tw-btn-tf" class="twin-chip" onclick="toggleTwinLayer('tf')" title="Joint &amp; TCP coordinate axes">TF</button>
+          <button id="tw-btn-surfels" class="twin-chip" onclick="toggleTwinLayer('surfels')" title="Raw RGB-D depth points">Pts</button>
+          <button id="tw-btn-pick" class="twin-chip" onclick="toggleTwinPick()" title="Click measured surface to commit a shared target revision">Pick</button>
+          <button class="twin-chip" onclick="refreshSceneReconstruction(true)">Rescan</button>
+        </div>
       </div>
-      <div class="hud-tr" style="pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:64%">
-        <button id="tw-btn-mesh" class="twin-chip on" onclick="toggleTwinLayer('mesh')" title="Shaded EvidenceScene measured surface mesh &amp; committed entities">Mesh</button>
-        <button id="tw-btn-cameras" class="twin-chip on" onclick="toggleTwinLayer('cameras')" title="Calibrated camera frustums">Cameras</button>
-        <button id="tw-btn-env" class="twin-chip on" onclick="toggleTwinLayer('env')" title="Workspace safety envelope &amp; zone rings">Envelope</button>
-        <button id="tw-btn-traj" class="twin-chip on" onclick="toggleTwinLayer('traj')" title="Live 3D end-effector trajectory">Trail</button>
-        <button id="tw-btn-tf" class="twin-chip" onclick="toggleTwinLayer('tf')" title="Joint &amp; TCP coordinate axes">TF</button>
-        <button id="tw-btn-surfels" class="twin-chip" onclick="toggleTwinLayer('surfels')" title="Optional raw RGB-D depth points overlay">Depth Pts</button>
-        <button id="tw-btn-pick" class="twin-chip" onclick="toggleTwinPick()" title="Click surface to commit a shared target revision">Pick</button>
-        <button class="twin-chip" onclick="refreshSceneReconstruction(true)">Rescan</button>
+      <div class="urdf-canvas-wrap">
+        <canvas id="urdf-canvas"></canvas>
+        <div id="urdf-status" class="urdf-status">Loading URDF + EvidenceScene v3 measured surface...</div>
       </div>
-      <div id="urdf-status" class="urdf-status">Loading URDF + EvidenceScene v3 measured surface...</div>
     </div>`;
   const cv = document.getElementById('urdf-canvas');
   const st = document.getElementById('urdf-status');

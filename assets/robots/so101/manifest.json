@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "upstream": "TheRobotStudio/SO-ARM100/Simulation/SO101",
   "urdf": "robot.urdf",
-  "urdf_sha256": "8c3fda50aa8c7f7d69b2f22f487c2ef599f92730078bf5d7a32649a089498225",
+  "urdf_sha256": "682a79f916d8037f39b612887c0f1a0a720bddd8ca413ef582ccd2aed67698b4",
   "mjcf": "so101_new_calib_camera.xml",
   "mesh_root": "assets",
   "joints": [

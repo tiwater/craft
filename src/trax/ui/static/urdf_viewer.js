@@ -189,7 +189,7 @@
       this.refusalPoints = [];
       this.lastEeLocal = null;
 
-      this.layers = { mesh: true, surfels: false, env: true, traj: true, tf: false, cameras: true, urdf: true };
+      this.layers = { mesh: true, surfels: false, env: false, traj: true, tf: false, cameras: true, urdf: true };
       this.surfelBuffer = null;
       this.surfelCount = 0;
       this.measuredMeshBuf = null;
@@ -207,11 +207,13 @@
       this.camCount = 0;
       this.envBuf = null;
       this.envCount = 0;
+      this.zonesBuf = null;
+      this.zonesCount = 0;
 
-      this.azimuth = -0.82;
-      this.elevation = 0.48;
-      this.distance = 0.68;
-      this.target = [0.18, 0.0, 0.09];
+      this.azimuth = -0.68;
+      this.elevation = 0.50;
+      this.distance = 0.78;
+      this.target = [0.22, 0.0, 0.08];
       this.dragging = false;
       this.lastX = 0;
       this.lastY = 0;
@@ -259,15 +261,24 @@
         attribute vec3 aPos; attribute vec3 aNrm;
         uniform mat4 uProj, uView, uModel;
         varying vec3 vNrm;
-        void main() { gl_Position = uProj * uView * uModel * vec4(aPos, 1.0); vNrm = normalize(mat3(uModel) * aNrm); }`;
+        void main() {
+          gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
+          vec3 n = mat3(uModel) * aNrm;
+          vNrm = length(n) > 1e-6 ? normalize(n) : vec3(0.0, 0.0, 1.0);
+        }`;
       const fs = `
         precision mediump float; uniform vec4 uColor; varying vec3 vNrm;
         void main() {
-          vec3 l1 = normalize(vec3(0.45, -0.55, 0.85));
-          vec3 l2 = normalize(vec3(-0.6, 0.4, 0.5));
-          float d1 = max(dot(normalize(vNrm), l1), 0.0);
-          float d2 = max(dot(normalize(vNrm), l2), 0.0);
-          gl_FragColor = vec4(uColor.rgb * (0.40 + 0.50 * d1 + 0.20 * d2), uColor.a);
+          vec3 n = normalize(vNrm);
+          vec3 keyL = normalize(vec3(0.45, -0.55, 0.85));
+          vec3 fillL = normalize(vec3(-0.65, 0.50, 0.45));
+          vec3 rimL = normalize(vec3(-0.30, -0.60, 0.35));
+          float d1 = max(dot(n, keyL), 0.0);
+          float d2 = max(dot(n, fillL), 0.0);
+          float d3 = max(dot(n, rimL), 0.0);
+          float hemi = 0.5 + 0.5 * n.z;
+          vec3 lit = uColor.rgb * (0.28 + 0.14 * hemi + 0.52 * d1 + 0.22 * d2) + vec3(0.10) * pow(d3, 3.0);
+          gl_FragColor = vec4(min(lit, vec3(1.0)), uColor.a);
         }`;
       const prog = gl.createProgram();
       gl.attachShader(prog, this._compile(gl.VERTEX_SHADER, vs));
@@ -314,17 +325,18 @@
         uProj: gl.getUniformLocation(vprog, 'uProj'), uView: gl.getUniformLocation(vprog, 'uView'),
       };
 
-      // Subtle tabletop coordinate grid
+      // Subtle dark-studio tabletop reference deck + metric grid
+      this.tableDeckBuf = this._uploadMesh(buildBoxGeometry([-0.14, -0.38, -0.014], [0.62, 0.38, -0.002]));
       const gPos = [], gCol = [];
       for (let i = -4; i <= 4; i++) {
-        const y = i * 0.08, c = i === 0 ? 0.45 : 0.72;
-        gPos.push(-0.08, y, 0, 0.56, y, 0);
-        gCol.push(c, c, c, c, c, c);
+        const y = i * 0.08, c = i === 0 ? 0.30 : 0.19;
+        gPos.push(-0.10, y, -0.001, 0.58, y, -0.001);
+        gCol.push(c * 0.85, c * 0.95, c * 1.15, c * 0.85, c * 0.95, c * 1.15);
       }
       for (let i = -1; i <= 7; i++) {
-        const x = i * 0.08, c = i === 0 ? 0.45 : 0.72;
-        gPos.push(x, -0.32, 0, x, 0.32, 0);
-        gCol.push(c, c, c, c, c, c);
+        const x = i * 0.08, c = i === 0 ? 0.30 : 0.19;
+        gPos.push(x, -0.34, -0.001, x, 0.34, -0.001);
+        gCol.push(c * 0.85, c * 0.95, c * 1.15, c * 0.85, c * 0.95, c * 1.15);
       }
       this.gridBuf = this._uploadPoints(new Float32Array(gPos), new Float32Array(gCol));
       this.gridCount = gPos.length / 3;
@@ -357,7 +369,7 @@
       const pos = [], col = [];
       const cyan = [0.05, 0.65, 0.92], amber = [0.92, 0.56, 0.08], green = [0.12, 0.78, 0.42];
 
-      // Reachability cylindrical shell (rMax & rMin at zMin & zMax)
+      // Reachability cylindrical shell (optional Envelope layer, OFF by default to keep scene clean)
       pushRing(pos, col, 0, 0, zMin, rMax, 48, cyan);
       pushRing(pos, col, 0, 0, zMax, rMax, 48, cyan);
       pushRing(pos, col, 0, 0, zMin, rMin, 28, amber);
@@ -367,19 +379,21 @@
         pos.push(x, y, zMin, x, y, zMax);
         col.push(cyan[0], cyan[1], cyan[2], cyan[0], cyan[1], cyan[2]);
       }
+      this.envBuf = this._uploadPoints(new Float32Array(pos), new Float32Array(col));
+      this.envCount = pos.length / 3;
 
-      // Target zone acceptance tolerance rings (32mm / 28mm)
+      // Target zone acceptance rings (always drawn cleanly on the tabletop plane)
+      const zPos = [], zCol = [];
       for (const [zname, xyz] of Object.entries(this.sceneZones || {})) {
         const lx = Number(xyz[0]) - this.baseWorld[0];
         const ly = Number(xyz[1]) - this.baseWorld[1];
-        const rad = zname === 'station_pad' ? 0.028 : 0.032;
+        const rad = zname === 'station_pad' ? 0.028 : 0.036;
         const c = zname === 'station_pad' ? green : (zname === 'target_zone_b' ? amber : cyan);
-        pushRing(pos, col, lx, ly, 0.004, rad, 28, c);
-        pushRing(pos, col, lx, ly, 0.020, rad, 28, c);
+        pushRing(zPos, zCol, lx, ly, 0.003, rad, 32, c);
+        pushRing(zPos, zCol, lx, ly, 0.003, rad * 0.55, 24, c);
       }
-
-      this.envBuf = this._uploadPoints(new Float32Array(pos), new Float32Array(col));
-      this.envCount = pos.length / 3;
+      this.zonesBuf = zPos.length ? this._uploadPoints(new Float32Array(zPos), new Float32Array(zCol)) : null;
+      this.zonesCount = zPos.length / 3;
     }
 
     _rebuildCameraFrustums() {
@@ -405,7 +419,7 @@
         const rayRgb = isWrist ? [0.98, 0.74, 0.34] : [0.35, 0.82, 0.98];
         const fovy = ((Number(cam.fovy_deg) || 58) * Math.PI) / 180;
         const aspect = Number(cam.aspect) || (16 / 9);
-        const d = isWrist ? 0.065 : 0.135;
+        const d = isWrist ? 0.052 : 0.095;
         const hh = d * Math.tan(fovy * 0.5);
         const hw = hh * aspect;
         const o = xf(T, 0, 0, 0);
@@ -413,8 +427,8 @@
         const tr = xf(T,  hw, -hh, d);
         const br = xf(T,  hw,  hh, d);
         const bl = xf(T, -hw,  hh, d);
-        const upTip = xf(T, 0, -hh * 1.28, d);
-        const rayEnd = xf(T, 0, 0, isWrist ? 0.16 : 0.44);
+        const upTip = xf(T, 0, -hh * 1.24, d);
+        const rayEnd = xf(T, 0, 0, isWrist ? 0.13 : 0.34);
         // Pyramid rays & image plane rectangle
         pushSeg(o, tl, rgb); pushSeg(o, tr, rgb); pushSeg(o, br, rgb); pushSeg(o, bl, rgb);
         pushSeg(tl, tr, rgb); pushSeg(tr, br, rgb); pushSeg(br, bl, rgb); pushSeg(bl, tl, rgb);
@@ -483,7 +497,7 @@
         this.distance = Math.max(0.28, Math.min(1.6, this.distance * (1 + e.deltaY * 0.001)));
       }, { passive: false });
       this.canvas.addEventListener('dblclick', () => {
-        this.azimuth = -0.82; this.elevation = 0.48; this.distance = 0.68;
+        this.azimuth = -0.68; this.elevation = 0.50; this.distance = 0.78;
       });
     }
 
@@ -734,9 +748,8 @@
       const h = Math.max(180, Math.floor(this.canvas.clientHeight * dpr));
       if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; }
       gl.viewport(0, 0, w, h);
-      const isDark = document.documentElement.dataset.theme === 'dark';
-      if (isDark) gl.clearColor(0.04, 0.06, 0.11, 1.0);
-      else gl.clearColor(0.95, 0.97, 0.99, 1.0);
+      // Studio dark-slate viewport so yellow SO-101 arm, red objects, and measured mesh stand out crisply
+      gl.clearColor(0.055, 0.082, 0.135, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.enable(gl.DEPTH_TEST);
 
@@ -749,6 +762,14 @@
       const view = mat4LookAt(eye, this.target, [0, 0, 1]);
       this.lastProj = proj;
       this.lastView = view;
+
+      // 0. Subtle Studio Workbench Reference Deck
+      if (this.tableDeckBuf) {
+        gl.useProgram(this.prog);
+        gl.uniformMatrix4fv(this.loc.uProj, false, proj);
+        gl.uniformMatrix4fv(this.loc.uView, false, view);
+        this._drawMesh(this.tableDeckBuf, mat4Identity(), [0.11, 0.145, 0.21, 1.0]);
+      }
 
       // 1a. EvidenceScene Measured Planar Surface Mesh (Clean Solid Triangles, Default ON)
       if (this.layers.mesh && this.measuredMeshBuf && this.measuredMeshCount > 0) {
@@ -768,7 +789,7 @@
       gl.uniformMatrix4fv(this.ploc.uProj, false, proj);
       gl.uniformMatrix4fv(this.ploc.uView, false, view);
 
-      // 1b. Subtle coordinate grid
+      // 1b. Subtle coordinate grid + Target Zone floor rings
       gl.bindBuffer(gl.ARRAY_BUFFER, this.gridBuf.posBuf);
       gl.enableVertexAttribArray(this.ploc.aPos);
       gl.vertexAttribPointer(this.ploc.aPos, 3, gl.FLOAT, false, 0, 0);
@@ -776,6 +797,14 @@
       gl.enableVertexAttribArray(this.ploc.aCol);
       gl.vertexAttribPointer(this.ploc.aCol, 3, gl.FLOAT, false, 0, 0);
       gl.drawArrays(gl.LINES, 0, this.gridCount);
+
+      if (this.zonesBuf && this.zonesCount > 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.zonesBuf.posBuf);
+        gl.vertexAttribPointer(this.ploc.aPos, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.zonesBuf.colBuf);
+        gl.vertexAttribPointer(this.ploc.aCol, 3, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.LINES, 0, this.zonesCount);
+      }
 
       // 2. Workspace Safety Envelope + Target Tolerance Cylinders
       if (this.layers.env && this.envBuf && this.envCount > 0) {

@@ -74,6 +74,61 @@ def test_mujoco_so101_capabilities_ik_and_cameras() -> None:
         assert len(recon["cameras"]) == 2
         assert {c["mount"] for c in recon["cameras"]} == {"fixed_world", "eye_in_hand"}
         assert recon["total_surfels"] > 100
+
+        # URDF mesh URI rewriting handles /assets/robot/ -> api/robot/assets/ (subpath-safe browser STL loading)
+        from trax.plugin import rewrite_urdf_mesh_uris
+        raw_urdf = (driver._so101_dir / "robot.urdf").read_text(encoding="utf-8")
+        mcp_urdf = rewrite_urdf_mesh_uris(raw_urdf, asset_url_prefix="/assets/robot")
+        browser_urdf = rewrite_urdf_mesh_uris(mcp_urdf, asset_url_prefix="api/robot/assets")
+        assert 'filename="api/robot/assets/assets/base_so101_v2.stl"' in browser_urdf
+        assert 'filename="/assets/robot/' not in browser_urdf
+
+        # URDF forward kinematics matches live MuJoCo link positions (< 2mm, no gimbal-lock drift)
+        import math, xml.etree.ElementTree as ET
+        import numpy as np
+        from trax.mujoco_so101_driver import SO101_BASE_XYZ
+
+        def _rpy_to_R(r: float, p: float, y: float) -> np.ndarray:
+            cr, sr, cp, sp, cy, sy = math.cos(r), math.sin(r), math.cos(p), math.sin(p), math.cos(y), math.sin(y)
+            return np.array([
+                [cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr],
+                [sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr],
+                [-sp, cp * sr, cp * cr],
+            ], dtype=float)
+
+        st = driver.low_level_get_robot_state()
+        qmap = dict(zip(st["joint_names"], st["joint_pos_rad"]))
+        qmap["gripper"] = 0.10 + st["gripper_open_ratio"] * (0.88 - 0.10)
+        root = ET.fromstring(raw_urdf)
+        tf: dict[str, np.ndarray] = {"base": np.eye(4)}
+        for j in root.findall("joint"):
+            par, ch = j.find("parent").attrib["link"], j.find("child").attrib["link"]
+            orig = j.find("origin")
+            xyz = [float(v) for v in orig.attrib.get("xyz", "0 0 0").split()]
+            rpy = [float(v) for v in orig.attrib.get("rpy", "0 0 0").split()]
+            m = np.eye(4)
+            m[:3, :3] = _rpy_to_R(*rpy)
+            m[:3, 3] = xyz
+            cur = tf[par] @ m
+            if j.attrib.get("type") == "revolute":
+                ax = np.array([float(v) for v in j.find("axis").attrib["xyz"].split()], dtype=float)
+                ax /= np.linalg.norm(ax)
+                ang = float(qmap.get(j.attrib["name"], 0.0))
+                c, s = math.cos(ang), math.sin(ang)
+                t = 1.0 - c
+                x, y, z = ax
+                rot = np.array([
+                    [t * x * x + c, t * x * y - s * z, t * x * z + s * y, 0],
+                    [t * x * y + s * z, t * y * y + c, t * y * z - s * x, 0],
+                    [t * x * z - s * y, t * y * z + s * x, t * z * z + c, 0],
+                    [0, 0, 0, 1],
+                ], dtype=float)
+                cur = cur @ rot
+            tf[ch] = cur
+            bid = driver._mj.mj_name2id(driver._model, driver._mj.mjtObj.mjOBJ_BODY, ch)
+            mj_local = driver._data.xpos[bid] - np.array(SO101_BASE_XYZ)
+            err_m = float(np.linalg.norm(cur[:3, 3] - mj_local))
+            assert err_m < 0.0025, f"URDF FK mismatch on link {ch}: {err_m*1000:.2f}mm"
     finally:
         driver.close()
 

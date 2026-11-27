@@ -189,7 +189,12 @@ def rewrite_urdf_mesh_uris(urdf_xml: str, *, asset_url_prefix: str = "/assets/ro
     def _replace(match: re.Match[str]) -> str:
         head, quote, raw_uri, tail = match.groups()
         uri = raw_uri.strip()
-        if uri.startswith(("http://", "https://", "data:", "/")):
+        if uri.startswith(("http://", "https://", "data:")):
+            return match.group(0)
+        if uri.startswith("/assets/robot/"):
+            rel = uri[len("/assets/robot/") :].lstrip("/")
+            return f"{head}{quote}{prefix}/{rel}{tail}"
+        if uri.startswith("/"):
             return match.group(0)
         if uri.startswith("package://"):
             rest = uri[len("package://") :]
