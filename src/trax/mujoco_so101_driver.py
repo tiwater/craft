@@ -22,7 +22,7 @@ from pathlib import Path
 import random
 import threading
 import time
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 import xml.etree.ElementTree as ET
 
 if not os.environ.get("MUJOCO_GL") and not os.environ.get("DISPLAY"):
@@ -394,6 +394,20 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
         self._persistent_reconciled_after_unknown = True
         self._host_command_ledger: dict[str, dict[str, Any]] = {}
         self._last_command: dict[str, Any] = {"command_id": None, "status": "idle", "steps": []}
+        self._scene_store: Any = None
+        self._geom_epoch: int = 0
+        self._geom_version: int = 0
+        self._last_obs_ns: int = 0
+        self._last_recon_cameras: list[dict[str, Any]] = []
+        self._published_entity_xyz: dict[str, tuple[float, float, float]] = {}
+        self._pinned_assessments: dict[str, dict[str, Any]] = {}
+        self._recon_cache: tuple[Any, dict[str, Any]] | None = None
+        try:
+            from evidencescene.spatial_state import SceneStore
+
+            self._scene_store = SceneStore("sim_world")
+        except ImportError:
+            self._scene_store = None
         self.reset_scenario({"preset": "default"})
 
     def clamp_world_target(self, wx: float, wy: float, wz: float) -> tuple[float, float, float]:
@@ -629,6 +643,14 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             self._workstation_activations = 0
             self._workstation_ledger = {}
             self._last_command = {"command_id": None, "status": "idle", "steps": []}
+            self._recon_cache = None
+            self._pinned_assessments = {}
+            self._published_entity_xyz = {}
+            self._last_obs_ns = 0
+            if self._scene_store is not None:
+                self._scene_store.reset(self._scene_store.snapshot().cursor)
+                self._geom_epoch += 1
+                self._geom_version = 0
             return {
                 "status": "reset",
                 "preset": self._preset,
@@ -733,7 +755,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                         "grasped": self._grasped_obj_id == body_key,
                     }
                 )
-            return {
+            out: dict[str, Any] = {
                 "evidence_source": self.evidence_source,
                 "table_top_z_m": round(TABLE_TOP_Z, 4),
                 "objects": objs,
@@ -744,6 +766,33 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                 },
                 "step_seq": int(self._step_seq),
             }
+            if self._scene_store is not None:
+                snap = self._scene_store.snapshot()
+                out["schema_version"] = int(snap.schema_version)
+                out["frame_id"] = str(snap.frame_id)
+                out["clock_id"] = "mujoco-time"
+                out["observation_ns"] = round(float(self._data.time) * 1e9)
+                out["cursor"] = {
+                    "scene_id": snap.cursor.scene_id,
+                    "epoch": int(snap.cursor.epoch),
+                    "revision": int(snap.cursor.revision),
+                }
+                sel = snap.selected_surface_target()
+                if sel is not None:
+                    out["selected_surface_target"] = {
+                        "entity_id": sel.selection.entity_id,
+                        "point_index": int(sel.selection.point_index),
+                        "entity_point_m": [round(float(v), 5) for v in sel.selection.entity_point_m],
+                        "scene_point_m": [round(float(v), 5) for v in sel.scene_point_m] if sel.scene_point_m else None,
+                        "reviewer_id": sel.selection.reviewer_id,
+                        "reason": sel.selection.reason,
+                        "committed_cursor": {
+                            "scene_id": sel.selection.committed_cursor.scene_id,
+                            "epoch": int(sel.selection.committed_cursor.epoch),
+                            "revision": int(sel.selection.committed_cursor.revision),
+                        },
+                    }
+            return out
 
     def low_level_move_ee(self, x: float, y: float, z: float, *, steps: int = 36) -> dict[str, Any]:
         tx, ty, tz = float(x), float(y), float(z)
@@ -1200,9 +1249,19 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                     "reason": str(rep.reason),
                     "detail": f"Schur 6-DoF marginal rank={rep.marginal_pose_rank}/6 across {len(world_from_cam_map)} calibrated RGB-D cameras",
                 }
+
+            # Publish unified committed SpatialSnapshot into EvidenceScene v3 SceneStore ("One Spatial State, Two Interfaces")
+            self._last_recon_cameras = list(cameras_meta)
+            snapshot_meta = self._publish_to_scene_store(
+                pts=pts,
+                support=support,
+                cam_counts=cam_counts,
+                cloud_digest=digest([len(surfels_out), int(self._step_seq), corroborated_count])[:16],
+            )
         except ImportError:
             engine_name = "numpy_rgbd_fallback"
             perception_owner = "mujoco-rgbd-fallback"
+            snapshot_meta = None
             # Graceful fallback if optional `evidencescene` package is not installed
             for kt, cs in list(voxel_color_sum.items())[: int(max_points)]:
                 cnt = voxel_color_cnt[kt]
@@ -1216,6 +1275,7 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             observability_report["detail"] = "Optional evidencescene package not installed; using raw RGB-D voxel fallback"
 
         payload = {
+            "schema_version": 1,
             "perception_owner": perception_owner,
             "engine": engine_name,
             "evidence_source": self.evidence_source,
@@ -1230,8 +1290,669 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             "wall_ms": round((time.monotonic() - t0) * 1000.0, 1),
             "surfels": surfels_out,
         }
+        if snapshot_meta is not None:
+            payload.update(snapshot_meta)
         self._recon_cache = (cache_key, payload)
         return payload
+
+    def _sim_clock(self) -> tuple[str, int]:
+        obs_ns = max(self._last_obs_ns, round(float(self._data.time) * 1e9))
+        self._last_obs_ns = obs_ns
+        return ("mujoco-time", obs_ns)
+
+    def _serialize_selected_target(self, snap: Any) -> dict[str, Any] | None:
+        sel = snap.selected_surface_target()
+        if sel is None:
+            return None
+        return {
+            "entity_id": sel.selection.entity_id,
+            "point_index": int(sel.selection.point_index),
+            "entity_point_m": [round(float(v), 5) for v in sel.selection.entity_point_m],
+            "scene_point_m": [round(float(v), 5) for v in sel.scene_point_m] if sel.scene_point_m else None,
+            "support": int(sel.selection.support),
+            "reviewer_id": sel.selection.reviewer_id,
+            "reason": sel.selection.reason,
+            "committed_cursor": {
+                "scene_id": sel.selection.committed_cursor.scene_id,
+                "epoch": int(sel.selection.committed_cursor.epoch),
+                "revision": int(sel.selection.committed_cursor.revision),
+            },
+        }
+
+    def _serialize_snapshot(self, snap: Any) -> dict[str, Any]:
+        entities: dict[str, dict[str, Any]] = {}
+        for eid, pose in snap.entity_poses.items():
+            mat = pose.scene_from_entity
+            entities[eid] = {
+                "entity_id": eid,
+                "entity_revision": int(pose.revision),
+                "lifecycle": "active",
+                "source_id": pose.source_id,
+                "observation_id": pose.observation_id,
+                "sensor_clock_id": pose.sensor_clock_id,
+                "observation_ns": int(pose.observation_ns),
+                "world_m": [round(float(v), 5) for v in mat[:3, 3].tolist()],
+                "scene_from_entity": [[round(float(x), 5) for x in row] for row in mat.tolist()],
+                "surface_points_count": int(len(pose.geometry.points_m)) if pose.geometry is not None else 0,
+                "geometry_ref": {
+                    "owner_id": pose.geometry.reference.owner_id,
+                    "owner_epoch": int(pose.geometry.reference.owner_epoch),
+                    "owner_version": int(pose.geometry.reference.owner_version),
+                }
+                if pose.geometry is not None
+                else None,
+                "observability": {
+                    "status": "sufficient" if pose.marginal_pose_rank >= 5 else "insufficient",
+                    "rank": int(pose.marginal_pose_rank),
+                    "required_rank": 6,
+                    "reason": pose.admission_reason,
+                    "tangent": {
+                        "transform": pose.admission.tangent.transform,
+                        "perturbation_side": pose.admission.tangent.perturbation_side,
+                        "order": pose.admission.tangent.order,
+                    }
+                    if pose.admission and pose.admission.tangent
+                    else None,
+                },
+            }
+        unavailable = {
+            eid: {
+                "entity_id": eid,
+                "revision": int(u.revision),
+                "source_id": u.source_id,
+                "observation_id": u.observation_id,
+                "sensor_clock_id": u.sensor_clock_id,
+                "observation_ns": int(u.observation_ns),
+                "reason": u.reason,
+            }
+            for eid, u in snap.unavailable_poses.items()
+        }
+        obs_ns = max((int(p.observation_ns) for p in snap.entity_poses.values()), default=self._last_obs_ns)
+        return {
+            "schema_version": int(snap.schema_version),
+            "cursor": {
+                "scene_id": snap.cursor.scene_id,
+                "epoch": int(snap.cursor.epoch),
+                "revision": int(snap.cursor.revision),
+            },
+            "frame_id": str(snap.frame_id),
+            "clock_id": "mujoco-time",
+            "observation_ns": int(obs_ns),
+            "published_monotonic_ns": int(snap.published_monotonic_ns),
+            "publication_clock_id": str(snap.publication_clock_id),
+            "entities": entities,
+            "unavailable_poses": unavailable,
+            "retired_entities": {k: int(v) for k, v in snap.retired_entities.items()},
+            "selected_surface_target": self._serialize_selected_target(snap),
+            "cameras": list(self._last_recon_cameras),
+        }
+
+    def _publish_to_scene_store(
+        self,
+        *,
+        pts: Any,
+        support: Any,
+        cam_counts: Any,
+        cloud_digest: str,
+    ) -> dict[str, Any] | None:
+        """Publish calibrated tabletop and object surfels/poses into EvidenceScene v3 SceneStore."""
+        if self._scene_store is None:
+            return None
+        from evidencescene.observability.factor_graph_observability import evaluate_schur_observability_gate
+        from evidencescene.observability.task_observability import inspection_point_jacobian
+        from evidencescene.spatial_state import GeometryRef, ObjectSurface, PoseTangent
+
+        np = self._np
+        store = self._scene_store
+        clock_id, obs_ns = self._sim_clock()
+        tangent = PoseTangent("entity_from_scene", "right")
+        obs_id = f"rgbd-step-{int(self._step_seq)}-{cloud_digest}"
+
+        # 1. Fixed tabletop surface (known simulator world frame prior + measured tabletop surfels)
+        table_mask = np.abs(pts[:, 2] - TABLE_TOP_Z) <= 0.012 if len(pts) else np.zeros((0,), dtype=bool)
+        table_pts = pts[table_mask] if len(pts) else np.zeros((0, 3), dtype=np.float64)
+        table_sup = np.maximum(1, cam_counts[table_mask].astype(np.int64)) if len(table_pts) else np.zeros((0,), dtype=np.int64)
+        self._geom_version += 1
+        table_surf = (
+            ObjectSurface.from_points(
+                "fixed_tabletop",
+                GeometryRef("so101-rgbd", self._geom_epoch, self._geom_version),
+                (obs_id,),
+                table_pts,
+                table_sup,
+            )
+            if len(table_pts)
+            else None
+        )
+        prior_gate = evaluate_schur_observability_gate(pose_jacobian_ax=np.eye(6), candidate_pose_index=0)
+        snap = store.publish_pose(
+            store.snapshot().cursor,
+            "fixed_tabletop",
+            np.eye(4, dtype=np.float64),
+            frame_id="sim_world",
+            gate=prior_gate,
+            source_id="known_sim_world_frame",
+            observation_id=obs_id,
+            sensor_clock_id=clock_id,
+            observation_ns=obs_ns,
+            geometry=table_surf,
+            tangent=tangent,
+        )
+
+        # 2. Tabletop dynamic entities with point-to-plane surface normal SE(3) information matrices
+        with self._lock:
+            entity_poses_sim: list[tuple[str, Any, Any, str]] = []
+            for body_key, eid, shape in (("obj-cup-a", "red_cylinder", "cylinder"), ("obj-bag-1", "brown_block", "box")):
+                bid = self._body_ids.get(body_key)
+                if bid is None:
+                    continue
+                pos = self._data.xpos[bid].copy()
+                if float(pos[0]) > 1.2:
+                    continue
+                rot = self._data.xmat[bid].reshape(3, 3).copy()
+                entity_poses_sim.append((eid, pos, rot, shape))
+
+        for eid, pos, rot, shape in entity_poses_sim:
+            T_se = np.eye(4, dtype=np.float64)
+            T_se[:3, :3] = rot
+            T_se[:3, 3] = pos
+            # Crop measured RGB-D surfels in the entity's physical bounding volume
+            if len(pts):
+                rel_w = pts - pos[None, :]
+                r_xy = np.hypot(rel_w[:, 0], rel_w[:, 1])
+                rad_lim = 0.048 if shape == "cylinder" else 0.068
+                z_lim = 0.065 if shape == "cylinder" else 0.045
+                ent_mask = (r_xy <= rad_lim) & (np.abs(rel_w[:, 2]) <= z_lim) & (pts[:, 2] >= TABLE_TOP_Z + 0.005)
+                ent_pts_w = pts[ent_mask]
+                ent_sup = np.maximum(1, cam_counts[ent_mask].astype(np.int64))
+            else:
+                ent_pts_w = np.zeros((0, 3), dtype=np.float64)
+                ent_sup = np.zeros((0,), dtype=np.int64)
+
+            if len(ent_pts_w) < 4:
+                if snap.is_active(eid):
+                    snap = store.report_pose_unavailable(
+                        snap.cursor,
+                        eid,
+                        source_id="so101-rgbd-2cam",
+                        observation_id=obs_id,
+                        sensor_clock_id=clock_id,
+                        observation_ns=obs_ns,
+                        reason="insufficient_visible_surfels",
+                    )
+                continue
+
+            # Transform measured world surfels into entity-local frame.
+            # Under PoseTangent("scene_from_entity", "right"), T_se exp(xi) maps p_loc -> R(p_loc + w x p_loc + v) + t,
+            # so point-to-plane residual Jacobian is n_loc^T [-[p_loc]_x, I_3] = [(p_loc x n_loc)^T, n_loc^T].
+            # For a vertical cylinder, radial normals yield exact rank=5 with ker(H) = span{e_wz} (pure axial yaw)
+            # while translational Schur block stays full-rank 3x3!
+            ent_pts_local = (ent_pts_w - pos[None, :]) @ rot
+            rows_jac: list[Any] = []
+            inv_sigma = 1.0 / 0.004
+            for p_loc, sup_val in zip(ent_pts_local, ent_sup.tolist()):
+                w_obs = math.sqrt(float(sup_val)) * inv_sigma
+                if shape == "cylinder":
+                    if p_loc[2] >= 0.022:
+                        n_loc = np.array([0.0, 0.0, 1.0], dtype=np.float64)
+                    else:
+                        nr = math.hypot(float(p_loc[0]), float(p_loc[1]))
+                        if nr < 1e-4:
+                            continue
+                        n_loc = np.array([float(p_loc[0]) / nr, float(p_loc[1]) / nr, 0.0], dtype=np.float64)
+                else:
+                    ax_idx = int(np.argmax(np.abs(p_loc)))
+                    n_loc = np.zeros(3, dtype=np.float64)
+                    n_loc[ax_idx] = 1.0 if p_loc[ax_idx] >= 0.0 else -1.0
+                rot_row = np.cross(p_loc, n_loc)
+                rows_jac.append((w_obs * np.concatenate([rot_row, n_loc])).astype(np.float64))
+
+            if len(rows_jac) < 5:
+                continue
+            A_ent = np.vstack(rows_jac)
+            req_rank = 5 if shape == "cylinder" else 6
+            gate = evaluate_schur_observability_gate(
+                pose_jacobian_ax=A_ent,
+                candidate_pose_index=0,
+                required_pose_rank=req_rank,
+            )
+            if not gate.admitted:
+                if snap.is_active(eid):
+                    snap = store.report_pose_unavailable(
+                        snap.cursor,
+                        eid,
+                        source_id="so101-rgbd-2cam",
+                        observation_id=obs_id,
+                        sensor_clock_id=clock_id,
+                        observation_ns=obs_ns,
+                        reason=str(gate.reason),
+                    )
+                continue
+
+            prev_xyz = self._published_entity_xyz.get(eid)
+            cur_xyz = (float(pos[0]), float(pos[1]), float(pos[2]))
+            cause = "observation"
+            if prev_xyz is not None and math.dist(prev_xyz, cur_xyz) > 0.005:
+                cause = "physical_motion"
+            self._published_entity_xyz[eid] = cur_xyz
+
+            self._geom_version += 1
+            ent_surf = ObjectSurface.from_points(
+                eid,
+                GeometryRef("so101-rgbd", self._geom_epoch, self._geom_version),
+                (obs_id,),
+                ent_pts_local,
+                ent_sup,
+            )
+            snap = store.publish_pose(
+                snap.cursor,
+                eid,
+                T_se,
+                frame_id="sim_world",
+                gate=gate,
+                source_id="so101-rgbd-2cam",
+                observation_id=obs_id,
+                sensor_clock_id=clock_id,
+                observation_ns=obs_ns,
+                geometry=ent_surf,
+                cause=cause,
+                tangent=PoseTangent("scene_from_entity", "right"),
+            )
+
+        return self._serialize_snapshot(snap)
+
+    def get_spatial_snapshot_dict(self, *, refresh: bool = False) -> dict[str, Any]:
+        """Return canonical EvidenceScene v3 SpatialSnapshot JSON (unified human/machine state)."""
+        if self._scene_store is None:
+            return {
+                "schema_version": 0,
+                "availability": "unavailable",
+                "detail": "Optional evidencescene v3 spatial_state runtime not installed",
+            }
+        snap = self._scene_store.snapshot()
+        if refresh or not snap.entity_poses:
+            self.reconstruct_scene_evidencescene()
+            snap = self._scene_store.snapshot()
+        return self._serialize_snapshot(snap)
+
+    def _point_jacobian_for_tangent(self, transform: Any, pt_local: Any, tangent: Any) -> Any:
+        """Exact 3x6 point Jacobian d(p_scene)/d(xi) matching the pose's declared PoseTangent."""
+        from evidencescene.observability.task_observability import inspection_point_jacobian
+
+        np = self._np
+        if tangent is not None and tangent.transform == "scene_from_entity" and tangent.perturbation_side == "right":
+            # T exp(xi) maps p_loc -> R (p_loc + w x p_loc + v) + t = R (-[p_loc]_x w + v) + p_scene
+            px, py, pz = float(pt_local[0]), float(pt_local[1]), float(pt_local[2])
+            neg_skew = np.array([[0.0, pz, -py], [-pz, 0.0, px], [py, -px, 0.0]], dtype=float)
+            return transform[:3, :3] @ np.hstack([neg_skew, np.eye(3, dtype=float)])
+        return inspection_point_jacobian(transform, pt_local)
+
+    def _build_task_jacobian(
+        self,
+        transform: Any,
+        task_mode: str,
+        entity_point_m: Sequence[float] | None = None,
+        tangent: Any = None,
+    ) -> tuple[Any, list[float]]:
+        np = self._np
+        mode = str(task_mode or "body_grasp").strip().lower()
+        if mode == "handle_grasp":
+            pt = np.array(entity_point_m if entity_point_m is not None else [0.028, 0.0, 0.0], dtype=float)
+        else:
+            pt = np.array(entity_point_m if entity_point_m is not None else [0.0, 0.0, 0.0], dtype=float)
+
+        pt_jac = self._point_jacobian_for_tangent(transform, pt, tangent)
+        if mode in ("body_grasp", "handle_grasp"):
+            if tangent is not None and tangent.transform == "scene_from_entity" and tangent.perturbation_side == "right":
+                # Local Z axis under right perturbation: d(R e_z)/d(w) = R (w x e_z) = R (-[e_z]_x w)
+                # Two tangent coordinates on S^2 at e_z are local X and local Y: rows [0, 1, 0, 0,0,0] and [-1, 0, 0, 0,0,0]
+                angular_rows = np.array(
+                    [[0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
+                    dtype=float,
+                )
+            else:
+                direction = transform[:3, :3] @ np.array([0.0, 0.0, 1.0], dtype=float)
+                x, y, z = direction
+                axis_rows = np.array([[0.0, -z, y, 0.0, 0.0, 0.0], [z, 0.0, -x, 0.0, 0.0, 0.0], [-y, x, 0.0, 0.0, 0.0, 0.0]])
+                basis = np.eye(3)[int(np.argmin(np.abs(direction)))]
+                first = np.cross(direction, basis)
+                first /= np.linalg.norm(first)
+                angular_rows = np.stack((first, np.cross(direction, first))) @ axis_rows
+            rows = np.vstack([pt_jac, angular_rows])
+        else:
+            rows = pt_jac
+        scene_pt = (transform[:3, :3] @ pt + transform[:3, 3]).tolist()
+        return rows, [round(float(v), 5) for v in scene_pt]
+
+    def low_level_assess_spatial_requirements(
+        self,
+        entity_id: str = "red_cylinder",
+        task_mode: str = "body_grasp",
+        *,
+        max_age_ms: float = 2000.0,
+        max_stddev_m: float | None = None,
+        entity_point_m: Sequence[float] | None = None,
+    ) -> dict[str, Any]:
+        """Assess task-conditioned observability (ker(H) <= ker(J_task)) via EvidenceScene v3."""
+        if self._scene_store is None:
+            return {"status": "unavailable_evidence", "detail": "EvidenceScene v3 SceneStore unavailable"}
+        from evidencescene.spatial_state import PoseTangent
+
+        self.reconstruct_scene_evidencescene()
+        snap = self._scene_store.snapshot()
+        clock_id, ref_ns = self._sim_clock()
+        max_age_ns = max(0, round(float(max_age_ms) * 1e6))
+        mode = str(task_mode or "body_grasp").strip().lower()
+
+        if mode == "selected_point":
+            if snap.selected_point is None:
+                return {
+                    "status": "unknown",
+                    "detail": "No operator surface target selected yet; call select_surface_target first.",
+                    "cursor": {
+                        "scene_id": snap.cursor.scene_id,
+                        "epoch": int(snap.cursor.epoch),
+                        "revision": int(snap.cursor.revision),
+                    },
+                }
+            limits = [float(max_stddev_m)] * 3 if max_stddev_m is not None else None
+            assessment = snap.assess_selected_point(
+                reference_ns=ref_ns,
+                reference_clock_id=clock_id,
+                maximum_age_ns=max_age_ns,
+                maximum_model_stddev=limits,
+            )
+            sel_tgt = snap.selected_surface_target()
+            scene_pt = [round(float(v), 5) for v in sel_tgt.scene_point_m] if sel_tgt and sel_tgt.scene_point_m else None
+            resolved_entity = snap.selected_point.entity_id
+            resolved_pt = list(snap.selected_point.entity_point_m)
+        else:
+            if entity_id not in snap.entity_poses:
+                unavail = snap.unavailable_poses.get(entity_id)
+                return {
+                    "status": "unknown" if unavail is None else "unavailable_evidence",
+                    "entity_id": entity_id,
+                    "detail": unavail.reason if unavail is not None else f"Entity {entity_id!r} not in committed snapshot",
+                    "cursor": {
+                        "scene_id": snap.cursor.scene_id,
+                        "epoch": int(snap.cursor.epoch),
+                        "revision": int(snap.cursor.revision),
+                    },
+                }
+            pose = snap.entity_poses[entity_id]
+            pose_tangent = pose.admission.tangent if pose.admission and pose.admission.tangent else PoseTangent("entity_from_scene", "right")
+            rows, scene_pt = self._build_task_jacobian(pose.scene_from_entity, mode, entity_point_m, tangent=pose_tangent)
+            limits = [float(max_stddev_m)] * len(rows) if max_stddev_m is not None else None
+            assessment = snap.assess_spatial_requirements(
+                entity_id,
+                rows,
+                reference_ns=ref_ns,
+                reference_clock_id=clock_id,
+                maximum_age_ns=max_age_ns,
+                maximum_model_stddev=limits,
+                required_tangent=pose_tangent,
+            )
+            resolved_entity = entity_id
+            resolved_pt = list(entity_point_m) if entity_point_m is not None else ([0.028, 0.0, 0.0] if mode == "handle_grasp" else [0.0, 0.0, 0.0])
+
+        aid = f"assess-{snap.cursor.epoch}-{snap.cursor.revision}-{len(self._pinned_assessments) + 1}"
+        self._pinned_assessments[aid] = {
+            "assessment": assessment,
+            "snapshot": snap,
+            "entity_id": resolved_entity,
+            "task_mode": mode,
+            "entity_point_m": resolved_pt,
+        }
+        obs_eval = assessment.evidence.assessment
+        return {
+            "assessment_id": aid,
+            "entity_id": resolved_entity,
+            "task_mode": mode,
+            "status": str(assessment.status),
+            "cursor": {
+                "scene_id": snap.cursor.scene_id,
+                "epoch": int(snap.cursor.epoch),
+                "revision": int(snap.cursor.revision),
+            },
+            "pose_revision": int(assessment.evidence.pose_revision),
+            "freshness": {
+                "status": assessment.freshness.status,
+                "reason": assessment.freshness.reason,
+                "age_ms": round(assessment.freshness.age_ns / 1e6, 2) if assessment.freshness.age_ns is not None else None,
+            },
+            "observability": {
+                "status": "sufficient" if assessment.status == "satisfied" else ("insufficient" if assessment.status == "unsatisfied" else "unknown"),
+                "rank": int(obs_eval.pose_rank) if obs_eval is not None else None,
+                "status_by_row": list(obs_eval.status_by_row) if obs_eval is not None else [],
+                "model_stddev_by_row": [
+                    round(float(v), 6) if v is not None else None
+                    for v in (obs_eval.model_stddev_by_row if obs_eval is not None else ())
+                ],
+            },
+            "missing_evidence": list(assessment.missing_evidence),
+            "scene_point_m": scene_pt,
+            "detail": f"task_mode={mode}, status={assessment.status}, missing={list(assessment.missing_evidence)}",
+        }
+
+    def low_level_revalidate_spatial_requirements(self, assessment_id: str) -> dict[str, Any]:
+        """Revalidate a pinned assessment against the current committed SceneStore snapshot."""
+        if self._scene_store is None:
+            return {"decision": "hold", "status": "unavailable_evidence", "reason": "scene_store_unavailable"}
+        rec = self._pinned_assessments.get(str(assessment_id or ""))
+        if rec is None:
+            return {
+                "decision": "invalidate_plan",
+                "status": "unknown",
+                "reason": "unknown_assessment_id",
+                "resnapshot_required": True,
+                "detail": f"Assessment {assessment_id!r} was cleared (e.g. after epoch reset) or does not exist.",
+            }
+        prev = rec["assessment"]
+        snap = self._scene_store.snapshot()
+        clock_id, ref_ns = self._sim_clock()
+        check = snap.revalidate_spatial_requirements(prev, reference_clock_id=clock_id, reference_ns=ref_ns)
+        scene_pt = None
+        if check.status == "satisfied":
+            decision = "target_available"
+            pose = snap.entity_poses[prev.evidence.entity_id]
+            pt = self._np.asarray(rec["entity_point_m"], dtype=float)
+            scene_pt = [round(float(v), 5) for v in (pose.scene_from_entity[:3, :3] @ pt + pose.scene_from_entity[:3, 3]).tolist()]
+        elif check.reason in ("task_requires_new_linearization", "scene_scope_changed", "entity_retired", "surface_selection_changed"):
+            decision = "invalidate_plan"
+        else:
+            decision = "hold"
+        resnap = check.reason in ("scene_scope_changed",)
+        return {
+            "assessment_id": assessment_id,
+            "decision": decision,
+            "status": str(check.status),
+            "reason": str(check.reason),
+            "resnapshot_required": resnap,
+            "planned_cursor": {
+                "scene_id": prev.evidence.cursor.scene_id,
+                "epoch": int(prev.evidence.cursor.epoch),
+                "revision": int(prev.evidence.cursor.revision),
+            },
+            "cursor": {
+                "scene_id": check.cursor.scene_id,
+                "epoch": int(check.cursor.epoch),
+                "revision": int(check.cursor.revision),
+            },
+            "scene_point_m": scene_pt,
+            "missing_evidence": list(check.assessment.missing_evidence) if check.assessment is not None else [check.reason],
+            "detail": f"decision={decision}, reason={check.reason}, status={check.status}",
+        }
+
+    def low_level_evaluate_wrist_viewpoints(
+        self,
+        assessment_id: str,
+        candidates_xyz_m: Sequence[Sequence[float]] | None = None,
+    ) -> dict[str, Any]:
+        """Active perception forecast via EvidenceScene v3 `evaluate_observation` over reachable SO-101 wrist poses."""
+        if self._scene_store is None:
+            return {"status": "unavailable_evidence", "detail": "EvidenceScene v3 SceneStore unavailable"}
+        rec = self._pinned_assessments.get(str(assessment_id or ""))
+        if rec is None:
+            return {"status": "unknown", "reason": "unknown_assessment_id", "selected_candidate": None}
+        from evidencescene.observability.task_observability import inspection_point_jacobian
+        from evidencescene.spatial_state import PoseTangent
+
+        np = self._np
+        req = rec["assessment"]
+        snap = rec["snapshot"]
+        eid = rec["entity_id"]
+        if eid not in snap.entity_poses:
+            return {"status": "unknown", "reason": "entity_absent", "selected_candidate": None}
+        pose = snap.entity_poses[eid]
+        ent_xyz = pose.scene_from_entity[:3, 3]
+        ee_now = np.asarray(self.low_level_get_robot_state()["ee_pos_m"], dtype=float)
+
+        if candidates_xyz_m:
+            raw_cands = [(f"wrist_cand_{i}", tuple(float(v) for v in xyz[:3])) for i, xyz in enumerate(candidates_xyz_m)]
+        else:
+            raw_cands = [
+                ("wrist_left_closeup", (float(ent_xyz[0] - 0.04), float(ent_xyz[1] + 0.09), TABLE_TOP_Z + 0.16)),
+                ("wrist_right_closeup", (float(ent_xyz[0] - 0.04), float(ent_xyz[1] - 0.09), TABLE_TOP_Z + 0.16)),
+                ("wrist_top_closeup", (float(ent_xyz[0] - 0.02), float(ent_xyz[1]), TABLE_TOP_Z + 0.19)),
+            ]
+
+        tangent = pose.admission.tangent if pose.admission and pose.admission.tangent else PoseTangent("entity_from_scene", "right")
+        target_local = np.asarray(rec["entity_point_m"], dtype=float)
+        J_feat = self._point_jacobian_for_tangent(pose.scene_from_entity, target_local, tangent)
+        evaluated: list[dict[str, Any]] = []
+        eligible: list[tuple[float, str, list[float]]] = []
+
+        for cid, raw_xyz in raw_cands:
+            cx, cy, cz = self.clamp_world_target(*raw_xyz)
+            cand_xyz = np.array([cx, cy, cz], dtype=float)
+            dist_to_obj = max(0.08, float(np.linalg.norm(cand_xyz - ent_xyz)))
+            motion_m = float(np.linalg.norm(cand_xyz - ee_now))
+            # Expected depth/feature noise scales linearly with standoff distance (3mm @ 0.15m)
+            sigma_m = 0.003 * (dist_to_obj / 0.15)
+            # Only side viewpoints with horizontal offset break cylindrical yaw ambiguity on a side feature
+            horiz_offset = float(np.hypot(cand_xyz[0] - ent_xyz[0], cand_xyz[1] - ent_xyz[1]))
+            if horiz_offset < 0.045:
+                # Top-down view constrains Z and XY center well, weaker tangential yaw discrimination
+                B = np.vstack([J_feat[2:3] / sigma_m, J_feat[0:2] / (sigma_m * 1.6)])
+            else:
+                B = J_feat / sigma_m
+
+            fc = snap.evaluate_observation(req, candidate_id=cid, tangent=tangent, whitened_pose_jacobian=B)
+            pred = fc.predicted
+            unmet: list[int] = []
+            if pred is not None:
+                limits = req.maximum_model_stddev
+                for i, st in enumerate(pred.status_by_row):
+                    dev = pred.model_stddev_by_row[i]
+                    if st != "observable" or (limits is not None and (dev is None or dev > limits[i])):
+                        unmet.append(i)
+            meets = pred is not None and not unmet and req.freshness.status == "fresh"
+            if meets:
+                eligible.append((motion_m, cid, [round(cx, 4), round(cy, 4), round(cz, 4)]))
+            evaluated.append(
+                {
+                    "candidate_id": cid,
+                    "ee_xyz_m": [round(cx, 4), round(cy, 4), round(cz, 4)],
+                    "estimated_motion_m": round(motion_m, 4),
+                    "standoff_m": round(dist_to_obj, 4),
+                    "forecast_reason": fc.reason,
+                    "predicted_rank": int(pred.pose_rank) if pred is not None else None,
+                    "predicted_status_by_row": list(pred.status_by_row) if pred is not None else [],
+                    "unmet_task_rows": unmet if pred is not None else None,
+                    "predicted_to_meet_requirements": meets,
+                }
+            )
+
+        selected_id = None
+        selected_xyz = None
+        if req.status == "satisfied":
+            reason = "already_satisfied"
+        elif eligible:
+            _, selected_id, selected_xyz = min(eligible, key=lambda x: x[0])
+            reason = "least_motion_wrist_viewpoint_meeting_requirements"
+        else:
+            reason = "no_single_candidate_meets_requirements"
+
+        return {
+            "assessment_id": assessment_id,
+            "cursor": {
+                "scene_id": snap.cursor.scene_id,
+                "epoch": int(snap.cursor.epoch),
+                "revision": int(snap.cursor.revision),
+            },
+            "current_status": str(req.status),
+            "selected_candidate": selected_id,
+            "recommended_ee_xyz_m": selected_xyz,
+            "reason": reason,
+            "candidates": evaluated,
+        }
+
+    def low_level_select_surface_target(
+        self,
+        *,
+        entity_id: str = "fixed_tabletop",
+        point_index: int | None = None,
+        target_xyz_m: Sequence[float] | None = None,
+        reviewer_id: str = "operator",
+        reason: str = "3d_twin_surface_selection",
+    ) -> dict[str, Any]:
+        """Commit an operator-selected measured surface vertex into EvidenceScene v3 SceneStore."""
+        if self._scene_store is None:
+            return {"ok": False, "status": "unavailable_evidence", "detail": "EvidenceScene v3 SceneStore unavailable"}
+        snap = self._scene_store.snapshot()
+        if not snap.entity_poses:
+            self.reconstruct_scene_evidencescene()
+            snap = self._scene_store.snapshot()
+
+        eid = str(entity_id or "fixed_tabletop")
+        if eid == "auto" and target_xyz_m is not None and len(target_xyz_m) >= 3:
+            tgt = self._np.asarray([float(target_xyz_m[0]), float(target_xyz_m[1]), float(target_xyz_m[2])], dtype=float)
+            best_eid, best_dist = "fixed_tabletop", 1e9
+            for cand_eid in ("red_cylinder", "brown_block", "fixed_tabletop"):
+                cand_pose = snap.entity_poses.get(cand_eid)
+                if cand_pose is None or cand_pose.geometry is None or not len(cand_pose.geometry.points_m):
+                    continue
+                dmin = float(self._np.linalg.norm(cand_pose.surface_points_in_scene() - tgt[None, :], axis=1).min())
+                # Prefer object surface if click is within 2.8cm of a tracked object
+                if cand_eid != "fixed_tabletop" and dmin <= 0.028:
+                    best_eid, best_dist = cand_eid, dmin
+                    break
+                if dmin < best_dist:
+                    best_eid, best_dist = cand_eid, dmin
+            eid = best_eid
+        pose = snap.entity_poses.get(eid)
+        if pose is None or pose.geometry is None or not len(pose.geometry.points_m):
+            return {"ok": False, "status": "missing_object", "detail": f"Entity {eid!r} has no measured surface points"}
+
+        pts_scene = pose.surface_points_in_scene()
+        if point_index is not None:
+            idx = int(point_index)
+        elif target_xyz_m is not None and len(target_xyz_m) >= 3:
+            tgt = self._np.asarray([float(target_xyz_m[0]), float(target_xyz_m[1]), float(target_xyz_m[2])], dtype=float)
+            idx = int(self._np.linalg.norm(pts_scene - tgt[None, :], axis=1).argmin())
+        else:
+            idx = len(pts_scene) // 2
+
+        new_snap = self._scene_store.select_surface_point(
+            snap.cursor,
+            eid,
+            idx,
+            reviewer_id=str(reviewer_id or "operator"),
+            reason=str(reason or "3d_twin_surface_selection"),
+        )
+        # Invalidate cached reconstruction so next poll reflects updated cursor & selection
+        self._recon_cache = None
+        sel_dict = self._serialize_selected_target(new_snap)
+        return {
+            "ok": True,
+            "status": "selected",
+            "cursor": {
+                "scene_id": new_snap.cursor.scene_id,
+                "epoch": int(new_snap.cursor.epoch),
+                "revision": int(new_snap.cursor.revision),
+            },
+            "selected_surface_target": sel_dict,
+        }
 
     def embodiment_manifest(self) -> Any:
         from .plugin import EmbodimentManifest
@@ -1416,6 +2137,92 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
             ),
             lambda args: self.low_level_verify_task(args.get("task_id")),
         )
+        server.register_tool(
+            MCPToolSpec(
+                name="assess_spatial_requirements",
+                description="Evaluate task-conditioned observability (ker(H) <= ker(J_task)) & freshness via EvidenceScene v3 SceneStore.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "entity_id": {"type": "string", "default": "red_cylinder"},
+                        "task_mode": {
+                            "type": "string",
+                            "default": "body_grasp",
+                            "enum": ["body_grasp", "handle_grasp", "inspect_point", "selected_point"],
+                        },
+                        "max_age_ms": {"type": "number", "default": 2000.0},
+                        "max_stddev_m": {"type": "number"},
+                    },
+                },
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_assess_spatial_requirements(
+                str(args.get("entity_id") or "red_cylinder"),
+                str(args.get("task_mode") or "body_grasp"),
+                max_age_ms=float(args.get("max_age_ms", 2000.0)),
+                max_stddev_m=float(args["max_stddev_m"]) if args.get("max_stddev_m") is not None else None,
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="revalidate_spatial_requirements",
+                description="Revalidate a pinned assessment_id against the current committed SceneStore cursor before actuation.",
+                input_schema={
+                    "type": "object",
+                    "required": ["assessment_id"],
+                    "properties": {"assessment_id": {"type": "string"}},
+                },
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_revalidate_spatial_requirements(str(args.get("assessment_id") or "")),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="evaluate_wrist_viewpoints",
+                description="Active perception forecast (H + B^T B) over reachable SO-101 wrist camera poses via EvidenceScene v3.",
+                input_schema={
+                    "type": "object",
+                    "required": ["assessment_id"],
+                    "properties": {
+                        "assessment_id": {"type": "string"},
+                        "candidates_xyz_m": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
+                    },
+                },
+                read_only=True,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_evaluate_wrist_viewpoints(
+                str(args.get("assessment_id") or ""),
+                candidates_xyz_m=args.get("candidates_xyz_m"),
+            ),
+        )
+        server.register_tool(
+            MCPToolSpec(
+                name="select_surface_target",
+                description="Commit a provenance-tagged surface vertex selection into EvidenceScene v3 SceneStore.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "entity_id": {"type": "string", "default": "fixed_tabletop"},
+                        "point_index": {"type": "integer"},
+                        "target_xyz_m": {"type": "array", "items": {"type": "number"}},
+                        "reviewer_id": {"type": "string", "default": "operator"},
+                        "reason": {"type": "string", "default": "3d_twin_surface_selection"},
+                    },
+                },
+                read_only=False,
+                idempotent=True,
+            ),
+            lambda args: self.low_level_select_surface_target(
+                entity_id=str(args.get("entity_id") or "fixed_tabletop"),
+                point_index=int(args["point_index"]) if args.get("point_index") is not None else None,
+                target_xyz_m=args.get("target_xyz_m"),
+                reviewer_id=str(args.get("reviewer_id") or "operator"),
+                reason=str(args.get("reason") or "3d_twin_surface_selection"),
+            ),
+        )
         server.register_resource(
             MCPResourceSpec(
                 uri="trax://scene/state",
@@ -1457,6 +2264,15 @@ class MuJoCoSO101HostDriver(MuJoCoCafeHostDriver):
                 mime_type="application/json",
             ),
             lambda: ("application/json", _json.dumps(self.reconstruct_scene_evidencescene())),
+        )
+        server.register_resource(
+            MCPResourceSpec(
+                uri="trax://scene/snapshot",
+                name="EvidenceScene v3 Canonical SpatialSnapshot",
+                description="Committed Schema v1 SpatialSnapshot (cursor, clock_id, entities, observability, selected target).",
+                mime_type="application/json",
+            ),
+            lambda: ("application/json", _json.dumps(self.get_spatial_snapshot_dict())),
         )
 
 

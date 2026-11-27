@@ -229,6 +229,43 @@ class TraxUIApp:
                 return None
         return None
 
+    def fetch_scene_snapshot(self) -> dict[str, Any] | None:
+        """Fetch committed EvidenceScene v3 SpatialSnapshot v1 from active host."""
+        fn = getattr(self.driver, "get_spatial_snapshot_dict", None)
+        if callable(fn):
+            return fn()
+        if self.driver.driver_name == "http" and hasattr(self.driver, "config"):
+            base = self.driver.config.host.normalized_base_url  # type: ignore[attr-defined]
+            try:
+                with self._opener.open(f"{base}/scene/snapshot", timeout=10.0) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except Exception:  # noqa: BLE001
+                return None
+        return None
+
+    def select_scene_surface(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        """Commit an operator-selected measured surface vertex into the host's EvidenceScene v3 SceneStore."""
+        fn = getattr(self.driver, "low_level_select_surface_target", None)
+        if callable(fn):
+            return fn(
+                entity_id=str(body.get("entity_id") or "auto"),
+                point_index=int(body["point_index"]) if body.get("point_index") is not None else None,
+                target_xyz_m=body.get("target_xyz_m"),
+                reviewer_id=str(body.get("reviewer_id") or "ui_operator"),
+                reason=str(body.get("reason") or "3d_twin_surface_selection"),
+            )
+        if self.driver.driver_name == "http" and hasattr(self.driver, "config"):
+            base = self.driver.config.host.normalized_base_url  # type: ignore[attr-defined]
+            req = urllib.request.Request(
+                f"{base}/scene/select_surface",
+                data=json.dumps(dict(body)).encode("utf-8"),
+                method="POST",
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
+            )
+            with self._opener.open(req, timeout=8.0) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        raise ValueError("Active host does not support EvidenceScene surface selection")
+
     def fetch_robot_urdf(self) -> str | None:
         """Fetch active embodiment URDF via MCP `trax://robot/urdf` and normalize mesh URLs for browser."""
         try:
@@ -575,6 +612,13 @@ def create_ui_server(
                 else:
                     self._send_json(recon)
                 return
+            if path == "/api/scene/snapshot":
+                snap = app.fetch_scene_snapshot()
+                if snap is None:
+                    self._send_json({"error": "SpatialSnapshot v1 unavailable on active backend"}, HTTPStatus.NOT_FOUND)
+                else:
+                    self._send_json(snap)
+                return
             if path.startswith("/api/robot/assets/"):
                 rel = path[len("/api/robot/assets/") :]
                 asset = app.fetch_robot_asset(rel)
@@ -625,6 +669,9 @@ def create_ui_server(
                 body = self._read_json()
                 if path == "/api/confirm":
                     self._send_json(app.driver.confirm_object(str(body.get("object_id", ""))))
+                    return
+                if path == "/api/scene/select_surface":
+                    self._send_json(app.select_scene_surface(body))
                     return
                 if path == "/api/reset":
                     with app._lock:

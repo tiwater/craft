@@ -249,6 +249,13 @@ def create_sim_host_server(
                 else:
                     self._send_json({"error": "Active driver does not expose RGB-D scene reconstruction"}, HTTPStatus.NOT_FOUND)
                 return
+            if path == "/scene/snapshot":
+                fn = getattr(app.driver, "get_spatial_snapshot_dict", None)
+                if callable(fn):
+                    self._send_json(fn())
+                else:
+                    self._send_json({"error": "Active driver does not expose SpatialSnapshot v1"}, HTTPStatus.NOT_FOUND)
+                return
             if path == "/mcp":
                 self._send_json(
                     {
@@ -277,6 +284,21 @@ def create_sim_host_server(
                     return
                 if path == "/cap/confirm":
                     self._send_json(app.post_cap_confirm(body))
+                    return
+                if path == "/scene/select_surface":
+                    fn = getattr(app.driver, "low_level_select_surface_target", None)
+                    if callable(fn):
+                        self._send_json(
+                            fn(
+                                entity_id=str(body.get("entity_id") or "auto"),
+                                point_index=int(body["point_index"]) if body.get("point_index") is not None else None,
+                                target_xyz_m=body.get("target_xyz_m"),
+                                reviewer_id=str(body.get("reviewer_id") or "operator"),
+                                reason=str(body.get("reason") or "3d_twin_surface_selection"),
+                            )
+                        )
+                    else:
+                        self._send_json({"error": "Active driver does not support surface target selection"}, HTTPStatus.NOT_FOUND)
                     return
                 if path == "/v1/sim/testbed/setup":
                     self._send_json(app.post_testbed_setup(body))

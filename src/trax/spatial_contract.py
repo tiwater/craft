@@ -22,6 +22,8 @@ LEGACY_WALL_CLOCK_ID = "legacy_wall_ns"
 VALID_FRESHNESS_STATUSES = frozenset({"fresh", "stale", "unknown"})
 VALID_OBSERVABILITY_STATUSES = frozenset({"sufficient", "insufficient", "unknown"})
 VALID_ASSESSMENT_STATUSES = frozenset({"satisfied", "unsatisfied", "unknown"})
+VALID_TASK_MODES = frozenset({"body_grasp", "handle_grasp", "inspect_point", "selected_point"})
+VALID_REVALIDATION_DECISIONS = frozenset({"target_available", "invalidate_plan", "hold"})
 VALID_CHANGE_CAUSES = frozenset(
     {"observation", "physical_motion", "historical_correction", "removal", "reset"}
 )
@@ -182,6 +184,36 @@ class SpatialRequirementAssessment:
             "missing_information": list(self.missing_information),
             "limitations": list(self.limitations),
             "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
+class SpatialRequirementSpec:
+    """Declarative spatial precondition bound to a promoted TRAX Skill (pure stdlib)."""
+
+    entity_id: str
+    task_mode: str = "body_grasp"  # body_grasp | handle_grasp | inspect_point | selected_point
+    max_age_ms: float = 2000.0
+    max_stddev_m: float | None = None
+    required_category: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.entity_id, str) or not self.entity_id.strip():
+            raise ValueError("SpatialRequirementSpec.entity_id must be a non-empty string")
+        if self.task_mode not in VALID_TASK_MODES:
+            raise ValueError(f"Invalid task_mode: {self.task_mode!r}")
+        if float(self.max_age_ms) < 0.0:
+            raise ValueError("SpatialRequirementSpec.max_age_ms must be nonnegative")
+        if self.max_stddev_m is not None and float(self.max_stddev_m) < 0.0:
+            raise ValueError("SpatialRequirementSpec.max_stddev_m must be nonnegative")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "entity_id": self.entity_id,
+            "task_mode": self.task_mode,
+            "max_age_ms": float(self.max_age_ms),
+            "max_stddev_m": float(self.max_stddev_m) if self.max_stddev_m is not None else None,
+            "required_category": self.required_category,
         }
 
 
@@ -359,22 +391,31 @@ def parse_spatial_snapshot_meta(snapshot: Mapping[str, Any]) -> ParsedSnapshotMe
         except (TypeError, ValueError):
             cursor = None
 
-    snapshot_clock = str(snapshot.get("clock_id") or "").strip()
+    snapshot_clock = str(snapshot.get("clock_id") or snapshot.get("sensor_clock_id") or "").strip()
     fallback_clock = snapshot_clock or LEGACY_WALL_CLOCK_ID
 
-    obs_time = _parse_clock_ts(
+    raw_obs_ts = (
         snapshot.get("observation_time")
         if "observation_time" in snapshot
-        else (snapshot.get("observation_timestamp_ns") if "observation_timestamp_ns" in snapshot else snapshot.get("timestamp_ns")),
-        fallback_clock_id=fallback_clock,
+        else (
+            snapshot.get("observation_ns")
+            if "observation_ns" in snapshot
+            else (
+                snapshot.get("observation_timestamp_ns")
+                if "observation_timestamp_ns" in snapshot
+                else snapshot.get("timestamp_ns")
+            )
+        )
     )
+    obs_time = _parse_clock_ts(raw_obs_ts, fallback_clock_id=fallback_clock)
     rev_time = _parse_clock_ts(
         snapshot.get("revision_time") if "revision_time" in snapshot else snapshot.get("revision_timestamp_ns"),
         fallback_clock_id=fallback_clock,
     )
+    pub_clock = str(snapshot.get("publication_clock_id") or snapshot_clock or "publisher_monotonic_ns").strip()
     pub_time = _parse_clock_ts(
-        snapshot.get("published_at"),
-        fallback_clock_id=snapshot_clock or "publisher_monotonic_ns",
+        snapshot.get("published_at") if "published_at" in snapshot else snapshot.get("published_monotonic_ns"),
+        fallback_clock_id=pub_clock,
     )
 
     raw_avail = str(snapshot.get("availability") or snapshot.get("state_status") or "").strip().lower()
@@ -399,18 +440,20 @@ def parse_spatial_snapshot_meta(snapshot: Mapping[str, Any]) -> ParsedSnapshotMe
 
 
 def extract_entity_list(snapshot: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    """Return entity/object records from either v2 `objects` list or v3 `entities` mapping/list."""
-    if isinstance(snapshot.get("entities"), Mapping):
-        out: list[Mapping[str, Any]] = []
-        for eid, ent in snapshot["entities"].items():
-            if isinstance(ent, Mapping):
-                row = dict(ent)
-                row.setdefault("entity_id", str(eid))
-                row.setdefault("object_id", str(eid))
-                out.append(row)
-        return out
-    if isinstance(snapshot.get("entities"), Sequence) and not isinstance(snapshot.get("entities"), (str, bytes)):
-        return [e for e in snapshot["entities"] if isinstance(e, Mapping)]
+    """Return entity/object records from v2 `objects`, v3 `entities`, or v3 `entity_poses`."""
+    for key in ("entities", "entity_poses"):
+        val = snapshot.get(key)
+        if isinstance(val, Mapping):
+            out: list[Mapping[str, Any]] = []
+            for eid, ent in val.items():
+                if isinstance(ent, Mapping):
+                    row = dict(ent)
+                    row.setdefault("entity_id", str(eid))
+                    row.setdefault("object_id", str(eid))
+                    out.append(row)
+            return out
+        if isinstance(val, Sequence) and not isinstance(val, (str, bytes)):
+            return [e for e in val if isinstance(e, Mapping)]
     raw_objs = snapshot.get("objects")
     if isinstance(raw_objs, Sequence) and not isinstance(raw_objs, (str, bytes)):
         return [o for o in raw_objs if isinstance(o, Mapping)]

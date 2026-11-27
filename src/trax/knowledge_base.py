@@ -416,6 +416,7 @@ class ExecutableKnowledgeBase:
         urdf_sha256: str = "",
         verified_seeds: Sequence[int] = (0,),
         min_verified_seeds: int = 1,
+        spatial_requirements: Sequence[Mapping[str, Any]] = (),
     ) -> dict[str, Any]:
         """Stage a verified skill and merge `--no-ff` to `main` ONLY when the seed verification gate passes."""
         if not bool(verify_result.get("passed")):
@@ -424,6 +425,7 @@ class ExecutableKnowledgeBase:
         unique_seeds = sorted({int(s) for s in verified_seeds})
         req_seeds = max(1, int(min_verified_seeds))
         meets_main_gate = len(unique_seeds) >= req_seeds
+        spatial_reqs = [dict(r) for r in spatial_requirements]
 
         with self._lock:
             emb = _slug(embodiment_id)
@@ -445,6 +447,7 @@ class ExecutableKnowledgeBase:
                 "promotion_stage": "verified_main" if meets_main_gate else "candidate",
                 "verify_metrics": verify_result.get("metrics") or {},
                 "verify_detail": str(verify_result.get("detail") or ""),
+                "spatial_requirements": spatial_reqs,
             }
             skill_md = "\n".join(
                 [
@@ -457,6 +460,7 @@ class ExecutableKnowledgeBase:
                     f"code_sha256: {meta['code_sha256']}",
                     f"verified_seeds: {json.dumps(unique_seeds)}",
                     f"promotion_stage: {meta['promotion_stage']}",
+                    *([f"spatial_requirements: {json.dumps(spatial_reqs, sort_keys=True)}"] if spatial_reqs else []),
                     f"verified_utc: {meta['verified_utc']}",
                     "---",
                     "",

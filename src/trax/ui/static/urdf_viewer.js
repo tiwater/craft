@@ -146,7 +146,13 @@
       this.layers = { surfels: true, env: true, traj: true, tf: true, cameras: true, urdf: true };
       this.surfelBuffer = null;
       this.surfelCount = 0;
+      this.rawSurfels = [];
       this.reconMeta = null;
+      this.selectedTarget = null;
+      this.pickMode = false;
+      this.onSurfacePick = null;
+      this.lastProj = null;
+      this.lastView = null;
       this.cameraMeta = [];
       this.camBuf = null;
       this.camCount = 0;
@@ -176,6 +182,18 @@
     toggleLayer(key) {
       if (key in this.layers) this.layers[key] = !this.layers[key];
       return this.layers[key];
+    }
+
+    setPickMode(enabled) {
+      this.pickMode = !!enabled;
+      if (this.canvas) this.canvas.style.cursor = this.pickMode ? 'crosshair' : 'grab';
+      this._updateStatusText();
+      return this.pickMode;
+    }
+
+    setSelectedTarget(sel) {
+      this.selectedTarget = sel || null;
+      this._updateStatusText();
     }
 
     _compile(type, src) {
@@ -342,8 +360,41 @@
       this.camCount = pos.length / 3;
     }
 
+    _pickSurfelAtClient(clientX, clientY) {
+      if (!this.lastProj || !this.lastView || !this.rawSurfels.length) return null;
+      const rect = this.canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      const nx = ((clientX - rect.left) / rect.width) * 2 - 1;
+      const ny = 1 - ((clientY - rect.top) / rect.height) * 2;
+      const vp = mat4Mul(this.lastProj, this.lastView);
+      const [bx, by, bz] = this.baseWorld;
+      let best = null;
+      let bestScore = 1e9;
+      for (let i = 0; i < this.rawSurfels.length; i++) {
+        const pt = this.rawSurfels[i];
+        const lx = Number(pt[0]) - bx, ly = Number(pt[1]) - by, lz = Number(pt[2]) - bz;
+        const cx = vp[0]*lx + vp[4]*ly + vp[8]*lz + vp[12];
+        const cy = vp[1]*lx + vp[5]*ly + vp[9]*lz + vp[13];
+        const cz = vp[2]*lx + vp[6]*ly + vp[10]*lz + vp[14];
+        const cw = vp[3]*lx + vp[7]*ly + vp[11]*lz + vp[15];
+        if (cw <= 1e-4) continue;
+        const sx = cx / cw, sy = cy / cw, sz = cz / cw;
+        const d2 = Math.hypot(sx - nx, sy - ny);
+        if (d2 > 0.065) continue;
+        const score = d2 + Math.max(0, sz) * 0.015;
+        if (score < bestScore) {
+          bestScore = score;
+          best = [Number(pt[0]), Number(pt[1]), Number(pt[2])];
+        }
+      }
+      return best;
+    }
+
     _bindPointer() {
+      let downX = 0, downY = 0;
       this.canvas.addEventListener('pointerdown', (e) => {
+        downX = e.clientX; downY = e.clientY;
+        if (this.pickMode || e.shiftKey) return;
         this.dragging = true; this.lastX = e.clientX; this.lastY = e.clientY;
         this.canvas.setPointerCapture(e.pointerId);
       });
@@ -354,7 +405,13 @@
         this.azimuth -= dx * 0.008;
         this.elevation = Math.max(0.08, Math.min(1.48, this.elevation + dy * 0.007));
       });
-      this.canvas.addEventListener('pointerup', () => { this.dragging = false; });
+      this.canvas.addEventListener('pointerup', (e) => {
+        this.dragging = false;
+        if ((this.pickMode || e.shiftKey) && Math.hypot(e.clientX - downX, e.clientY - downY) < 6) {
+          const hit = this._pickSurfelAtClient(e.clientX, e.clientY);
+          if (hit && typeof this.onSurfacePick === 'function') this.onSurfacePick(hit);
+        }
+      });
       this.canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         this.distance = Math.max(0.28, Math.min(1.6, this.distance * (1 + e.deltaY * 0.001)));
@@ -441,6 +498,8 @@
     setReconstruction(recon) {
       if (!recon || !Array.isArray(recon.surfels)) return;
       this.reconMeta = recon;
+      this.rawSurfels = recon.surfels;
+      if ('selected_surface_target' in recon) this.selectedTarget = recon.selected_surface_target || null;
       this.cameraMeta = Array.isArray(recon.cameras) ? recon.cameras : [];
       this._rebuildCameraFrustums();
       const pts = recon.surfels;
@@ -470,12 +529,18 @@
       if (this.robot) parts.push(`URDF: ${this.robot.name}`);
       if (this.reconMeta) {
         const obs = this.reconMeta.observability || {};
+        const cur = this.reconMeta.cursor;
+        if (cur) parts.push(`SceneStore ep=${cur.epoch} rev=${cur.revision}`);
         const pct = Math.round((this.reconMeta.corroborated_ratio || 0) * 100);
         const cams = (this.reconMeta.cameras_used || []).join('+');
-        parts.push(`${this.reconMeta.engine}: ${this.reconMeta.total_surfels} surfels (${pct}% 2-cam${cams ? ' · ' + cams : ''})`);
-        if (obs.rank != null) parts.push(`Schur ${obs.rank}/${obs.required_rank || 6} ${String(obs.status || '').toUpperCase()}`);
+        parts.push(`${this.reconMeta.total_surfels} surfels (${pct}% 2-cam${cams ? ' · ' + cams : ''})`);
+        if (obs.rank != null) parts.push(`Schur ${obs.rank}/${obs.required_rank || 6}`);
       }
-      parts.push('drag=orbit · scroll=zoom');
+      if (this.selectedTarget && this.selectedTarget.scene_point_m) {
+        const p = this.selectedTarget.scene_point_m.map((v) => Number(v).toFixed(3)).join(',');
+        parts.push(`target=${this.selectedTarget.entity_id}@(${p})`);
+      }
+      parts.push(this.pickMode ? 'CLICK surfel to commit target' : 'drag=orbit · shift+click=pick target');
       this.statusEl.textContent = parts.join('  ·  ');
     }
 
@@ -565,6 +630,8 @@
       ];
       const proj = mat4Perspective((42 * Math.PI) / 180, w / h, 0.02, 10.0);
       const view = mat4LookAt(eye, this.target, [0, 0, 1]);
+      this.lastProj = proj;
+      this.lastView = view;
 
       gl.useProgram(this.pprog);
       gl.uniformMatrix4fv(this.ploc.uProj, false, proj);
@@ -653,8 +720,20 @@
         drawLink(this.robot.rootLink, mat4Identity());
       }
 
-      // 6. Draw Joint & TCP TF triads on top
-      if (this.layers.tf && tfPos.length) {
+      // 6. Draw Joint & TCP TF triads + Operator Selected Surface Target marker on top
+      if (this.selectedTarget && Array.isArray(this.selectedTarget.scene_point_m)) {
+        const sp = this.selectedTarget.scene_point_m;
+        const sx = Number(sp[0]) - this.baseWorld[0];
+        const sy = Number(sp[1]) - this.baseWorld[1];
+        const sz = Number(sp[2]) - this.baseWorld[2];
+        const mag = [0.95, 0.16, 0.62];
+        pushRing(tfPos, tfCol, sx, sy, sz + 0.003, 0.018, 24, mag);
+        pushRing(tfPos, tfCol, sx, sy, sz + 0.012, 0.010, 20, mag);
+        const s = 0.028;
+        tfPos.push(sx - s, sy, sz + 0.004, sx + s, sy, sz + 0.004, sx, sy - s, sz + 0.004, sx, sy + s, sz + 0.004, sx, sy, sz, sx, sy, sz + 0.045);
+        for (let k = 0; k < 6; k++) tfCol.push(mag[0], mag[1], mag[2]);
+      }
+      if (tfPos.length) {
         gl.useProgram(this.pprog);
         gl.uniformMatrix4fv(this.ploc.uProj, false, proj);
         gl.uniformMatrix4fv(this.ploc.uView, false, view);

@@ -548,6 +548,37 @@ function toggleTwinLayer(key) {
   if (el) el.className = 'twin-chip' + (on ? ' on' : '');
 }
 
+function toggleTwinPick() {
+  if (!urdfViewer) return;
+  const on = urdfViewer.setPickMode(!urdfViewer.pickMode);
+  const el = document.getElementById('tw-btn-pick');
+  if (el) el.className = 'twin-chip' + (on ? ' on' : '');
+}
+
+async function commitTwinSurfacePick(worldXyz) {
+  try {
+    const res = await api('api/scene/select_surface', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        entity_id: 'auto',
+        target_xyz_m: worldXyz,
+        reviewer_id: 'ui_operator',
+        reason: '3d_twin_surface_selection',
+      }),
+    });
+    if (res && res.ok && urdfViewer) {
+      urdfViewer.setSelectedTarget(res.selected_surface_target);
+      urdfViewer.setPickMode(false);
+      const el = document.getElementById('tw-btn-pick');
+      if (el) el.className = 'twin-chip';
+      refreshSceneReconstruction(true);
+    }
+  } catch (e) {
+    console.warn('Surface selection failed:', e);
+  }
+}
+
 async function refreshSceneReconstruction(force) {
   if (!urdfViewer || reconInFlight) return;
   const seq = (lastMcpTelemetry && lastMcpTelemetry.robot && lastMcpTelemetry.robot.step_seq != null)
@@ -562,7 +593,8 @@ async function refreshSceneReconstruction(force) {
     if (badge && recon) {
       const obs = recon.observability || {};
       const ok = obs.status === 'observable';
-      badge.textContent = `EvidenceScene: ${recon.total_surfels} surfels · rank ${obs.rank ?? '-'}/6`;
+      const cur = recon.cursor ? ` · ep${recon.cursor.epoch}:r${recon.cursor.revision}` : '';
+      badge.textContent = `EvidenceScene v3: ${recon.total_surfels} surfels · rank ${obs.rank ?? '-'}/6${cur}`;
       badge.className = 'hud-pill ' + (ok ? 'ok' : 'warn');
     }
   } catch (_) {
@@ -611,6 +643,7 @@ function renderCameraShells() {
           <button id="tw-btn-env" class="twin-chip on" onclick="toggleTwinLayer('env')">Envelope</button>
           <button id="tw-btn-traj" class="twin-chip on" onclick="toggleTwinLayer('traj')">3D Trail</button>
           <button id="tw-btn-tf" class="twin-chip on" onclick="toggleTwinLayer('tf')">TF Axes</button>
+          <button id="tw-btn-pick" class="twin-chip" onclick="toggleTwinPick()" title="Click any measured EvidenceScene surfel to commit a shared target revision">Pick Target</button>
           <button class="twin-chip" onclick="refreshSceneReconstruction(true)">Rescan</button>
         </div>
         <div id="urdf-status" class="urdf-status">Loading URDF + EvidenceScene RGB-D reconstruction...</div>
@@ -620,6 +653,7 @@ function renderCameraShells() {
     const st = document.getElementById('urdf-status');
     if (cv && window.TraxURDFViewer) {
       urdfViewer = new window.TraxURDFViewer(cv, st);
+      urdfViewer.onSurfacePick = commitTwinSurfacePick;
       if (lastMcpTelemetry) urdfViewer.setTelemetry(lastMcpTelemetry);
       urdfViewer.loadUrdf('api/robot/urdf?t=' + Date.now());
       lastReconStepSeq = -1;
